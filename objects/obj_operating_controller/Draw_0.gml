@@ -1,0 +1,1 @@
+operating_controller_draw(id);
