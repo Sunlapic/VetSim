@@ -523,7 +523,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_foreign_body_ear", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_foreign_body_ear", diagnostic_id : "diag_otoscope",      required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_foreign_body_ear", action_id : "treat_foreign_body_removal", count : 1, days : 1, reveal_level : 3, required : true, severity_or_condition : "any", notes : "Операция: удаление инородного тела.", repeat_until_recovered : false, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_foreign_body_ear", action_id : "treat_ear_drops", count : 1, days : 1, reveal_level : 2, required : false, severity_or_condition : "any", notes : "Профилактика воспаления.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_foreign_body_ear", action_id : "treat_ear_drops", count : 1, days : 1, reveal_level : 2, required : false, severity_or_condition : "any", notes : "Профилактика воспаления.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_foreign_body_ear", skill_id : "skill_therapy_diag", min_level : 5, importance : "main" });
 
     // ── СРЕДНИЙ ОТИТ ──
@@ -689,7 +689,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_periodontitis", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_periodontitis", diagnostic_id : "diag_dental_exam",   required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_periodontitis", action_id : "treat_tooth_extraction", count : 1, days : 1, reveal_level : 3, required : true, severity_or_condition : "any", notes : "Операция: удаление зуба.", repeat_until_recovered : false, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_periodontitis", action_id : "treat_antibiotic",      count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Антибиотик при инфекции.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_periodontitis", action_id : "treat_antibiotic",      count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Антибиотик при инфекции.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_periodontitis", skill_id : "skill_procedures", min_level : 5, importance : "main" });
 
     // ── СТОМАТИТ ──
