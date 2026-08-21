@@ -19,15 +19,72 @@ function clinic_rooms_init() {
     }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Пакет №173: КОЙКИ СТАЦИОНАРА И ОПЕРАЦИОННАЯ ЗА ДЕНЬГИ
+//
+// Койки 101 и 102 идут в комплекте с палатой, 103 и 104 покупаются.
+// Некупленная койка скрыта (par_objects → Draw) и держит table_busy,
+// поэтому её не найдёт ни один поиск свободного места.
+// ═══════════════════════════════════════════════════════════════
+
+// ВРЕМЕННО: операционная открыта сразу, чтобы не покупать её при каждой
+// проверке игры. Перед релизом поставить false — механика покупки готова.
+#macro CLINIC_OPERATING_FREE_WHILE_TESTING true
+
+function clinic_bed_price(_slot_id) {
+    switch (round(_slot_id)) {
+        case 103: return 1600;
+        case 104: return 2000;
+    }
+
+    return 0;
+}
+
+function clinic_bed_is_open(_slot_id) {
+    clinic_rooms_init();
+
+    var _slot = round(_slot_id);
+
+    // Первые две койки — часть палаты.
+    if (_slot == 101 || _slot == 102) return true;
+    if (_slot < 101 || _slot > 104) return true;
+
+    var _key = "bed_" + string(_slot);
+
+    if (variable_struct_exists(global.clinic_rooms_open, _key)) {
+        return variable_struct_get(global.clinic_rooms_open, _key);
+    }
+
+    return false;
+}
+
+function clinic_operating_is_open() {
+    clinic_rooms_init();
+
+    if (CLINIC_OPERATING_FREE_WHILE_TESTING) return true;
+
+    if (variable_struct_exists(global.clinic_rooms_open, "operating")) {
+        return variable_struct_get(global.clinic_rooms_open, "operating");
+    }
+
+    return false;
+}
+
 function clinic_room_is_open(_slot_id) {
     clinic_rooms_init();
 
-    // Пакет №109: операционная пока открыта всегда (покупка за деньги — позже).
-    if (string(_slot_id) == "operating") return true;
+    // Пакет №173: операционная и её мебель (столы 201/202).
+    if (string(_slot_id) == "operating") return clinic_operating_is_open();
 
-    // Пакет №73: стационар (слоты 100+) — это койки, которые не покупаются
-    // через «ПОМЕЩЕНИЯ». Они всегда открыты и не скрываются.
-    if (round(_slot_id) >= 100) return true;
+    var _slot_num = round(_slot_id);
+
+    if (_slot_num == 201 || _slot_num == 202) return clinic_operating_is_open();
+
+    // Пакет №173: койки стационара 101–104 покупаются по одной.
+    if (_slot_num >= 101 && _slot_num <= 104) return clinic_bed_is_open(_slot_num);
+
+    // Шкаф палаты и прочее общее оборудование стационара (слот 100).
+    if (_slot_num >= 100) return true;
 
     // Слот 0 (не настроен) и слот 1 (стартовый кабинет) всегда открыты.
     if (_slot_id <= 1) return true;
@@ -48,10 +105,14 @@ function clinic_room_is_open(_slot_id) {
 // ═══════════════════════════════════════════════════════════════
 
 function clinic_room_price(_slot_id) {
-    // Пакет №109: операционная пока не продаётся (открыта сразу).
-    if (string(_slot_id) == "operating") return 0;
+    // Пакет №173: операционная продаётся за деньги.
+    if (string(_slot_id) == "operating") return 5000;
 
-    switch (round(_slot_id)) {
+    var _slot_num = round(_slot_id);
+
+    if (_slot_num >= 101 && _slot_num <= 104) return clinic_bed_price(_slot_num);
+
+    switch (_slot_num) {
         case 2: return 1500;
         case 3: return 3000;
     }
@@ -62,7 +123,13 @@ function clinic_room_price(_slot_id) {
 function clinic_room_name(_slot_id) {
     if (string(_slot_id) == "operating") return "Операционная";
 
-    return "Кабинет " + string(round(_slot_id));
+    var _slot_num = round(_slot_id);
+
+    if (_slot_num >= 101 && _slot_num <= 104) {
+        return "Койка " + string(_slot_num - 100);
+    }
+
+    return "Кабинет " + string(_slot_num);
 }
 
 function clinic_room_description(_slot_id) {
@@ -107,11 +174,14 @@ function clinic_rooms_entries() {
 function clinic_room_purchase(_slot_id) {
     clinic_rooms_init();
 
-    var _slot = round(_slot_id);
+    // Пакет №173: операционная — отдельный ключ, не числовой слот.
+    var _is_operating = (string(_slot_id) == "operating");
+    var _slot = _is_operating ? 0 : round(_slot_id);
 
-    if (clinic_room_is_open(_slot)) return false;
+    if (!_is_operating && clinic_room_is_open(_slot)) return false;
+    if (_is_operating && clinic_operating_is_open()) return false;
 
-    var _price = clinic_room_price(_slot);
+    var _price = clinic_room_price(_slot_id);
 
     if (_price <= 0) return false;
 
@@ -139,7 +209,33 @@ function clinic_room_purchase(_slot_id) {
     }
 
     global.clinic_money -= _price;
-    variable_struct_set(global.clinic_rooms_open, string(_slot), true);
+
+    // Пакет №173: ключ зависит от типа покупки.
+    if (_is_operating) {
+        variable_struct_set(global.clinic_rooms_open, "operating", true);
+    }
+    else if (_slot >= 101 && _slot <= 104) {
+        variable_struct_set(global.clinic_rooms_open, "bed_" + string(_slot), true);
+
+        // Освобождаем купленную койку: теперь её найдёт inpatient_find_free_ward.
+        for (var _bed_index = 0; _bed_index < instance_number(obj_inpatient_table); _bed_index++) {
+            var _bed = instance_find(obj_inpatient_table, _bed_index);
+
+            if (
+                instance_exists(_bed)
+                && variable_instance_exists(_bed, "exam_slot_id")
+                && _bed.exam_slot_id == _slot
+            ) {
+                _bed.table_busy = false;
+                _bed.assigned_owner = noone;
+                _bed.assigned_doctor = noone;
+                _bed.assigned_pet = noone;
+            }
+        }
+    }
+    else {
+        variable_struct_set(global.clinic_rooms_open, string(_slot), true);
+    }
 
     // Освобождаем столы открытого кабинета: теперь их найдут
     // игрок, врачи и ассистенты в поиске свободного стола.
@@ -164,7 +260,7 @@ function clinic_room_purchase(_slot_id) {
         }
     }
 
-    var _room_name = clinic_room_name(_slot);
+    var _room_name = clinic_room_name(_is_operating ? "operating" : _slot);
 
     if (instance_exists(obj_UI_HUD)) {
         var _hud_ok = instance_find(obj_UI_HUD, 0);

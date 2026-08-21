@@ -120,6 +120,15 @@ function inpatient_find_free_ward() {
         var _ward = instance_find(obj_inpatient_controller, _index);
 
         if (!instance_exists(_ward)) continue;
+
+        // Пакет №173: некупленная койка не принимает пациентов.
+        if (
+            variable_instance_exists(_ward, "exam_slot_id")
+            && !clinic_bed_is_open(_ward.exam_slot_id)
+        ) {
+            continue;
+        }
+
         if (!inpatient_refresh_room_links(_ward)) continue;
         if (_ward.phase != "empty") continue;
         if (instance_exists(_ward.patient)) continue;
