@@ -1,10 +1,19 @@
 /// Draw obj_staff_doctor
 /// @description Сидящий врач рисуется точно по ветке сидения par_visitors.
+/// Пакет №163: сидение на стуле операционной (or_seated + operating_idle)
+/// рисуется той же веткой, что и стул стационара. Раньше условие проверяло
+/// только "inpatient_at_chair", поэтому в операционной врач уходил в
+/// par_staff → Draw и лицо рисовалось по стоячим смещениям — «висело в воздухе».
+
+if (!variable_instance_exists(id, "or_seated")) or_seated = false;
 
 var _doctor_sitting = (
     variable_instance_exists(id, "_owner_sitting")
     && _owner_sitting
-    && doctor_state == "inpatient_at_chair"
+    && (
+        doctor_state == "inpatient_at_chair"
+        || (or_seated && doctor_state == "operating_idle")
+    )
 );
 
 // Стояние, ходьба и работа полностью остаются у par_staff.
