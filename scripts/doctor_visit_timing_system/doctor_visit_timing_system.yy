@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"doctor_visit_timing_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"doctor_visit_timing_system",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

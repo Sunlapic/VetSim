@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_species_match",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_species_match",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

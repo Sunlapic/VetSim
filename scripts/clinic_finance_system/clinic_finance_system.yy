@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"clinic_finance_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"clinic_finance_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

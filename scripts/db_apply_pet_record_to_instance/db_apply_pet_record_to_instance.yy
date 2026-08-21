@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_apply_pet_record_to_instance",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_apply_pet_record_to_instance",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

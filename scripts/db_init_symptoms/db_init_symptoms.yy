@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_init_symptoms",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_init_symptoms",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

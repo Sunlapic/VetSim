@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"doctor_get_exam_duration_frames",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"doctor_get_exam_duration_frames",
+  "parent":{
+    "name":"SKILLS_SCRIPTS",
+    "path":"folders/SCRIPTS/SKILLS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

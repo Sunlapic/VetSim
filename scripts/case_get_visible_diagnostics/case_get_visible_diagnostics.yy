@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"case_get_visible_diagnostics",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"case_get_visible_diagnostics",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"doctor_add_therapy_xp",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"doctor_add_therapy_xp",
+  "parent":{
+    "name":"SKILLS_SCRIPTS",
+    "path":"folders/SCRIPTS/SKILLS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_make_owner_record_from_instance",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_make_owner_record_from_instance",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

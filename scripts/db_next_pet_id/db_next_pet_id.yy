@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_next_pet_id",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_next_pet_id",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

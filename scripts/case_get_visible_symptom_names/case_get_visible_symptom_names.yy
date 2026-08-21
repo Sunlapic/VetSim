@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"case_get_visible_symptom_names",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"case_get_visible_symptom_names",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

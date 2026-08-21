@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"clinic_upgrade_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"clinic_upgrade_system",
+  "parent":{
+    "name":"HUD",
+    "path":"folders/SCRIPTS/HUD.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

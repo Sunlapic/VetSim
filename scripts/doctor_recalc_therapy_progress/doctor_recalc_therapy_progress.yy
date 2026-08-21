@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"doctor_recalc_therapy_progress",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"doctor_recalc_therapy_progress",
+  "parent":{
+    "name":"SKILLS_SCRIPTS",
+    "path":"folders/SCRIPTS/SKILLS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

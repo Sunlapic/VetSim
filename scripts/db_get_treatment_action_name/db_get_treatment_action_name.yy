@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_get_treatment_action_name",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_get_treatment_action_name",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

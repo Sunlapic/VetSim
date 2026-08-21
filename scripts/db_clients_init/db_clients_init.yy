@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_clients_init",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_clients_init",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

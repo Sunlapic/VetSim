@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_register_completed_visit",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_register_completed_visit",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

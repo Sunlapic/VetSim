@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"db_next_scheduled_visit_id",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"db_next_scheduled_visit_id",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
