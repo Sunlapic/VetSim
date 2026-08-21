@@ -1,0 +1,118 @@
+
+VetSim_man.png
+size: 256,256
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+player_front_right/FR_Foot_Far
+  rotate: false
+  xy: 88, 220
+  size: 35, 32
+  orig: 35, 32
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Leg_Near_Lower
+  rotate: false
+  xy: 64, 169
+  size: 22, 62
+  orig: 22, 62
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Leg_Far_Upper
+  rotate: false
+  xy: 76, 1
+  size: 27, 72
+  orig: 27, 72
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Hand_Far
+  rotate: false
+  xy: 144, 158
+  size: 16, 33
+  orig: 16, 33
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Arm_Far_Lower
+  rotate: false
+  xy: 125, 114
+  size: 22, 42
+  orig: 22, 42
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Arm_Far_Upper
+  rotate: false
+  xy: 88, 169
+  size: 24, 49
+  orig: 24, 49
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Foot_Near
+  rotate: false
+  xy: 98, 75
+  size: 27, 37
+  orig: 27, 37
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Leg_Far_Lower
+  rotate: false
+  xy: 30, 195
+  size: 23, 54
+  orig: 23, 54
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Leg_Near_Upper
+  rotate: false
+  xy: 64, 93
+  size: 32, 74
+  orig: 32, 74
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Hand_Near
+  rotate: false
+  xy: 125, 198
+  size: 23, 31
+  orig: 23, 31
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Pelvis
+  rotate: false
+  xy: 1, 153
+  size: 61, 40
+  orig: 61, 40
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Chest
+  rotate: false
+  xy: 1, 1
+  size: 73, 90
+  orig: 73, 90
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Arm_Near_Lower
+  rotate: false
+  xy: 105, 114
+  size: 18, 53
+  orig: 18, 53
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Arm_Near_Upper
+  rotate: false
+  xy: 1, 195
+  size: 27, 55
+  orig: 27, 55
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Neck
+  rotate: false
+  xy: 114, 169
+  size: 28, 27
+  orig: 28, 27
+  offset: 0, 0
+  index: -1
+player_front_right/FR_Head
+  rotate: false
+  xy: 1, 93
+  size: 45, 58
+  orig: 45, 58
+  offset: 0, 0
+  index: -1
