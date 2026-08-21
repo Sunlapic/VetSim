@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"world_clicks_blocked",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"world_clicks_blocked",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

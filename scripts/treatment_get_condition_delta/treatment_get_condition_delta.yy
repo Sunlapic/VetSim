@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"treatment_get_condition_delta",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"treatment_get_condition_delta",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

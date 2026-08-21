@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"treatment_get_required_items",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"treatment_get_required_items",
+  "parent":{
+    "name":"ITEMS_SCRIPTS",
+    "path":"folders/SCRIPTS/ITEMS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

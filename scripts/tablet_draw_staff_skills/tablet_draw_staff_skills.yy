@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"tablet_draw_staff_skills",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"tablet_draw_staff_skills",
+  "parent":{
+    "name":"SKILLS_SCRIPTS",
+    "path":"folders/SCRIPTS/SKILLS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
