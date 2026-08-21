@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"owner_loyalty",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"owner_loyalty",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

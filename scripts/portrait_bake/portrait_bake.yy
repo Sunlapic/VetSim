@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"portrait_bake",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"portrait_bake",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"reception_enqueue_priority_payment",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"reception_enqueue_priority_payment",
+  "parent":{
+    "name":"REGISTRATION_SCRIPTS",
+    "path":"folders/SCRIPTS/REGISTRATION_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"inventory_storage_helpers",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"inventory_storage_helpers",
+  "parent":{
+    "name":"ITEMS_SCRIPTS",
+    "path":"folders/SCRIPTS/ITEMS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

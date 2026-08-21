@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"followup_count_pending_today",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"followup_count_pending_today",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

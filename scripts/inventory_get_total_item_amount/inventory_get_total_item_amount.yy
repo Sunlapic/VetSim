@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"inventory_get_total_item_amount",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"inventory_get_total_item_amount",
+  "parent":{
+    "name":"ITEMS_SCRIPTS",
+    "path":"folders/SCRIPTS/ITEMS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"staff_generate_appearance",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"staff_generate_appearance",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

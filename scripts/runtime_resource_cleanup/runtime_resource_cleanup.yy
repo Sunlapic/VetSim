@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"runtime_resource_cleanup",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"runtime_resource_cleanup",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

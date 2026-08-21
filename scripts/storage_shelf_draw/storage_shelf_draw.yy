@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"storage_shelf_draw",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"storage_shelf_draw",
+  "parent":{
+    "name":"STORAGE",
+    "path":"folders/SCRIPTS/STORAGE.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

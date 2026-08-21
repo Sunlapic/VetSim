@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"schedule_next_random_arrival",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"schedule_next_random_arrival",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

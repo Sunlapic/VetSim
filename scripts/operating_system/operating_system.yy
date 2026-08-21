@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"operating_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"operating_system",
+  "parent":{
+    "name":"OPERATION",
+    "path":"folders/SCRIPTS/OPERATION.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

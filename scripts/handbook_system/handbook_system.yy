@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"handbook_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"handbook_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_enum",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_enum",
+  "parent":{
+    "name":"ANIMALS",
+    "path":"folders/SCRIPTS/ANIMALS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

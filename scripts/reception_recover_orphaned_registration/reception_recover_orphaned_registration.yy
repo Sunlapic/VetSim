@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"reception_recover_orphaned_registration",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"reception_recover_orphaned_registration",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

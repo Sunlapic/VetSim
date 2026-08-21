@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"owner_walk_speed",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"owner_walk_speed",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

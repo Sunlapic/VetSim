@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"staff_hiring_search_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"staff_hiring_search_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

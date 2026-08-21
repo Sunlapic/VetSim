@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"inpatient_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"inpatient_system",
+  "parent":{
+    "name":"STACIONAR",
+    "path":"folders/SCRIPTS/STACIONAR.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"player_cancel_pending_service",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"player_cancel_pending_service",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

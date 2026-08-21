@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"tablet_draw_animal_card",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"tablet_draw_animal_card",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"reception_finish_owner_registration",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"reception_finish_owner_registration",
+  "parent":{
+    "name":"REGISTRATION_SCRIPTS",
+    "path":"folders/SCRIPTS/REGISTRATION_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

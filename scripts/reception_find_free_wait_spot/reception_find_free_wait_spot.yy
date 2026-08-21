@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"reception_find_free_wait_spot",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"reception_find_free_wait_spot",
+  "parent":{
+    "name":"REGISTRATION_SCRIPTS",
+    "path":"folders/SCRIPTS/REGISTRATION_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

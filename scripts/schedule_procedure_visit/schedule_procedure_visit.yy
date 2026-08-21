@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"schedule_procedure_visit",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"schedule_procedure_visit",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
