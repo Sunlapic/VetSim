@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"active_visitors_live_count",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"active_visitors_live_count",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"case_build_next_procedure_assignments",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"case_build_next_procedure_assignments",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

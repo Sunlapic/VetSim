@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"animal_perform_diagnostic",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"animal_perform_diagnostic",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

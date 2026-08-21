@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"candidate_wait_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"candidate_wait_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

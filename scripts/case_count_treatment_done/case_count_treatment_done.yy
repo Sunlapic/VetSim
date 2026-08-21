@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"case_count_treatment_done",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"case_count_treatment_done",
+  "parent":{
+    "name":"MED_SKRIPTS",
+    "path":"folders/SCRIPTS/MED_SKRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
