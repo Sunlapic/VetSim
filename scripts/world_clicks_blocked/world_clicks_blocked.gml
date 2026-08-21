@@ -196,7 +196,77 @@ function ui_other_modal_panel_open() {
 // 4. ЕДИНЫЙ БЛОКИРОВЩИК МИРА И КАМЕРЫ
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// 3.5 ПАКЕТ №172: ЗАЩЕЛКА ЗАКРЫВАЮЩЕГО КЛИКА
+//
+// Проблема: крестик карточки, кнопки панелей и «НОВЫЙ ДЕНЬ» закрывают окно
+// в СВОЁМ обработчике, и к моменту, когда obj_player читает тот же самый
+// клик, окна уже нет — world_clicks_blocked() возвращает false, и герой
+// уходит в точку под крестиком.
+//
+// Решение: ui_modal_guard_step() вызывается РАЗ в кадр из
+// obj_Render → Begin Step. Все Begin Step в GameMaker гарантированно
+// выполняются раньше любого Step, поэтому защёлка успевает встать до того,
+// как игрок прочитает нажатие — независимо от порядка объектов.
+// ═══════════════════════════════════════════════════════════════
+
+function ui_modal_state_now() {
+    if (
+        variable_global_exists("ui_block_world_click")
+        && global.ui_block_world_click
+    ) {
+        return true;
+    }
+
+    if (ui_hud_modal_panel_open()) return true;
+    if (ui_other_modal_panel_open()) return true;
+
+    return ui_modal_custom_lock_active();
+}
+
+function ui_modal_guard_step() {
+    if (!variable_global_exists("ui_modal_open_prev")) {
+        global.ui_modal_open_prev = false;
+    }
+
+    if (!variable_global_exists("ui_modal_close_guard")) {
+        global.ui_modal_close_guard = 0;
+    }
+
+    var _now = ui_modal_state_now();
+
+    // Нажатие произошло, пока окно было открыто (сейчас или в прошлом кадре).
+    // Гасим мир на несколько кадров: этот клик принадлежит интерфейсу.
+    if (
+        mouse_check_button_pressed(mb_left)
+        && (_now || global.ui_modal_open_prev)
+    ) {
+        global.ui_modal_close_guard = 10;
+
+        // На телефоне тап подтверждается на ОТПУСКАНИЕ пальца, уже после
+        // закрытия окна. Пользуемся штатным подавителем тапа.
+        if (variable_global_exists("touch_suppress_tap")) {
+            global.touch_suppress_tap = true;
+        }
+    }
+
+    if (global.ui_modal_close_guard > 0) {
+        global.ui_modal_close_guard -= 1;
+    }
+
+    global.ui_modal_open_prev = _now;
+}
+
+
 function world_clicks_blocked() {
+    // Пакет №172: клик, которым закрыли окно, не уходит в мир.
+    if (
+        variable_global_exists("ui_modal_close_guard")
+        && global.ui_modal_close_guard > 0
+    ) {
+        return true;
+    }
+
     // Пакет №82: клик по миру заблокирован и когда курсор находится над
     // верхней/нижней панелью HUD (global.ui_block_world_click вычисляется
     // в Begin Step obj_UI_HUD). Раньше кнопки меню «протекали»: клик по

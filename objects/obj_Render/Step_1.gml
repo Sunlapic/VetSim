@@ -1,5 +1,11 @@
 ///Begin Step obj_Render
 
+// Пакет №172: защёлка закрывающего клика. Должна стоять именно в Begin Step —
+// все Begin Step выполняются раньше любого Step, поэтому obj_player прочитает
+// нажатие уже с поднятой защёлкой и не пойдёт в точку под крестиком.
+ui_modal_guard_step();
+
+
 global.hover_target = noone;
 
 hover_best = noone;
