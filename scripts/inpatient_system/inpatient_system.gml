@@ -288,7 +288,15 @@ function inpatient_can_admit(_pet = noone) {
             && _pet.or_post_surgery
         );
 
-        if (!_post_surgery && _condition >= 50) return false;
+        // Пакет №170: пациент, которому назначена операция, ложится в
+        // стационар при ЛЮБОМ состоянии — койка работает как
+        // предоперационная палата и ждёт освобождения операционной.
+        var _waiting_surgery = (
+            variable_instance_exists(_pet, "or_waiting_surgery")
+            && _pet.or_waiting_surgery
+        );
+
+        if (!_post_surgery && !_waiting_surgery && _condition >= 50) return false;
     }
 
     return instance_exists(inpatient_find_free_ward());
@@ -1310,8 +1318,26 @@ function inpatient_assign_treatments(_ward, _doctor) {
         }
     }
 
+    // Пакет №170: хирургические действия из цикла палаты убираем —
+    // их выполнит операционная, а не медсестра у койки.
+    var _ward_actions = [];
+
+    for (var _filter_index = 0; _filter_index < array_length(_actions); _filter_index++) {
+        var _filter_entry = _actions[_filter_index];
+
+        var _filter_id = is_struct(_filter_entry)
+            ? (variable_struct_exists(_filter_entry, "action_id")
+                ? _filter_entry.action_id
+                : "")
+            : _filter_entry;
+
+        if (operating_action_is_surgery(_filter_id)) continue;
+
+        array_push(_ward_actions, _filter_entry);
+    }
+
     _pet.current_case.pending_procedure_actions = _actions;
-    _ward.treatment_actions = _actions;
+    _ward.treatment_actions = _ward_actions;
     _ward.prescriptions_assigned = true;
     _ward.next_treatment_minute = inpatient_now_absolute_minute();
     _ward.phase = "waiting_cycle";
@@ -1459,7 +1485,22 @@ function inpatient_get_action_stock_status(_ward, _action_id) {
     return { ok : true, missing_item_id : "", missing_item_name : "" };
 }
 
+// Пакет №170: пациент ждёт операцию — выписывать его нельзя.
+function inpatient_patient_waits_surgery(_ward) {
+    if (!instance_exists(_ward)) return false;
+    if (!instance_exists(_ward.patient)) return false;
+
+    return (
+        variable_instance_exists(_ward.patient, "or_waiting_surgery")
+        && _ward.patient.or_waiting_surgery
+    );
+}
+
 function inpatient_apply_treatment_action(_ward, _action_id) {
+    // Пакет №170: хирургию выполняет только операционная.
+    // Иначе стационар «вылечил» бы перелом уколом прямо на койке.
+    if (operating_action_is_surgery(_action_id)) return false;
+
     if (!instance_exists(_ward)) return { ok : false, missing_item_id : "", missing_item_name : "" };
     if (!instance_exists(_ward.patient)) return { ok : false, missing_item_id : "", missing_item_name : "" };
 
@@ -1950,7 +1991,8 @@ function inpatient_player_finish_treatment(_player, _pet) {
 
     var _next_phase = "waiting_cycle";
 
-    if (_pet.condition >= 100) {
+    // Пакет №170: пока операция не сделана, выписки нет.
+    if (_pet.condition >= 100 && !inpatient_patient_waits_surgery(_ward)) {
         _next_phase = "recovered";
     } else {
         _ward.next_treatment_minute = inpatient_now_absolute_minute() + 120;
@@ -2025,6 +2067,17 @@ function inpatient_find_assistant() {
 
 function inpatient_controller_step(_ward) {
     if (!instance_exists(_ward)) return;
+
+    // ═══ Пакет №170: пациента увезли в операционную ═══
+    // Койка закреплена за ним и никому не отдаётся, лечение и выписка
+    // на паузе. Флаг снимает operating_system, когда пациент вернулся.
+    if (
+        variable_instance_exists(_ward, "or_surgery_hold")
+        && _ward.or_surgery_hold
+    ) {
+        inpatient_refresh_room_links(_ward);
+        return;
+    }
 
     // Пакет №73 (hotfix): один раз печатаем полную сводку по койке, чтобы
     // в логе было видно, чего не хватает (стол, точки, шкаф).
@@ -2700,6 +2753,7 @@ function inpatient_controller_step(_ward) {
                     if (
                         instance_exists(_ward.patient)
                         && _ward.patient.condition >= 100
+                        && !inpatient_patient_waits_surgery(_ward)
                     ) {
                         _assistant.action_progress_active = false;
                         _assistant.assigned_table = noone;
