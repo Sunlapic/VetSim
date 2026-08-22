@@ -258,15 +258,18 @@ function hud_draw_clinic_storage(_hud) {
             });
         }
 
-        var _panel_x1 = main_panel_x1 + 24;
-        var _panel_y1 = main_panel_y1 + 100;
-        var _panel_x2 = main_panel_x2 - 24;
-        var _panel_y2 = main_panel_y2 - 18;
+        // Пакет №203: левая колонка ровно такая же, как список клиентов и
+        // список персонала: отступ 28, ширина 470, верх +122, низ -32.
+        // При переключении между окнами ничего не прыгает.
+        var _panel_x1 = main_panel_x1 + 28;
+        var _panel_y1 = main_panel_y1 + 122;
+        var _panel_x2 = main_panel_x2 - 28;
+        var _panel_y2 = main_panel_y2 - 32;
         var _left_x1 = _panel_x1;
         var _left_y1 = _panel_y1;
-        var _left_x2 = _left_x1 + 230;
+        var _left_x2 = _left_x1 + 470;
         var _left_y2 = _panel_y2;
-        var _right_x1 = _left_x2 + 18;
+        var _right_x1 = _left_x2 + 20;
         var _right_y1 = _panel_y1;
         var _right_x2 = _panel_x2;
         var _right_y2 = _panel_y2;
@@ -281,7 +284,7 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        ui_text_fit_left(_left_x1 + 12, _left_y1 + 12, "ХРАНИЛИЩА", (_left_x2 - _left_x1) - 26, UI_FS_HEADER);
+        ui_text_fit_left(_left_x1 + 16, _left_y1 + 10, "ХРАНИЛИЩА", (_left_x2 - _left_x1) - 32, UI_FS_TITLE);
 
         var _selected_label = "СКЛАД";
         var _selected_inventory = global.inventory_main;
@@ -328,8 +331,9 @@ function hud_draw_clinic_storage(_hud) {
         // ПАКЕТ №70: ПРОКРУТКА СПИСКА ХРАНИЛИЩ (левая колонка)
         // ─────────────────────────────────────────────
         // Пакет №175: строки выше — крупный шрифт помещается целиком.
-        var _scope_row_height = 56;
-        var _scope_start_y = _left_y1 + 36;
+        // Пакет №203: строка хранилища крупная, как карточка клиента.
+        var _scope_row_height = 84;
+        var _scope_start_y = _left_y1 + 58;
         var _scope_view_bottom = _left_y2 - 8;
         var _scope_visible_count = max(
             1,
@@ -402,9 +406,9 @@ function hud_draw_clinic_storage(_hud) {
 
             var _scope_entry = storage_scope_entries[_scope_index];
             var _scope_y1 = _scope_start_y + _scope_vis * _scope_row_height;
-            var _scope_y2 = _scope_y1 + 48;
-            var _scope_x1 = _left_x1 + 8;
-            var _scope_x2 = _left_x2 - 8;
+            var _scope_y2 = _scope_y1 + _scope_row_height - 12;
+            var _scope_x1 = _left_x1 + 10;
+            var _scope_x2 = _left_x2 - 24;
 
             var _scope_selected = storage_scope_selected == _scope_entry.scope_id;
             var _scope_hovered = point_in_rectangle(
@@ -426,14 +430,20 @@ function hud_draw_clinic_storage(_hud) {
             draw_roundrect_ext(_scope_x1, _scope_y1, _scope_x2, _scope_y2, 8, 8, false);
             draw_set_color(_line_dark);
             draw_roundrect_ext(_scope_x1, _scope_y1, _scope_x2, _scope_y2, 8, 8, true);
+            // Выбранное хранилище отмечено полосой слева — как у клиентов.
+            if (_scope_selected) {
+                draw_set_color(make_color_rgb(180, 140, 64));
+                draw_roundrect_ext(_scope_x1, _scope_y1, _scope_x1 + 7, _scope_y2, 4, 4, false);
+            }
+
             draw_set_color(_text_dark);
             ui_text_row(
-                _scope_x1 + 10,
+                _scope_x1 + 18,
                 _scope_y1,
                 _scope_y2 - _scope_y1,
                 _scope_entry.label_ru,
-                (_scope_x2 - _scope_x1) - 24,
-                UI_FS_ROW
+                (_scope_x2 - _scope_x1) - 34,
+                UI_FS_HEADER
             );
 
             if (
@@ -451,7 +461,7 @@ function hud_draw_clinic_storage(_hud) {
 
         // Пакет №70: бегунок списка хранилищ.
         storage_draw_scrollbar(
-            _left_x2 - 8,
+            _left_x2 - 16,
             _scope_start_y,
             _scope_view_bottom,
             storage_scope_scroll,
@@ -463,7 +473,7 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        ui_text_fit_left(_right_x1 + 12, _right_y1 + 8, _selected_label, (_right_x2 - _right_x1) - 26, UI_FS_HEADER);
+        ui_text_fit_left(_right_x1 + 16, _right_y1 + 10, _selected_label, (_right_x2 - _right_x1) - 32, UI_FS_TITLE);
         draw_set_color(_text_soft);
 
         if (_is_main_storage) {
@@ -471,8 +481,8 @@ function hud_draw_clinic_storage(_hud) {
             var _hint_s = UI_FS_ROW;
 
             draw_text_ext_transformed(
-                _right_x1 + 12,
-                _right_y1 + 42,
+                _right_x1 + 20,
+                _right_y1 + 58,
                 "Здесь можно закупить препараты. Кабинетные шкафы автоматически пополняются ассистентом.",
                 24,
                 _hint_w / _hint_s,
@@ -486,8 +496,8 @@ function hud_draw_clinic_storage(_hud) {
             var _cab_s = UI_FS_ROW;
 
             draw_text_ext_transformed(
-                _right_x1 + 12,
-                _right_y1 + 42,
+                _right_x1 + 20,
+                _right_y1 + 58,
                 "Это кабинетный шкаф. Препараты сюда приносит ассистент.\nКупить препараты можно на СКЛАДЕ.",
                 24,
                 _cab_w / _cab_s,
@@ -497,8 +507,8 @@ function hud_draw_clinic_storage(_hud) {
             );
 
             var _link_text = "> Перейти к СКЛАДУ для закупки";
-            var _link_x1 = _right_x1 + 10;
-            var _link_y1 = _right_y1 + 110;
+            var _link_x1 = _right_x1 + 20;
+            var _link_y1 = _right_y1 + 58;
             var _link_scale = ui_fit_scale(_link_text, (_right_x2 - _right_x1) - 26, UI_FS_ROW);
             var _link_x2 = _link_x1 + string_width(_link_text) * _link_scale + 10;
             var _link_y2 = _link_y1 + string_height(_link_text) * _link_scale;
@@ -530,48 +540,54 @@ function hud_draw_clinic_storage(_hud) {
         }
 
         // Пакет №70: нижняя граница списка препаратов (над блоком «НУЖНО ДОКУПИТЬ»).
-        var _shortage_y = _right_y2 - 140;
+        // Пакет №203: блок «НУЖНО ДОКУПИТЬ» выше — под крупный шрифт.
+        var _shortage_y = _right_y2 - 170;
 
         if (array_length(global.item_ids) > 0) {
             // Пакет №71: скидка аптеки на закупку препаратов.
             var _pharmacy_discount = clinic_get_pharmacy_discount_percent();
-            var _list_top_y = _right_y1 + 100;
-            var _column_start = _right_x1 + 14;
-            var _column_gap = 10;
-            var _font_scale = 1.3;
-            var _max_name_width = 0;
+            // ═══════════════════════════════════════════════════
+            // Пакет №203: КОЛОНКИ РАЗНЕСЕНЫ ПО ШИРИНЕ
+            //
+            // Раньше «ОСТАТОК» и «ЦЕНА» ставились впритык друг к другу:
+            // ширина считалась по самому длинному названию препарата плюс
+            // 10 пикселей. Стоило названию быть длинным — и колонки
+            // налезали одна на другую.
+            //
+            // Теперь у каждой колонки своя доля ширины окна, а места
+            // справа хватает с запасом — оно всё равно пустовало.
+            // ═══════════════════════════════════════════════════
 
-            for (var _measure_index = 0; _measure_index < array_length(global.item_ids); _measure_index++) {
-                var _measure_id = global.item_ids[_measure_index];
-                var _measure_data = variable_struct_get(global.item_db, _measure_id);
-                _max_name_width = max(
-                    _max_name_width,
-                    string_width(_measure_data.name_ru) * _font_scale
-                );
-            }
+            var _list_top_y = _right_y1 + 104;
+            var _right_w = _right_x2 - _right_x1;
+            var _font_scale = 1.45;
 
-            _max_name_width += 4;
+            var _name_x = _right_x1 + 20;
+            var _quantity_x = _right_x1 + _right_w * 0.46;
+            var _price_x = _right_x1 + _right_w * 0.64;
 
-            var _name_x = _column_start;
-            var _quantity_x = _name_x + _max_name_width + _column_gap;
-            var _price_x = _quantity_x + string_width("999 шт.") * _font_scale + _column_gap;
-            var _buy_button_x1 = _price_x + string_width("$ 999") * _font_scale + _column_gap;
-            var _buy_button_w = (string_width("КУПИТЬ") + 24) * _font_scale;
-            var _buy_button_x2 = _buy_button_x1 + _buy_button_w;
-            var _buy_button_h = (string_height("КУПИТЬ") + 10) * _font_scale;
+            var _buy_button_w = min(220, _right_w * 0.20);
+            var _buy_button_x2 = _right_x2 - 20;
+            var _buy_button_x1 = _buy_button_x2 - _buy_button_w;
+            var _buy_button_h = 56;
 
+            // Название не залезает на «ОСТАТОК» — при необходимости ужмётся.
+            var _name_w = (_quantity_x - _name_x) - 16;
+
+            draw_set_halign(fa_left);
+            draw_set_valign(fa_top);
             draw_set_color(_text_dark);
             draw_text_transformed(_name_x, _list_top_y, "ПРЕПАРАТ", UI_FS_HEADER, UI_FS_HEADER, 0);
             draw_text_transformed(_quantity_x, _list_top_y, "ОСТАТОК", UI_FS_HEADER, UI_FS_HEADER, 0);
             draw_text_transformed(_price_x, _list_top_y, "ЦЕНА", UI_FS_HEADER, UI_FS_HEADER, 0);
             draw_set_color(_paper_2);
-            draw_line(_right_x1 + 10, _list_top_y + 20, _right_x2 - 10, _list_top_y + 20);
+            draw_line(_right_x1 + 14, _list_top_y + 34, _right_x2 - 14, _list_top_y + 34);
 
             // ─────────────────────────────────────────────
             // ПАКЕТ №70: ПРОКРУТКА СПИСКА ПРЕПАРАТОВ (правая колонка)
             // ─────────────────────────────────────────────
-            var _item_row_height = 62;
-            var _items_view_top = _list_top_y + 26;
+            var _item_row_height = 74;
+            var _items_view_top = _list_top_y + 46;
             var _items_view_bottom = _shortage_y - 8;
             var _items_visible = max(
                 1,
@@ -656,19 +672,28 @@ function hud_draw_clinic_storage(_hud) {
                 draw_set_color(make_color_rgb(200, 188, 170));
                 draw_line(_right_x1 + 8, _item_row_y2, _right_x2 - 8, _item_row_y2);
 
+                // Каждая надпись — по центру своей строки, так они не
+                // расползаются при разной высоте текста.
+                var _row_center_y = (_item_row_y1 + _item_row_y2) * 0.5;
+                var _name_scale = ui_fit_scale(_item_data.name_ru, _name_w, _font_scale);
+
                 draw_set_halign(fa_left);
-                draw_set_valign(fa_top);
+                draw_set_valign(fa_middle);
                 draw_set_color(_text_dark);
-                draw_text_transformed(_name_x, _item_y, _item_data.name_ru, _font_scale, _font_scale, 0);
+                draw_text_transformed(_name_x, _row_center_y, _item_data.name_ru, _name_scale, _name_scale, 0);
+
                 draw_set_color(_text_soft);
-                draw_text_transformed(_quantity_x, _item_y, string(_quantity) + " шт.", _font_scale, _font_scale, 0);
+                draw_text_transformed(_quantity_x, _row_center_y, string(_quantity) + " шт.", _font_scale, _font_scale, 0);
+
                 draw_set_color(_pharmacy_discount > 0
                     ? make_color_rgb(62, 112, 74)
                     : _text_soft);
-                draw_text_transformed(_price_x, _item_y, "$ " + string(_effective_price), _font_scale, _font_scale, 0);
+                draw_text_transformed(_price_x, _row_center_y, "$ " + string(_effective_price), _font_scale, _font_scale, 0);
+
+                draw_set_valign(fa_top);
 
                 if (_is_main_storage) {
-                    var _buy_y1 = _item_y - 4;
+                    var _buy_y1 = (_item_row_y1 + _item_row_y2) * 0.5 - _buy_button_h * 0.5;
                     var _buy_y2 = _buy_y1 + _buy_button_h;
                     var _buy_hover = point_in_rectangle(
                         _mouse_x,
@@ -700,13 +725,12 @@ function hud_draw_clinic_storage(_hud) {
                     draw_set_halign(fa_center);
                     draw_set_valign(fa_middle);
                     draw_set_color(_text_dark);
-                    draw_text_transformed(
+                    ui_text_fit_center(
                         (_buy_button_x1 + _buy_button_x2) * 0.5,
                         (_buy_y1 + _buy_y2) * 0.5,
                         "КУПИТЬ",
-                        _font_scale,
-                        _font_scale,
-                        0
+                        _buy_button_w - 24,
+                        UI_FS_BUTTON
                     );
 
                     if (
@@ -784,7 +808,7 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_color(_paper_2);
         draw_line(_right_x1 + 10, _shortage_y - 8, _right_x2 - 10, _shortage_y - 8);
         draw_set_color(_text_dark);
-        ui_text_fit_left(_right_x1 + 12, _shortage_y, "НУЖНО ДОКУПИТЬ", (_right_x2 - _right_x1) - 26, UI_FS_HEADER);
+        ui_text_fit_left(_right_x1 + 20, _shortage_y, "НУЖНО ДОКУПИТЬ", (_right_x2 - _right_x1) - 40, UI_FS_HEADER);
 
         if (array_length(_shortages) <= 0) {
             draw_set_color(_text_soft);
@@ -792,8 +816,8 @@ function hud_draw_clinic_storage(_hud) {
             var _ok_s = UI_FS_ROW;
 
             draw_text_ext_transformed(
-                _right_x1 + 12,
-                _shortage_y + 44,
+                _right_x1 + 20,
+                _shortage_y + 48,
                 "Все текущие назначения обеспечены препаратами.",
                 24,
                 _ok_w / _ok_s,
