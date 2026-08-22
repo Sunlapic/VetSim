@@ -437,15 +437,16 @@ handbook_close_y1 = handbook_panel_y1 + 16;
 handbook_close_y2 = handbook_close_y1 + 28;
 
 // Подвкладки клиники
+// Пакет №173: вкладки РАЗВИТИЕ и СКЛАД крупнее — на телефоне были мелкие.
 clinic_tab_clinic_x1 = main_panel_x1 + 26;
-clinic_tab_clinic_y1 = main_panel_y1 + 20;
-clinic_tab_clinic_x2 = clinic_tab_clinic_x1 + 110;
-clinic_tab_clinic_y2 = clinic_tab_clinic_y1 + 30;
+clinic_tab_clinic_y1 = main_panel_y1 + 22;
+clinic_tab_clinic_x2 = clinic_tab_clinic_x1 + 230;
+clinic_tab_clinic_y2 = clinic_tab_clinic_y1 + 64;
 
-clinic_tab_storage_x1 = clinic_tab_clinic_x2 + 10;
+clinic_tab_storage_x1 = clinic_tab_clinic_x2 + 14;
 clinic_tab_storage_y1 = clinic_tab_clinic_y1;
-clinic_tab_storage_x2 = clinic_tab_storage_x1 + 110;
-clinic_tab_storage_y2 = clinic_tab_storage_y1 + 30;
+clinic_tab_storage_x2 = clinic_tab_storage_x1 + 230;
+clinic_tab_storage_y2 = clinic_tab_storage_y1 + 64;
 
 // Подвкладки клиентов
 clients_tab_all_x1 = clients_panel_x1 + 26;

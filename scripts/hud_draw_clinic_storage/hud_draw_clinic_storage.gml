@@ -79,9 +79,10 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text(main_panel_x1 + 28, main_panel_y1 + 24, "КЛИНИКА");
+        draw_text_transformed(main_panel_x1 + 28, main_panel_y1 + 96, "КЛИНИКА", 1.4, 1.4, 0);
 
-        hud_draw_button(
+        // Пакет №173: крупные вкладки с увеличенным шрифтом.
+        hud_draw_button_big(
             clinic_tab_clinic_x1,
             clinic_tab_clinic_y1,
             clinic_tab_clinic_x2,
@@ -95,7 +96,7 @@ function hud_draw_clinic_storage(_hud) {
             _line_dark,
             _text_dark
         );
-        hud_draw_button(
+        hud_draw_button_big(
             clinic_tab_storage_x1,
             clinic_tab_storage_y1,
             clinic_tab_storage_x2,
@@ -242,7 +243,7 @@ function hud_draw_clinic_storage(_hud) {
         }
 
         var _panel_x1 = main_panel_x1 + 24;
-        var _panel_y1 = main_panel_y1 + 60;
+        var _panel_y1 = main_panel_y1 + 100;
         var _panel_x2 = main_panel_x2 - 24;
         var _panel_y2 = main_panel_y2 - 18;
         var _left_x1 = _panel_x1;
