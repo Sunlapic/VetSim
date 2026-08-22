@@ -1,5 +1,7 @@
 /// clinic_tree_panel.gml
-/// @description Пакет №173. Панель «КЛИНИКА → РАЗВИТИЕ» в виде дерева.
+/// @description Пакет №173. Панель «КЛИНИКА - РАЗВИТИЕ» в виде дерева.
+/// Пакет №200: при прокрутке карточки больше не вылезают за окно на HUD —
+/// рисуется только то, что помещается целиком.
 ///
 /// Правка 3: всё крупное под телефон, ничего не налезает друг на друга.
 ///   • подписи и цены крупным шрифтом, длинные строки сами ужимаются;
@@ -610,7 +612,9 @@ function clinic_tree_draw(_hud) {
             if (_released) tree_touch_active = false;
         }
 
-        var _max_scroll = max(0, tree_content_h - _panel_h);
+        // Пакет №200: небольшой запас, чтобы последняя карточка точно
+        // доезжала до конца и не «пропадала» из-за округлений.
+        var _max_scroll = max(0, tree_content_h - _panel_h + 12);
         tree_scroll = clamp(tree_scroll, 0, _max_scroll);
 
         // ── Раскладка: секции идут сверху вниз, узлы внутри — по колонкам ──
@@ -623,8 +627,11 @@ function clinic_tree_draw(_hud) {
         for (var _s = 0; _s < array_length(_sections); _s++) {
             var _section = _sections[_s];
 
-            // Заголовок секции на всю ширину.
-            if (_y + _header_h > _panel_y1 && _y < _panel_y2) {
+            // Пакет №200: рисуем только то, что помещается в окно ЦЕЛИКОМ.
+            // Раньше проверялось «задевает ли элемент область» — и верхняя
+            // (или нижняя) часть карточки вылезала за панель прямо на
+            // верхний и нижний HUD.
+            if (_y >= _panel_y1 && _y + _header_h <= _panel_y2) {
                 draw_set_color(tree_color_wood_dark());
                 draw_roundrect_ext(_panel_x1, _y, _panel_x2, _y + _header_h, 12, 12, false);
                 draw_set_color(tree_color_wood_light());
@@ -672,11 +679,21 @@ function clinic_tree_draw(_hud) {
                 if (_nh > _row_max_h) _row_max_h = _nh;
 
                 // Соединитель к предыдущему узлу этой же колонки.
-                if (_n >= _cols) {
+                if (
+                    _n >= _cols
+                    && (_ny1 - 14) >= _panel_y1
+                    && _ny1 <= _panel_y2
+                ) {
                     tree_draw_stem((_nx1 + _nx2) * 0.5, _ny1 - 14, _ny1, true);
                 }
 
-                if (_ny2 > _panel_y1 && _ny1 < _panel_y2) {
+                // Узел показывается, только если влезает в окно полностью.
+                // Исключение — узел выше самого окна: иначе он не появился бы
+                // вообще (на очень низком экране).
+                var _node_fits = (_ny1 >= _panel_y1 && _ny2 <= _panel_y2)
+                    || (_nh >= _panel_h);
+
+                if (_node_fits) {
                     var _hover = point_in_rectangle(_mx, _my, _nx1, _ny1, _nx2, _ny2);
 
                     tree_draw_node(_node, _nx1, _ny1, _nx2, _ny2, _hover);
