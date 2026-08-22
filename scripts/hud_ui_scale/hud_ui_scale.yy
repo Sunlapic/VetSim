@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"hud_ui_scale",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"hud_ui_scale",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

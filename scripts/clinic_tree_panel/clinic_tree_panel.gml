@@ -54,15 +54,10 @@ function tree_color_lock_bg()    { return make_color_rgb(207, 199, 184); }
 #macro TREE_H_DOTS 48
 
 
-// Подгоняем масштаб текста, чтобы строка влезла в ширину.
+// Пакет №174: подбор масштаба переехал в общий UI-кит (hud_ui_scale),
+// чтобы во всех окнах работало одинаковое правило.
 function tree_fit_scale(_text, _max_w, _base) {
-    if (_max_w <= 0) return _base;
-
-    var _w = string_width(_text) * _base;
-
-    if (_w <= _max_w) return _base;
-
-    return max(0.72, _base * (_max_w / _w));
+    return ui_fit_scale(_text, _max_w, _base);
 }
 
 function tree_dot_metrics(_node_w) {

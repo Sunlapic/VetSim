@@ -101,10 +101,16 @@ function hud_draw_button(
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 12, 12, false);
     draw_set_color(_line_dark);
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 12, 12, true);
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
+    // Пакет №174: текст кнопки крупный, но сам ужимается под её ширину —
+    // раньше все кнопки в игре рисовались базовым мелким шрифтом.
     draw_set_color(_text_color);
-    draw_text((_x1 + _x2) * 0.5, (_y1 + _y2) * 0.5 + 1, _text);
+    ui_text_fit_center(
+        (_x1 + _x2) * 0.5,
+        (_y1 + _y2) * 0.5 + 1,
+        _text,
+        (_x2 - _x1) - 20,
+        UI_FS_BUTTON
+    );
 }
 
 function hud_get_visit_status_ru(_status_id) {
@@ -281,23 +287,37 @@ function hud_draw_string_list(
 
     var _draw_count = min(array_length(_lines), _limit);
 
+    // Пакет №174: строки списка крупнее, масштаб ограничен и по ширине,
+    // и по высоте строки — соседние строки не слипаются.
     for (var _index = 0; _index < _draw_count; _index++) {
+        var _line = "• " + string(_lines[_index]);
+        var _scale = ui_fit_scale_box(_line, _max_width, _line_height - 4, UI_FS_ROW);
+
         draw_set_color(_text_color);
-        draw_text_ext(
+        draw_set_halign(fa_left);
+        draw_set_valign(fa_top);
+        draw_text_transformed(
             _x,
             _y + _index * _line_height,
-            "• " + string(_lines[_index]),
-            18,
-            _max_width
+            _line,
+            _scale,
+            _scale,
+            0
         );
     }
 
     if (array_length(_lines) > _limit) {
+        var _more = "... ещё " + string(array_length(_lines) - _limit);
+        var _more_scale = ui_fit_scale_box(_more, _max_width, _line_height - 4, UI_FS_ROW);
+
         draw_set_color(_soft_color);
-        draw_text(
+        draw_text_transformed(
             _x,
             _y + _draw_count * _line_height,
-            "... ещё " + string(array_length(_lines) - _limit)
+            _more,
+            _more_scale,
+            _more_scale,
+            0
         );
     }
 }
