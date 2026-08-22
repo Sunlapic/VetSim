@@ -437,27 +437,28 @@ handbook_close_y1 = handbook_panel_y1 + 16;
 handbook_close_y2 = handbook_close_y1 + 28;
 
 // Подвкладки клиники
-// Пакет №173: вкладки РАЗВИТИЕ и СКЛАД крупнее — на телефоне были мелкие.
-clinic_tab_clinic_x1 = main_panel_x1 + 26;
+// Пакет №180: размеры вкладок берутся из UI-кита — один стиль во всей игре.
+clinic_tab_clinic_x1 = ui_tab_x1(main_panel_x1 + 26, 0);
 clinic_tab_clinic_y1 = main_panel_y1 + 22;
-clinic_tab_clinic_x2 = clinic_tab_clinic_x1 + 230;
-clinic_tab_clinic_y2 = clinic_tab_clinic_y1 + 64;
+clinic_tab_clinic_x2 = ui_tab_x2(main_panel_x1 + 26, 0);
+clinic_tab_clinic_y2 = clinic_tab_clinic_y1 + UI_TAB_H;
 
-clinic_tab_storage_x1 = clinic_tab_clinic_x2 + 14;
+clinic_tab_storage_x1 = ui_tab_x1(main_panel_x1 + 26, 1);
 clinic_tab_storage_y1 = clinic_tab_clinic_y1;
-clinic_tab_storage_x2 = clinic_tab_storage_x1 + 230;
-clinic_tab_storage_y2 = clinic_tab_storage_y1 + 64;
+clinic_tab_storage_x2 = ui_tab_x2(main_panel_x1 + 26, 1);
+clinic_tab_storage_y2 = clinic_tab_storage_y1 + UI_TAB_H;
 
 // Подвкладки клиентов
-clients_tab_all_x1 = clients_panel_x1 + 26;
-clients_tab_all_y1 = clients_panel_y1 + 20;
-clients_tab_all_x2 = clients_tab_all_x1 + 110;
-clients_tab_all_y2 = clients_tab_all_y1 + 30;
+// Пакет №180: тот же размер, что у вкладок КЛИНИКИ.
+clients_tab_all_x1 = ui_tab_x1(clients_panel_x1 + 26, 0);
+clients_tab_all_y1 = clients_panel_y1 + 22;
+clients_tab_all_x2 = ui_tab_x2(clients_panel_x1 + 26, 0);
+clients_tab_all_y2 = clients_tab_all_y1 + UI_TAB_H;
 
-clients_tab_followup_x1 = clients_tab_all_x2 + 10;
+clients_tab_followup_x1 = ui_tab_x1(clients_panel_x1 + 26, 1);
 clients_tab_followup_y1 = clients_tab_all_y1;
-clients_tab_followup_x2 = clients_tab_followup_x1 + 190;
-clients_tab_followup_y2 = clients_tab_followup_y1 + 30;
+clients_tab_followup_x2 = ui_tab_x2(clients_panel_x1 + 26, 1);
+clients_tab_followup_y2 = clients_tab_followup_y1 + UI_TAB_H;
 
 // Поле поиска
 client_search_x1 = clients_panel_x1 + 26;

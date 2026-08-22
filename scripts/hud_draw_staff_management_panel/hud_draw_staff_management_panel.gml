@@ -979,7 +979,8 @@ function hud_draw_staff_management_panel(_hud) {
     var _gui_w = display_get_gui_width();
     var _gui_h = display_get_gui_height();
     var _outer_pad = 18;
-    var _tab_area_h = 50;
+    // Пакет №180: полоса под общий размер вкладки + зазор.
+    var _tab_area_h = UI_TAB_H + 16;
     var _column_gap = 14;
     var _list_w = clamp(_gui_w * 0.18, 280, 340);
     var _actions_w = clamp(_gui_w * 0.09, 142, 172);
@@ -1042,10 +1043,11 @@ function hud_draw_staff_management_panel(_hud) {
         _panel_y2
     );
 
+    // Пакет №180: полоса вкладок под общий размер UI_TAB_H.
     var _tab_x1 = _panel_x1 + _outer_pad;
     var _tab_y1 = _panel_y1 + 16;
-    var _tab_x2 = _panel_x2 - 72;
-    var _tab_y2 = _tab_y1 + 36;
+    var _tab_x2 = _panel_x2 - 20 - UI_TAB_H - UI_TAB_GAP;
+    var _tab_y2 = _tab_y1 + UI_TAB_H;
     var _current_tab = staff_hiring_search_draw_tabs(
         _hud,
         _tab_x1,
@@ -1110,9 +1112,9 @@ function hud_draw_staff_management_panel(_hud) {
 
     // Общий крестик закрывает обе вкладки панели.
     var _close_x2 = _panel_x2 - 20;
-    var _close_x1 = _close_x2 - 30;
-    var _close_y1 = _panel_y1 + 19;
-    var _close_y2 = _close_y1 + 30;
+    var _close_x1 = _close_x2 - UI_TAB_H;
+    var _close_y1 = _panel_y1 + 16;
+    var _close_y2 = _close_y1 + UI_TAB_H;
     var _close_enabled = !_hud.staff_manage_fire_confirm;
     var _close_hovered = _close_enabled
         && point_in_rectangle(
@@ -1124,15 +1126,12 @@ function hud_draw_staff_management_panel(_hud) {
             _close_y2
         );
 
-    hud_staff_manage_draw_button(
+    ui_draw_close_button(
         _close_x1,
         _close_y1,
         _close_x2,
         _close_y2,
-        "X",
-        _close_enabled,
-        _close_hovered,
-        "red"
+        _close_hovered
     );
 
     if (

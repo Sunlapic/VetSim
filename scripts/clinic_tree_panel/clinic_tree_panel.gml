@@ -529,27 +529,9 @@ function hud_draw_button_big(
     _x1, _y1, _x2, _y2, _text, _active, _hover,
     _fill, _hover_fill, _active_fill, _line_dark, _text_color
 ) {
-    draw_set_alpha(0.18);
-    draw_set_color(c_black);
-    draw_roundrect_ext(_x1 + 3, _y1 + 4, _x2 + 3, _y2 + 4, 14, 14, false);
-    draw_set_alpha(1);
-
-    draw_set_color(_active ? _active_fill : (_hover ? _hover_fill : _fill));
-    draw_roundrect_ext(_x1, _y1, _x2, _y2, 14, 14, false);
-
-    draw_set_color(_line_dark);
-    draw_roundrect_ext(_x1, _y1, _x2, _y2, 14, 14, true);
-    draw_roundrect_ext(_x1 + 1, _y1 + 1, _x2 - 1, _y2 - 1, 13, 13, true);
-    draw_roundrect_ext(_x1 + 2, _y1 + 2, _x2 - 2, _y2 - 2, 12, 12, true);
-
-    var _scale = tree_fit_scale(_text, (_x2 - _x1) - 24, 1.7);
-
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
-    draw_set_color(_text_color);
-    draw_text_transformed((_x1 + _x2) * 0.5, (_y1 + _y2) * 0.5 + 1, _text, _scale, _scale, 0);
-    draw_set_halign(fa_left);
-    draw_set_valign(fa_top);
+    // Пакет №180: единый стиль вкладок переехал в UI-кит (ui_draw_tab).
+    // Функция оставлена ради совместимости со старыми вызовами.
+    ui_draw_tab(_x1, _y1, _x2, _y2, _text, _active, _hover);
 }
 
 

@@ -39,33 +39,23 @@ function hud_draw_clients_database(_hud) {
         draw_set_color(_text_dark);
         ui_text_fit_left(_content_x1 + 16, _content_y1 + 8, "БАЗА КЛИЕНТОВ", 520, UI_FS_TITLE);
 
-        hud_draw_button(
+        ui_draw_tab(
             clients_tab_all_x1,
             clients_tab_all_y1,
             clients_tab_all_x2,
             clients_tab_all_y2,
             "ВСЕ",
             clients_subtab == "all",
-            hover_clients_tab_all,
-            _paper,
-            _paper_hover,
-            _paper_active,
-            _line_dark,
-            _text_dark
+            hover_clients_tab_all
         );
-        hud_draw_button(
+        ui_draw_tab(
             clients_tab_followup_x1,
             clients_tab_followup_y1,
             clients_tab_followup_x2,
             clients_tab_followup_y2,
-            "ПОВТОРНЫЙ ПРИЁМ",
+            "ПОВТОРНЫЕ",
             clients_subtab == "followup",
-            hover_clients_tab_followup,
-            _paper,
-            _paper_hover,
-            _paper_active,
-            _line_dark,
-            _text_dark
+            hover_clients_tab_followup
         );
 
         draw_set_color(

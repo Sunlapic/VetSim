@@ -123,23 +123,8 @@ function staff_hiring_search_draw_tab(
     _selected,
     _hovered
 ) {
-    var _fill = _selected
-        ? make_color_rgb(205, 224, 193)
-        : (_hovered
-            ? make_color_rgb(224, 238, 248)
-            : make_color_rgb(225, 216, 199));
-    var _line = _selected
-        ? make_color_rgb(104, 137, 91)
-        : make_color_rgb(104, 135, 160);
-
-    draw_set_color(_fill);
-    draw_roundrect_ext(_x1, _y1, _x2, _y2, 8, 8, false);
-    draw_set_color(_line);
-    draw_roundrect_ext(_x1, _y1, _x2, _y2, 8, 8, true);
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
-    draw_set_color(make_color_rgb(50, 38, 28));
-    draw_text((_x1 + _x2) * 0.5, (_y1 + _y2) * 0.5, _text);
+    // Пакет №180: единый стиль вкладок из UI-кита.
+    ui_draw_tab(_x1, _y1, _x2, _y2, _text, _selected, _hovered);
 }
 
 function staff_hiring_search_draw_tabs(
@@ -155,9 +140,10 @@ function staff_hiring_search_draw_tabs(
         _hud.staff_manage_tab = "staff";
     }
 
-    var _gap = 10;
+    // Пакет №180: размер вкладок — общий для всей игры.
+    var _gap = UI_TAB_GAP;
     var _available_w = _x2 - _x1 - _gap;
-    var _tab_w = min(250, _available_w * 0.5);
+    var _tab_w = min(UI_TAB_W, _available_w * 0.5);
     var _staff_x1 = _x1;
     var _staff_x2 = _staff_x1 + _tab_w;
     var _search_x1 = _staff_x2 + _gap;
@@ -184,7 +170,7 @@ function staff_hiring_search_draw_tabs(
         _y1,
         _staff_x2,
         _y2,
-        "ШТАТ КЛИНИКИ",
+        "ШТАТ",
         _hud.staff_manage_tab == "staff",
         _staff_hover
     );
@@ -193,7 +179,7 @@ function staff_hiring_search_draw_tabs(
         _y1,
         _search_x2,
         _y2,
-        "ПОИСК СОТРУДНИКОВ",
+        "ПОИСК",
         _hud.staff_manage_tab == "search",
         _search_hover
     );

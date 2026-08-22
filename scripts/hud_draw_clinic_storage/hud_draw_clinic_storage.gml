@@ -93,33 +93,23 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_valign(fa_top);
 
         // Пакет №173: крупные вкладки с увеличенным шрифтом.
-        hud_draw_button_big(
+        ui_draw_tab(
             clinic_tab_clinic_x1,
             clinic_tab_clinic_y1,
             clinic_tab_clinic_x2,
             clinic_tab_clinic_y2,
             "РАЗВИТИЕ",
             clinic_subtab == "clinic",
-            hover_clinic_tab_clinic,
-            _paper,
-            _paper_hover,
-            _paper_active,
-            _line_dark,
-            _text_dark
+            hover_clinic_tab_clinic
         );
-        hud_draw_button_big(
+        ui_draw_tab(
             clinic_tab_storage_x1,
             clinic_tab_storage_y1,
             clinic_tab_storage_x2,
             clinic_tab_storage_y2,
             "СКЛАД",
             clinic_subtab == "storage",
-            hover_clinic_tab_storage,
-            _paper,
-            _paper_hover,
-            _paper_active,
-            _line_dark,
-            _text_dark
+            hover_clinic_tab_storage
         );
 
         if (clinic_subtab == "clinic") {

@@ -215,3 +215,104 @@ function ui_draw_badge(_x1, _y1, _x2, _y2, _text, _bg, _border, _ink) {
         UI_FS_VALUE
     );
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 5. ЕДИНЫЙ СТИЛЬ ВКЛАДОК (пакет №180)
+//
+// Эталон — вкладки «РАЗВИТИЕ» и «СКЛАД» в панели КЛИНИКА.
+// Один размер, один шрифт, одна форма во всех окнах игры.
+// Меняете макросы — меняются все вкладки разом.
+// ═══════════════════════════════════════════════════════════════
+
+#macro UI_TAB_W   230
+#macro UI_TAB_H   64
+#macro UI_TAB_GAP 14
+#macro UI_TAB_RADIUS 14
+#macro UI_TAB_FS  1.70
+
+// Позиция вкладки номер _index в ряду, начинающемся с _x1.
+function ui_tab_x1(_x1, _index) {
+    return _x1 + _index * (UI_TAB_W + UI_TAB_GAP);
+}
+
+function ui_tab_x2(_x1, _index) {
+    return ui_tab_x1(_x1, _index) + UI_TAB_W;
+}
+
+// Ширина ряда из _count вкладок.
+function ui_tabs_row_width(_count) {
+    return _count * UI_TAB_W + (_count - 1) * UI_TAB_GAP;
+}
+
+/// Канонная вкладка: тень, скруглённые углы, двойная рамка, крупный текст.
+function ui_draw_tab(_x1, _y1, _x2, _y2, _text, _active, _hover) {
+    var _paper = make_color_rgb(242, 232, 214);
+    var _paper_hover = make_color_rgb(248, 238, 220);
+    var _paper_active = make_color_rgb(220, 202, 172);
+    var _line_dark = make_color_rgb(58, 39, 24);
+    var _text_dark = make_color_rgb(50, 38, 28);
+
+    draw_set_alpha(0.18);
+    draw_set_color(c_black);
+    draw_roundrect_ext(
+        _x1 + 3, _y1 + 4, _x2 + 3, _y2 + 4,
+        UI_TAB_RADIUS, UI_TAB_RADIUS, false
+    );
+    draw_set_alpha(1);
+
+    draw_set_color(_active ? _paper_active : (_hover ? _paper_hover : _paper));
+    draw_roundrect_ext(_x1, _y1, _x2, _y2, UI_TAB_RADIUS, UI_TAB_RADIUS, false);
+
+    draw_set_color(_line_dark);
+    draw_roundrect_ext(_x1, _y1, _x2, _y2, UI_TAB_RADIUS, UI_TAB_RADIUS, true);
+    draw_roundrect_ext(_x1 + 1, _y1 + 1, _x2 - 1, _y2 - 1, UI_TAB_RADIUS - 1, UI_TAB_RADIUS - 1, true);
+    draw_roundrect_ext(_x1 + 2, _y1 + 2, _x2 - 2, _y2 - 2, UI_TAB_RADIUS - 2, UI_TAB_RADIUS - 2, true);
+
+    // Активная вкладка подчёркнута снизу.
+    if (_active) {
+        draw_set_color(make_color_rgb(104, 137, 91));
+        draw_roundrect_ext(_x1 + 14, _y2 - 9, _x2 - 14, _y2 - 5, 2, 2, false);
+    }
+
+    draw_set_color(_text_dark);
+    ui_text_fit_center(
+        (_x1 + _x2) * 0.5,
+        (_y1 + _y2) * 0.5 + 1,
+        _text,
+        (_x2 - _x1) - 24,
+        UI_TAB_FS
+    );
+}
+
+/// Крестик закрытия в том же стиле: квадрат со стороной UI_TAB_H.
+function ui_draw_close_button(_x1, _y1, _x2, _y2, _hover) {
+    var _paper = make_color_rgb(242, 232, 214);
+    var _paper_hover = make_color_rgb(250, 226, 220);
+    var _line_dark = make_color_rgb(58, 39, 24);
+    var _red = make_color_rgb(148, 74, 64);
+
+    draw_set_alpha(0.18);
+    draw_set_color(c_black);
+    draw_roundrect_ext(
+        _x1 + 3, _y1 + 4, _x2 + 3, _y2 + 4,
+        UI_TAB_RADIUS, UI_TAB_RADIUS, false
+    );
+    draw_set_alpha(1);
+
+    draw_set_color(_hover ? _paper_hover : _paper);
+    draw_roundrect_ext(_x1, _y1, _x2, _y2, UI_TAB_RADIUS, UI_TAB_RADIUS, false);
+
+    draw_set_color(_line_dark);
+    draw_roundrect_ext(_x1, _y1, _x2, _y2, UI_TAB_RADIUS, UI_TAB_RADIUS, true);
+    draw_roundrect_ext(_x1 + 1, _y1 + 1, _x2 - 1, _y2 - 1, UI_TAB_RADIUS - 1, UI_TAB_RADIUS - 1, true);
+
+    draw_set_color(_red);
+    ui_text_fit_center(
+        (_x1 + _x2) * 0.5,
+        (_y1 + _y2) * 0.5 + 1,
+        "X",
+        (_x2 - _x1) - 16,
+        UI_TAB_FS
+    );
+}

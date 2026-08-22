@@ -1861,18 +1861,20 @@ function hud_draw_finance_price_panel(_hud) {
     // Пакет №177: вкладки крупнее, места хватает.
     // Пакет №178: блок вкладок прижат влево и никогда не наезжает на крестик —
     // его правый край считается от кнопки закрытия, а не задан числом.
+    // Пакет №180: размер и зазор — из UI-кита, как у вкладок КЛИНИКИ.
     var _tab_y1 = _y1 + 16;
-    var _tab_y2 = _tab_y1 + 60;
-    var _tab_w = 210;
-    var _tab_gap = 10;
+    var _tab_y2 = _tab_y1 + UI_TAB_H;
+    var _tab_w = UI_TAB_W;
+    var _tab_gap = UI_TAB_GAP;
 
     var _tabs_total = 3 * _tab_w + 2 * _tab_gap;
 
     // Пакет №179: зазор до крестика = зазору между кнопками (_tab_gap).
     // Блок вкладок прижимается к кнопке закрытия, промежутки одинаковые:
     //   [ОБЗОР] 10 [УСЛУГИ] 10 [ПРЕПАРАТЫ] 10 [X]
-    // Кнопка закрытия начинается на _x2 - 76.
-    var _tab_x = (_x2 - 76) - _tab_gap - _tabs_total;
+    // Крестик такого же размера, как вкладка по высоте.
+    var _close_size = UI_TAB_H;
+    var _tab_x = (_x2 - 20 - _close_size) - _tab_gap - _tabs_total;
 
     // Но и на заголовок «ФИНАНСЫ И ПРАЙС-ЛИСТ» тоже не наезжаем.
     _tab_x = max(
@@ -1887,7 +1889,7 @@ function hud_draw_finance_price_panel(_hud) {
         var _tx2 = _tx1 + _tab_w;
         var _hover = point_in_rectangle(_mouse_x, _mouse_y, _tx1, _tab_y1, _tx2, _tab_y2);
 
-        finance_ui_draw_button(
+        ui_draw_tab(
             _tx1,
             _tab_y1,
             _tx2,
@@ -1905,9 +1907,9 @@ function hud_draw_finance_price_panel(_hud) {
     }
 
     var _close_x2 = _x2 - 20;
-    var _close_x1 = _close_x2 - 56;
-    var _close_y1 = _y1 + 16;
-    var _close_y2 = _close_y1 + 56;
+    var _close_x1 = _close_x2 - _close_size;
+    var _close_y1 = _tab_y1;
+    var _close_y2 = _close_y1 + _close_size;
     var _close_hover = point_in_rectangle(
         _mouse_x,
         _mouse_y,
@@ -1917,15 +1919,12 @@ function hud_draw_finance_price_panel(_hud) {
         _close_y2
     );
 
-    finance_ui_draw_button(
+    ui_draw_close_button(
         _close_x1,
         _close_y1,
         _close_x2,
         _close_y2,
-        "X",
-        false,
-        _close_hover,
-        true
+        _close_hover
     );
 
     if (_pressed && _close_hover) {
@@ -1935,7 +1934,7 @@ function hud_draw_finance_price_panel(_hud) {
     }
 
     var _content_x1 = _x1 + 22;
-    var _content_y1 = _y1 + 72;
+    var _content_y1 = _y1 + 104;
     var _content_x2 = _x2 - 22;
     var _content_y2 = _y2 - 22;
 
