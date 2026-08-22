@@ -996,11 +996,15 @@ function tablet_draw_staff_skills(
     // ── Сама отрисовка видимой части ──
     var _draw_y = _list_y1;
 
+    // Пакет №209: таблица обрезается по своей области — нижняя строка
+    // видна половинкой, сразу понятно, что список продолжается.
+    ui_clip_begin(_x - 4, _list_y1, _x + _width + 4, _list_y2);
+
     for (var _item_index = _scroll; _item_index < _item_count; _item_index++) {
         var _item = _items[_item_index];
         var _item_h = (_item.kind == "header") ? _header_h_px : _row_h_px;
 
-        if (_draw_y + _item_h > _list_y2) break;
+        if (_draw_y > _list_y2) break;
 
         if (_item.kind == "header") {
             draw_set_color(_item.fill);
@@ -1119,6 +1123,8 @@ function tablet_draw_staff_skills(
 
         _draw_y += _item_h;
     }
+
+    ui_clip_end();
 
     draw_set_color(c_white);
     draw_set_alpha(1);

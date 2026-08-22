@@ -400,7 +400,10 @@ function hud_draw_clinic_storage(_hud) {
             }
         }
 
-        for (var _scope_vis = 0; _scope_vis < _scope_visible_count; _scope_vis++) {
+        // Пакет №209: списки обрезаются по своей области.
+        ui_clip_begin(_left_x1, _scope_start_y - 4, _left_x2, _scope_view_bottom);
+
+        for (var _scope_vis = 0; _scope_vis < _scope_visible_count + 1; _scope_vis++) {
             var _scope_index = storage_scope_scroll + _scope_vis;
             if (_scope_index >= array_length(storage_scope_entries)) break;
 
@@ -458,6 +461,8 @@ function hud_draw_clinic_storage(_hud) {
                     : _scope_entry.cabinet_id;
             }
         }
+
+        ui_clip_end();
 
         // Пакет №70: бегунок списка хранилищ.
         storage_draw_scrollbar(
@@ -587,7 +592,9 @@ function hud_draw_clinic_storage(_hud) {
                 }
             }
 
-            for (var _item_vis = 0; _item_vis < _items_visible; _item_vis++) {
+            ui_clip_begin(_right_x1, _items_view_top - 4, _right_x2, _items_view_bottom);
+
+            for (var _item_vis = 0; _item_vis < _items_visible + 1; _item_vis++) {
                 var _item_index = storage_items_scroll + _item_vis;
                 if (_item_index >= array_length(global.item_ids)) break;
 
@@ -729,6 +736,8 @@ function hud_draw_clinic_storage(_hud) {
                     }
                 }
             }
+
+            ui_clip_end();
 
             // Пакет №70: бегунок списка препаратов.
             storage_draw_scrollbar(

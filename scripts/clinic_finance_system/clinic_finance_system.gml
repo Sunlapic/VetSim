@@ -1867,6 +1867,12 @@ function finance_ui_draw_service_prices(
     );
     var _pressed = finance_ui_pointer_pressed();
 
+    // Пакет №209: список обрезается по своей области — последняя строка
+    // видна половинкой, и понятно, что список можно крутить дальше.
+    ui_clip_begin(_x1, _y1 + 34, _x2, _y2 - 4);
+
+    _last = min(array_length(_entries), _last + 1);
+
     for (var _index = _hud.finance_price_scroll; _index < _last; _index++) {
         var _entry = _entries[_index];
         var _price = finance_service_price_get(_entry.id, 0);
@@ -1935,6 +1941,8 @@ function finance_ui_draw_service_prices(
         _draw_y += _row_h;
     }
 
+    ui_clip_end();
+
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 
@@ -1993,6 +2001,10 @@ function finance_ui_draw_medicine_prices(
         _hud.finance_price_scroll + _visible_rows
     );
     var _pressed = finance_ui_pointer_pressed();
+
+    ui_clip_begin(_x1, _y1 + 34, _x2, _y2 - 4);
+
+    _last = min(array_length(_item_ids), _last + 1);
 
     for (var _index = _hud.finance_price_scroll; _index < _last; _index++) {
         var _item_id = string(_item_ids[_index]);
@@ -2073,6 +2085,8 @@ function finance_ui_draw_medicine_prices(
 
         _draw_y += _row_h;
     }
+
+    ui_clip_end();
 
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);

@@ -660,10 +660,15 @@ function clinic_tree_draw(_hud) {
 
         var _y = _panel_y1 - tree_scroll;
 
+        // Пакет №209: содержимое обрезается по окну, поэтому карточка,
+        // выехавшая наполовину, так и видна — половинкой. Сразу понятно,
+        // что ниже есть ещё улучшения.
+        ui_clip_begin(_panel_x1 - 8, _panel_y1, _panel_x2 + 8, _panel_y2);
+
         // ── 1. Общая секция: заголовок и узлы в ряд ──
         var _common = _sections[0];
 
-        if (_y >= _panel_y1 && _y + _header_h <= _panel_y2) {
+        if (_y + _header_h >= _panel_y1 && _y <= _panel_y2) {
             draw_set_color(tree_color_wood_dark());
             draw_roundrect_ext(_panel_x1, _y, _panel_x2, _y + _header_h, 12, 12, false);
             draw_set_color(tree_color_wood_light());
@@ -712,10 +717,7 @@ function clinic_tree_draw(_hud) {
 
             if (_cnh > _common_row_h) _common_row_h = _cnh;
 
-            if (
-                (_cy1 >= _panel_y1 && _cy2 <= _panel_y2)
-                || (_cnh >= _panel_h)
-            ) {
+            if (_cy2 >= _panel_y1 && _cy1 <= _panel_y2) {
                 var _chover = point_in_rectangle(_mx, _my, _cx1, _cy1, _cx2, _cy2);
 
                 tree_draw_node(_cnode, _cx1, _cy1, _cx2, _cy2, _chover);
@@ -746,7 +748,7 @@ function clinic_tree_draw(_hud) {
             var _by = _col_y[_target_col];
 
             // Заголовок ветки — шапка столбца.
-            if (_by >= _panel_y1 && _by + _header_h <= _panel_y2) {
+            if (_by + _header_h >= _panel_y1 && _by <= _panel_y2) {
                 draw_set_color(tree_color_wood_dark());
                 draw_roundrect_ext(_bx1, _by, _bx2, _by + _header_h, 12, 12, false);
                 draw_set_color(tree_color_wood_light());
@@ -782,16 +784,13 @@ function clinic_tree_draw(_hud) {
 
                 if (
                     _bn > 0
-                    && (_by1 - _node_gap) >= _panel_y1
-                    && _by1 <= _panel_y2
+                    && _by1 >= _panel_y1 - _node_gap
+                    && (_by1 - _node_gap) <= _panel_y2
                 ) {
                     tree_draw_stem((_bx1 + _bx2) * 0.5, _by1 - _node_gap, _by1, true);
                 }
 
-                if (
-                    (_by1 >= _panel_y1 && _by2 <= _panel_y2)
-                    || (_bnh >= _panel_h)
-                ) {
+                if (_by2 >= _panel_y1 && _by1 <= _panel_y2) {
                     var _bhover = point_in_rectangle(_mx, _my, _bx1, _by1, _bx2, _by2);
 
                     tree_draw_node(_bnode, _bx1, _by1, _bx2, _by2, _bhover);
@@ -813,6 +812,8 @@ function clinic_tree_draw(_hud) {
         }
 
         _y = _lowest;
+
+        ui_clip_end();
 
         // Фактическая высота содержимого — для следующего кадра.
         tree_content_h = (_y + tree_scroll) - _panel_y1;

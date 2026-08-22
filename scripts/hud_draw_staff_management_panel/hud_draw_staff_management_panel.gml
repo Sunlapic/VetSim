@@ -548,6 +548,10 @@ function hud_staff_manage_draw_roster(
     var _draw_y = _rows_y1 - _hud.staff_manage_scroll_px;
     var _shown_count = 0;
 
+    // Пакет №209: список обрезается по своей области — выехавшая строка
+    // видна половинкой, а не пропадает целиком.
+    ui_clip_begin(_rows_x1 - 6, _rows_y1, _rows_x2 + 6, _rows_y2);
+
     for (
         var _entry_index = 0;
         _entry_index < _entry_count;
@@ -559,13 +563,11 @@ function hud_staff_manage_draw_roster(
             : _row_h;
         var _entry_y2 = _draw_y + _entry_h;
 
-        // Рисуем только полностью помещающиеся элементы — без GPU-scissor.
-        // Это исключает обрезание первой строки и правого края при GUI-scale.
-        // Пакет №207: список едет по пикселям, поэтому пропускаем и то,
-        // что уехало выше окна.
-        if (_entry_y2 > _rows_y2) break;
+        // Пакет №209: рисуем всё, что хотя бы краем попадает в окно —
+        // обрезка сделает остальное.
+        if (_draw_y > _rows_y2) break;
 
-        if (_draw_y < _rows_y1) {
+        if (_entry_y2 < _rows_y1) {
             _draw_y = _entry_y2 + _row_gap;
             continue;
         }
@@ -702,6 +704,8 @@ function hud_staff_manage_draw_roster(
     // Пакет №192: БЕГУНОК ПРОКРУТКИ СПИСКА ШТАТА
     // Показывает, где мы в списке, и его можно тащить пальцем.
     // ═══════════════════════════════════════════════════════════
+
+    ui_clip_end();
 
     var _visible_count = max(1, _shown_count);
 
