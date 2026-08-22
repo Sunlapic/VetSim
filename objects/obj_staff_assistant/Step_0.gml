@@ -730,6 +730,29 @@ switch (assistant_state) {
                     if (!_action_ok) {
                         _all_actions_completed = false;
 
+                        // Пакет №213: это была операция, а места в стационаре
+                        // не нашлось. Пациент не «вылечен»: назначаем ему
+                        // повторный визит, иначе он уходил домой навсегда
+                        // с невыполненной операцией.
+                        if (operating_action_is_surgery(_action_id)) {
+                            if (instance_exists(assigned_owner)) {
+                                assigned_owner.visit_followup_planned = true;
+                                assigned_owner.visit_followup_days = 1;
+                                assigned_owner.visit_followup_reason =
+                                    "Операция: не было места в стационаре";
+                            }
+
+                            if (instance_exists(obj_UI_HUD)) {
+                                with (obj_UI_HUD) {
+                                    show_notice(
+                                        "ОПЕРАЦИЯ ОТЛОЖЕНА",
+                                        "Нет свободной койки. Пациент придёт повторно.",
+                                        room_speed * 4
+                                    );
+                                }
+                            }
+                        }
+
                         if (
                             variable_struct_exists(global.med_db.treatment_actions, _action_id)
                         ) {
