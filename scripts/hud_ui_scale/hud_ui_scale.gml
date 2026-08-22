@@ -286,6 +286,38 @@ function ui_draw_tab(_x1, _y1, _x2, _y2, _text, _active, _hover) {
 }
 
 /// Крестик закрытия в том же стиле: квадрат со стороной UI_TAB_H.
+/// Пакет №194: единый крестик для ВСЕХ панелей нижнего меню.
+/// Одно место, одна позиция, один размер — как в окне ПЕРСОНАЛ.
+function ui_close_button_rect(_panel_x1, _panel_y1, _panel_x2, _panel_y2) {
+    var _size = UI_TAB_H;
+    var _x2 = _panel_x2 - 20;
+    var _y1 = _panel_y1 + 22;
+
+    return {
+        x1 : _x2 - _size,
+        y1 : _y1,
+        x2 : _x2,
+        y2 : _y1 + _size
+    };
+}
+
+/// Нарисовать крестик панели и сказать, наведён ли на него курсор.
+function ui_draw_panel_close(_panel_x1, _panel_y1, _panel_x2, _panel_y2, _mouse_x, _mouse_y) {
+    var _rect = ui_close_button_rect(_panel_x1, _panel_y1, _panel_x2, _panel_y2);
+    var _hover = point_in_rectangle(
+        _mouse_x,
+        _mouse_y,
+        _rect.x1,
+        _rect.y1,
+        _rect.x2,
+        _rect.y2
+    );
+
+    ui_draw_close_button(_rect.x1, _rect.y1, _rect.x2, _rect.y2, _hover);
+
+    return _hover;
+}
+
 function ui_draw_close_button(_x1, _y1, _x2, _y2, _hover) {
     var _paper = make_color_rgb(242, 232, 214);
     var _paper_hover = make_color_rgb(250, 226, 220);

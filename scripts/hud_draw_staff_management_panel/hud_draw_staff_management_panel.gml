@@ -1217,11 +1217,13 @@ function hud_draw_staff_management_panel(_hud) {
     }
 
     // Общий крестик закрывает обе вкладки панели.
-    var _close_x2 = _panel_x2 - 20;
-    var _close_x1 = _close_x2 - UI_TAB_H;
-    // Пакет №193: крестик на одной линии с вкладками.
-    var _close_y1 = _panel_y1 + 22;
-    var _close_y2 = _close_y1 + UI_TAB_H;
+    // Пакет №194: положение крестика берётся из UI-кита — одинаково
+    // во всех пяти окнах нижнего меню.
+    var _close_rect = ui_close_button_rect(_panel_x1, _panel_y1, _panel_x2, _panel_y2);
+    var _close_x1 = _close_rect.x1;
+    var _close_y1 = _close_rect.y1;
+    var _close_x2 = _close_rect.x2;
+    var _close_y2 = _close_rect.y2;
     var _close_enabled = !_hud.staff_manage_fire_confirm;
     var _close_hovered = _close_enabled
         && point_in_rectangle(

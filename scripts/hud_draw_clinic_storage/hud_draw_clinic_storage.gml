@@ -112,6 +112,21 @@ function hud_draw_clinic_storage(_hud) {
             hover_clinic_tab_storage
         );
 
+        // Пакет №194: крестик закрытия — такой же, как в окне ПЕРСОНАЛ.
+        var _clinic_close_hover = ui_draw_panel_close(
+            main_panel_x1,
+            main_panel_y1,
+            main_panel_x2,
+            main_panel_y2,
+            _mouse_x,
+            _mouse_y
+        );
+
+        if (_clinic_close_hover && hud_staff_manage_pointer_pressed()) {
+            clinic_panel_open = false;
+            return;
+        }
+
         if (clinic_subtab == "clinic") {
             // Пакет №71: дерево развития клиники.
             hud_draw_clinic_upgrades(id);

@@ -2123,10 +2123,12 @@ function hud_draw_finance_price_panel(_hud) {
         }
     }
 
-    var _close_x2 = _x2 - 20;
-    var _close_x1 = _close_x2 - _close_size;
-    var _close_y1 = _tab_y1;
-    var _close_y2 = _close_y1 + _close_size;
+    // Пакет №194: крестик из UI-кита — тот же, что в остальных окнах.
+    var _close_rect = ui_close_button_rect(_x1, _y1, _x2, _y2);
+    var _close_x1 = _close_rect.x1;
+    var _close_y1 = _close_rect.y1;
+    var _close_x2 = _close_rect.x2;
+    var _close_y2 = _close_rect.y2;
     var _close_hover = point_in_rectangle(
         _mouse_x,
         _mouse_y,

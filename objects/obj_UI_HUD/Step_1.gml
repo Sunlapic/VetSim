@@ -433,10 +433,19 @@ handbook_panel_y1 = main_panel_y1;
 handbook_panel_x2 = main_panel_x2;
 handbook_panel_y2 = main_panel_y2;
 
-handbook_close_x2 = handbook_panel_x2 - 20;
-handbook_close_x1 = handbook_close_x2 - 28;
-handbook_close_y1 = handbook_panel_y1 + 16;
-handbook_close_y2 = handbook_close_y1 + 28;
+// Пакет №194: крестик справочника такого же размера и на том же месте,
+// что и во всех остальных окнах нижнего меню (был мелкий, 28 пикселей).
+var _handbook_close_rect = ui_close_button_rect(
+    handbook_panel_x1,
+    handbook_panel_y1,
+    handbook_panel_x2,
+    handbook_panel_y2
+);
+
+handbook_close_x1 = _handbook_close_rect.x1;
+handbook_close_y1 = _handbook_close_rect.y1;
+handbook_close_x2 = _handbook_close_rect.x2;
+handbook_close_y2 = _handbook_close_rect.y2;
 
 // Подвкладки клиники
 // Пакет №180: размеры вкладок берутся из UI-кита — один стиль во всей игре.

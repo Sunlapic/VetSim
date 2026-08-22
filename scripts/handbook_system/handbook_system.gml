@@ -397,32 +397,30 @@ function hud_draw_handbook_panel(_hud) {
     draw_set_color(_wood_dark);
     draw_text_transformed(_x1 + 24, _y1 + 16, "СПРАВОЧНИК БОЛЕЗНЕЙ", UI_FS_TITLE, UI_FS_TITLE, 0);
 
+    // Пакет №194: счётчик отодвинут левее крупного крестика.
+    var _hb_close = ui_close_button_rect(_x1, _y1, _x2, _y2);
+
     draw_set_halign(fa_right);
     draw_set_color(_text_soft);
     draw_text_transformed(
-        _x2 - 58,
-        _y1 + 26,
+        _hb_close.x1 - 18,
+        _y1 + 34,
         "ОТКРЫТО " + string(handbook_get_unlocked_count())
             + " / " + string(array_length(_ids)),
         UI_FS_ROW,
         UI_FS_ROW,
         0
     );
+    draw_set_halign(fa_left);
 
-    // Кнопка закрытия (клик обрабатывается в Begin Step).
-    hud_draw_button(
+    // Пакет №194: крестик такой же, как во всех остальных окнах.
+    // Клик по-прежнему обрабатывается в Begin Step.
+    ui_draw_close_button(
         _hud.handbook_close_x1,
         _hud.handbook_close_y1,
         _hud.handbook_close_x2,
         _hud.handbook_close_y2,
-        "X",
-        false,
-        _hud.hover_handbook_close,
-        _paper,
-        make_color_rgb(248, 238, 220),
-        make_color_rgb(229, 194, 185),
-        _line_dark,
-        _text_dark
+        _hud.hover_handbook_close
     );
 
     // ── Левая колонка: список болезней ──

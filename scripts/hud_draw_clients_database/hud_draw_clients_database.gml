@@ -183,6 +183,24 @@ function hud_draw_clients_database(_hud) {
             hover_clients_tab_followup
         );
 
+        // Пакет №194: крестик закрытия — такой же, как в окне ПЕРСОНАЛ.
+        var _close_mouse_x = device_mouse_x_to_gui(0);
+        var _close_mouse_y = device_mouse_y_to_gui(0);
+        var _close_hover = ui_draw_panel_close(
+            clients_panel_x1,
+            clients_panel_y1,
+            clients_panel_x2,
+            clients_panel_y2,
+            _close_mouse_x,
+            _close_mouse_y
+        );
+
+        if (_close_hover && hud_staff_manage_pointer_pressed()) {
+            clients_panel_open = false;
+            client_search_active = false;
+            return;
+        }
+
         draw_set_color(
             (hover_client_search || client_search_active)
                 ? _paper_hover
