@@ -1,17 +1,20 @@
 /// clinic_tree_panel.gml
 /// @description Пакет №173. Панель «КЛИНИКА → РАЗВИТИЕ» в виде дерева.
 ///
-/// Вместо двух колонок со строчками — общий верхний блок и три ветки:
-/// ПРИЁМ, СТАЦИОНАР, ОПЕРАЦИОННАЯ. Узлы соединены стволом, где нужно —
-/// развилка. Деньги и баллы в одной таблице, валюта видна по цвету цены:
-/// зелёная — доллары, золотая — баллы клиники.
+/// Правка 3: всё крупное под телефон, ничего не налезает друг на друга.
+///   • подписи и цены крупным шрифтом, длинные строки сами ужимаются;
+///   • цена словами: «Баллов: 14» и «$ 1 600»;
+///   • кружки уровня зелёные, шаг одинаковый во всех узлах;
+///   • балансы денег и баллов убраны — они уже есть в верхней панели HUD;
+///   • сетка адаптивная: сколько колонок влезет, столько и будет,
+///     на узком экране всё выстраивается в одну колонку с прокруткой.
 ///
 /// Иконки собраны из примитивов (прямоугольник, круг, линия) — в fnt_main
 /// нет ни эмодзи, ни значков, а новые спрайты рисовать не нужно.
 
 
 // ═══════════════════════════════════════════════════════════════
-// 1. ПАЛИТРА
+// 1. ПАЛИТРА И РАЗМЕРЫ
 // ═══════════════════════════════════════════════════════════════
 
 function tree_color_wood_dark()  { return make_color_rgb(74, 49, 31); }
@@ -20,41 +23,69 @@ function tree_color_paper()      { return make_color_rgb(242, 232, 214); }
 function tree_color_paper_2()    { return make_color_rgb(232, 220, 198); }
 function tree_color_line()       { return make_color_rgb(58, 39, 24); }
 function tree_color_text()       { return make_color_rgb(50, 38, 28); }
-function tree_color_text_soft()  { return make_color_rgb(90, 70, 50); }
+function tree_color_text_soft()  { return make_color_rgb(88, 70, 52); }
 function tree_color_green()      { return make_color_rgb(62, 112, 74); }
+function tree_color_green_dark() { return make_color_rgb(45, 84, 54); }
 function tree_color_green_bg()   { return make_color_rgb(217, 232, 213); }
 function tree_color_gold()       { return make_color_rgb(180, 140, 64); }
 function tree_color_gold_bg()    { return make_color_rgb(247, 237, 214); }
 function tree_color_lock()       { return make_color_rgb(109, 97, 84); }
 function tree_color_lock_bg()    { return make_color_rgb(207, 199, 184); }
 
+// Минимальная ширина узла: если не влезает — колонок становится меньше.
+#macro TREE_NODE_MIN_W 520
 
-// ═══════════════════════════════════════════════════════════════
-// 1.5 ТОЧКИ УРОВНЯ
-//
-// Шаг между кружками одинаков во всех узлах: он считается по эталону
-// TREE_DOT_REFERENCE. Максимальная ветка — «Слот найма» с 14 уровнями
-// (1 + 14 = 15 сотрудников), поэтому эталон 15: при нём кружки влезают
-// в самый широкий случай, а у пятиуровневых улучшений просто короче ряд.
-// ═══════════════════════════════════════════════════════════════
-
+// Эталон шага кружков: самый длинный ряд (слот найма, 14 уровней + запас).
 #macro TREE_DOT_REFERENCE 15
 #macro TREE_HIRE_MAX_LEVEL 14
 
+// Масштабы шрифта. Всё крупное — игра телефонная.
+#macro TREE_FS_TITLE 1.75
+#macro TREE_FS_EFFECT 1.25
+#macro TREE_FS_COST 1.45
+#macro TREE_FS_HEADER 1.55
+
+// Высоты блоков внутри узла.
+#macro TREE_PAD 18
+#macro TREE_ICON 72
+#macro TREE_H_TITLE 40
+#macro TREE_H_EFFECT 32
+#macro TREE_H_COST 56
+#macro TREE_H_DOTS 48
+
+
+// Подгоняем масштаб текста, чтобы строка влезла в ширину.
+function tree_fit_scale(_text, _max_w, _base) {
+    if (_max_w <= 0) return _base;
+
+    var _w = string_width(_text) * _base;
+
+    if (_w <= _max_w) return _base;
+
+    return max(0.72, _base * (_max_w / _w));
+}
+
 function tree_dot_metrics(_node_w) {
-    var _avail = _node_w - 36;
+    var _avail = _node_w - TREE_PAD * 2 - 12;
     var _gap = _avail / TREE_DOT_REFERENCE;
 
     return {
         gap : _gap,
-        radius : clamp(_gap * 0.34, 5, 15)
+        radius : clamp(_gap * 0.32, 6, 16)
     };
+}
+
+function tree_node_height(_node) {
+    var _h = TREE_PAD * 2 + TREE_H_TITLE + TREE_H_EFFECT + TREE_H_COST;
+
+    if (_node.kind == "upg") _h += TREE_H_DOTS;
+
+    return _h;
 }
 
 
 // ═══════════════════════════════════════════════════════════════
 // 2. ИКОНКИ ИЗ ПРИМИТИВОВ
-// Каждая рисуется в квадрате _size × _size с центром (_cx, _cy).
 // ═══════════════════════════════════════════════════════════════
 
 function tree_icon_door(_cx, _cy, _size, _color) {
@@ -63,7 +94,8 @@ function tree_icon_door(_cx, _cy, _size, _color) {
 
     draw_set_color(_color);
     draw_roundrect_ext(_cx - _w, _cy - _h, _cx + _w, _cy + _h, 3, 3, true);
-    draw_circle(_cx + _w * 0.45, _cy + _size * 0.06, max(1.5, _size * 0.06), false);
+    draw_roundrect_ext(_cx - _w + 1, _cy - _h + 1, _cx + _w - 1, _cy + _h - 1, 3, 3, true);
+    draw_circle(_cx + _w * 0.45, _cy + _size * 0.06, max(2, _size * 0.08), false);
 }
 
 function tree_icon_bed(_cx, _cy, _size, _color) {
@@ -71,74 +103,72 @@ function tree_icon_bed(_cx, _cy, _size, _color) {
     var _h = _size * 0.26;
 
     draw_set_color(_color);
-
-    // матрас
     draw_roundrect_ext(_cx - _w, _cy - _h, _cx + _w, _cy + _h, 3, 3, true);
-    // подушка
+    draw_roundrect_ext(_cx - _w + 1, _cy - _h + 1, _cx + _w - 1, _cy + _h - 1, 3, 3, true);
     draw_roundrect_ext(
-        _cx - _w + 2, _cy - _h - _size * 0.24,
-        _cx - _w + _size * 0.5, _cy - _h,
+        _cx - _w + 2, _cy - _h - _size * 0.26,
+        _cx - _w + _size * 0.52, _cy - _h,
         3, 3, true
     );
-    // ножки
-    draw_line(_cx - _w, _cy + _h, _cx - _w, _cy + _h + _size * 0.18);
-    draw_line(_cx + _w, _cy + _h, _cx + _w, _cy + _h + _size * 0.18);
+    draw_line(_cx - _w, _cy + _h, _cx - _w, _cy + _h + _size * 0.20);
+    draw_line(_cx + _w, _cy + _h, _cx + _w, _cy + _h + _size * 0.20);
 }
 
 function tree_icon_surgery(_cx, _cy, _size, _color) {
     var _w = _size * 0.78;
 
     draw_set_color(_color);
-
-    // стол
-    draw_roundrect_ext(_cx - _w, _cy, _cx + _w, _cy + _size * 0.22, 3, 3, true);
-    draw_line(_cx - _w * 0.6, _cy + _size * 0.22, _cx - _w * 0.6, _cy + _size * 0.5);
-    draw_line(_cx + _w * 0.6, _cy + _size * 0.22, _cx + _w * 0.6, _cy + _size * 0.5);
-    // лампа
-    draw_circle(_cx, _cy - _size * 0.38, _size * 0.24, true);
+    draw_roundrect_ext(_cx - _w, _cy, _cx + _w, _cy + _size * 0.24, 3, 3, true);
+    draw_roundrect_ext(_cx - _w + 1, _cy + 1, _cx + _w - 1, _cy + _size * 0.24 - 1, 3, 3, true);
+    draw_line(_cx - _w * 0.6, _cy + _size * 0.24, _cx - _w * 0.6, _cy + _size * 0.54);
+    draw_line(_cx + _w * 0.6, _cy + _size * 0.24, _cx + _w * 0.6, _cy + _size * 0.54);
+    draw_circle(_cx, _cy - _size * 0.40, _size * 0.26, true);
+    draw_circle(_cx, _cy - _size * 0.40, _size * 0.26 - 1, true);
 }
 
 function tree_icon_book(_cx, _cy, _size, _color) {
-    var _w = _size * 0.66;
-    var _h = _size * 0.56;
+    var _w = _size * 0.68;
+    var _h = _size * 0.58;
 
     draw_set_color(_color);
     draw_roundrect_ext(_cx - _w, _cy - _h, _cx + _w, _cy + _h, 3, 3, true);
+    draw_roundrect_ext(_cx - _w + 1, _cy - _h + 1, _cx + _w - 1, _cy + _h - 1, 3, 3, true);
     draw_line(_cx, _cy - _h, _cx, _cy + _h);
 }
 
 function tree_icon_person(_cx, _cy, _size, _color) {
     draw_set_color(_color);
 
-    draw_circle(_cx - _size * 0.12, _cy - _size * 0.34, _size * 0.24, true);
+    draw_circle(_cx - _size * 0.14, _cy - _size * 0.36, _size * 0.26, true);
+    draw_circle(_cx - _size * 0.14, _cy - _size * 0.36, _size * 0.26 - 1, true);
 
-    // плечи
-    draw_line(_cx - _size * 0.62, _cy + _size * 0.46, _cx - _size * 0.42, _cy + _size * 0.02);
-    draw_line(_cx + _size * 0.18, _cy + _size * 0.46, _cx + _size * 0.02, _cy + _size * 0.02);
-    draw_line(_cx - _size * 0.62, _cy + _size * 0.46, _cx + _size * 0.18, _cy + _size * 0.46);
+    draw_line(_cx - _size * 0.64, _cy + _size * 0.48, _cx - _size * 0.44, _cy + _size * 0.02);
+    draw_line(_cx + _size * 0.16, _cy + _size * 0.48, _cx + _size * 0.00, _cy + _size * 0.02);
+    draw_line(_cx - _size * 0.64, _cy + _size * 0.48, _cx + _size * 0.16, _cy + _size * 0.48);
 
-    // плюсик «+1 место»
     draw_set_color(tree_color_green());
-    draw_line(_cx + _size * 0.52, _cy - _size * 0.48, _cx + _size * 0.52, _cy - _size * 0.08);
-    draw_line(_cx + _size * 0.32, _cy - _size * 0.28, _cx + _size * 0.72, _cy - _size * 0.28);
+    draw_line(_cx + _size * 0.54, _cy - _size * 0.50, _cx + _size * 0.54, _cy - _size * 0.06);
+    draw_line(_cx + _size * 0.32, _cy - _size * 0.28, _cx + _size * 0.76, _cy - _size * 0.28);
+    draw_line(_cx + _size * 0.55, _cy - _size * 0.50, _cx + _size * 0.55, _cy - _size * 0.06);
+    draw_line(_cx + _size * 0.32, _cy - _size * 0.27, _cx + _size * 0.76, _cy - _size * 0.27);
 }
 
 function tree_icon_dumbbell(_cx, _cy, _size, _color) {
     draw_set_color(_color);
 
     draw_roundrect_ext(
-        _cx - _size * 0.5, _cy - _size * 0.14,
-        _cx + _size * 0.5, _cy + _size * 0.14,
+        _cx - _size * 0.50, _cy - _size * 0.14,
+        _cx + _size * 0.50, _cy + _size * 0.14,
         3, 3, true
     );
     draw_roundrect_ext(
-        _cx - _size * 0.82, _cy - _size * 0.34,
-        _cx - _size * 0.5, _cy + _size * 0.34,
+        _cx - _size * 0.84, _cy - _size * 0.36,
+        _cx - _size * 0.50, _cy + _size * 0.36,
         3, 3, true
     );
     draw_roundrect_ext(
-        _cx + _size * 0.5, _cy - _size * 0.34,
-        _cx + _size * 0.82, _cy + _size * 0.34,
+        _cx + _size * 0.50, _cy - _size * 0.36,
+        _cx + _size * 0.84, _cy + _size * 0.36,
         3, 3, true
     );
 }
@@ -146,10 +176,11 @@ function tree_icon_dumbbell(_cx, _cy, _size, _color) {
 function tree_icon_pill(_cx, _cy, _size, _color) {
     draw_set_color(_color);
 
-    draw_circle(_cx, _cy, _size * 0.52, true);
+    draw_circle(_cx, _cy, _size * 0.54, true);
+    draw_circle(_cx, _cy, _size * 0.54 - 1, true);
     draw_line(
-        _cx - _size * 0.36, _cy + _size * 0.36,
-        _cx + _size * 0.36, _cy - _size * 0.36
+        _cx - _size * 0.38, _cy + _size * 0.38,
+        _cx + _size * 0.38, _cy - _size * 0.38
     );
 }
 
@@ -169,97 +200,78 @@ function tree_draw_icon(_icon_id, _cx, _cy, _size, _color) {
 // ═══════════════════════════════════════════════════════════════
 // 3. ДАННЫЕ ДЕРЕВА
 //
-// kind: "room" — помещение за деньги (clinic_rooms_system)
-//       "bed"  — койка стационара за деньги
-//       "oper" — операционная за деньги
-//       "upg"  — улучшение за баллы (clinic_upgrade_system)
-//
-// Каждая ветка — массив рядов, ряд — массив узлов (1 или 2 = развилка).
+// kind: "room" — помещение за деньги, "bed" — койка стационара,
+//       "oper" — операционная, "upg" — улучшение за баллы,
+//       "soon" — заглушка под будущие узлы.
 // ═══════════════════════════════════════════════════════════════
 
 function tree_node_room(_slot, _icon, _effect) {
-    return {
-        kind : "room",
-        key : _slot,
-        icon : _icon,
-        effect : _effect
-    };
+    return { kind : "room", key : _slot, icon : _icon, effect : _effect };
 }
 
 function tree_node_bed(_slot) {
-    return {
-        kind : "bed",
-        key : _slot,
-        icon : "bed",
-        effect : "место в стационаре"
-    };
+    return { kind : "bed", key : _slot, icon : "bed", effect : "место в стационаре" };
 }
 
 function tree_node_upgrade(_id, _icon) {
-    return {
-        kind : "upg",
-        key : _id,
-        icon : _icon,
-        effect : ""
-    };
+    return { kind : "upg", key : _id, icon : _icon, effect : "" };
 }
 
-function tree_branches() {
+function tree_sections() {
     return [
         {
+            title : "ОБЩЕЕ ДЛЯ КЛИНИКИ",
+            nodes : [
+                tree_node_upgrade("hire_slot", "person"),
+                tree_node_upgrade("library", "book"),
+                tree_node_upgrade("gym", "dumbbell"),
+                tree_node_upgrade("pharmacy", "pill")
+            ]
+        },
+        {
             title : "РЕГИСТРАТУРА",
-            rows : [
-                [ {
+            nodes : [
+                {
                     kind : "soon",
                     key : "reception",
                     icon : "person",
                     effect : "ветка появится позже"
-                } ]
+                }
             ]
         },
         {
             title : "ПРИЁМ",
-            rows : [
-                [ tree_node_room(2, "door", "второй стол приёма") ],
-                [ tree_node_room(3, "door", "третий стол приёма") ]
+            nodes : [
+                tree_node_room(2, "door", "второй стол приёма"),
+                tree_node_room(3, "door", "третий стол приёма")
             ]
         },
         {
             title : "СТАЦИОНАР",
-            rows : [
-                [ tree_node_bed(101), tree_node_bed(102) ],
-                [ tree_node_bed(103), tree_node_bed(104) ]
+            nodes : [
+                tree_node_bed(101),
+                tree_node_bed(102),
+                tree_node_bed(103),
+                tree_node_bed(104)
             ]
         },
         {
             title : "ОПЕРАЦИОННАЯ",
-            rows : [
-                [ {
+            nodes : [
+                {
                     kind : "oper",
                     key : "operating",
                     icon : "surgery",
                     effect : "стол, лампа, места бригады"
-                } ]
+                }
             ]
         }
     ];
 }
 
-// Пакет №173 (правка): библиотека переехала в общее — она работает
-// на всех врачей клиники, а не только на кабинеты приёма.
-function tree_common_nodes() {
-    return [
-        tree_node_upgrade("hire_slot", "person"),
-        tree_node_upgrade("library", "book"),
-        tree_node_upgrade("gym", "dumbbell"),
-        tree_node_upgrade("pharmacy", "pill")
-    ];
-}
-
 
 // ═══════════════════════════════════════════════════════════════
-// 4. СОСТОЯНИЕ УЗЛА
-// "done" — куплено, "open" — можно купить, "lock" — рано
+// 4. СОСТОЯНИЕ И ПОДПИСИ УЗЛА
 // ═══════════════════════════════════════════════════════════════
 
 function tree_node_state(_node) {
@@ -268,30 +280,19 @@ function tree_node_state(_node) {
 
         case "room": {
             if (clinic_room_is_open(_node.key)) return "done";
-
-            // Кабинет 3 открывается только после второго.
             if (round(_node.key) == 3 && !clinic_room_is_open(2)) return "lock";
-
             return "open";
         }
 
         case "bed": {
             if (clinic_bed_is_open(_node.key)) return "done";
-
-            // Четвёртую койку продаём только после третьей.
             if (round(_node.key) == 104 && !clinic_bed_is_open(103)) return "lock";
-
             return "open";
         }
 
-        case "oper": {
-            return clinic_operating_is_open() ? "done" : "open";
-        }
+        case "oper": return clinic_operating_is_open() ? "done" : "open";
 
-        case "upg": {
-            if (clinic_upgrade_is_maxed(_node.key)) return "done";
-            return "open";
-        }
+        case "upg": return clinic_upgrade_is_maxed(_node.key) ? "done" : "open";
     }
 
     return "lock";
@@ -299,8 +300,7 @@ function tree_node_state(_node) {
 
 function tree_node_title(_node) {
     switch (_node.kind) {
-        case "soon": return "Скоро";
-
+        case "soon": return "СКОРО";
         case "room": return clinic_room_name(_node.key);
         case "bed":  return clinic_room_name(_node.key);
         case "oper": return "Открыть операционную";
@@ -311,31 +311,26 @@ function tree_node_title(_node) {
 }
 
 function tree_node_effect(_node) {
-    if (_node.kind == "soon") return _node.effect;
-
-    if (_node.kind == "upg") {
-        return clinic_upgrade_effect_now(_node.key);
-    }
+    if (_node.kind == "upg") return clinic_upgrade_effect_now(_node.key);
 
     return _node.effect;
 }
 
 function tree_node_cost_text(_node, _state) {
-    if (_node.kind == "soon") return "—";
+    if (_node.kind == "soon") return "В РАЗРАБОТКЕ";
 
     if (_state == "done") {
-        if (_node.kind == "upg") return "МАКСИМУМ";
-        return "ЕСТЬ";
+        return (_node.kind == "upg") ? "МАКСИМАЛЬНЫЙ УРОВЕНЬ" : "УЖЕ ОТКРЫТО";
     }
 
+    // Пакет №173 (правка): цена словами, без значков.
     if (_node.kind == "upg") {
-        return "* " + string(clinic_upgrade_cost(_node.key));
+        return "Баллов: " + string(clinic_upgrade_cost(_node.key));
     }
 
-    return "$ " + string(clinic_room_price(_node.key));
+    return "Цена: $ " + string(clinic_room_price(_node.key));
 }
 
-// Хватает ли валюты прямо сейчас.
 function tree_node_affordable(_node) {
     if (_node.kind == "soon") return false;
 
@@ -346,9 +341,21 @@ function tree_node_affordable(_node) {
     return (global.clinic_money >= clinic_room_price(_node.key));
 }
 
+function tree_node_buy(_node) {
+    switch (_node.kind) {
+        case "room":
+        case "bed":  return clinic_room_purchase(_node.key);
+        case "oper": return clinic_room_purchase("operating");
+        case "upg":  return clinic_upgrade_apply(_node.key);
+    }
+
+    return false;
+}
+
 
 // ═══════════════════════════════════════════════════════════════
-// 5. ОТРИСОВКА ОДНОГО УЗЛА
+// 5. ОТРИСОВКА УЗЛА
+// Порядок строк жёсткий, каждая в своей полосе — наложений быть не может.
 // ═══════════════════════════════════════════════════════════════
 
 function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
@@ -372,7 +379,7 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
         _bg = make_color_rgb(250, 242, 226);
     }
 
-    // Тень и корпус.
+    // Корпус.
     draw_set_alpha(0.20);
     draw_set_color(c_black);
     draw_roundrect_ext(_x1 + 3, _y1 + 5, _x2 + 3, _y2 + 5, 14, 14, false);
@@ -385,54 +392,59 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
     draw_roundrect_ext(_x1 + 1, _y1 + 1, _x2 - 1, _y2 - 1, 13, 13, true);
     draw_roundrect_ext(_x1 + 2, _y1 + 2, _x2 - 2, _y2 - 2, 12, 12, true);
 
-    // ── Иконка ──
-    var _icon_box = 64;
-    var _icon_x1 = _x1 + 14;
-    var _icon_y1 = _y1 + 14;
+    // Иконка.
+    var _icon_x1 = _x1 + TREE_PAD;
+    var _icon_y1 = _y1 + TREE_PAD;
 
     draw_set_color(tree_color_paper_2());
-    draw_roundrect_ext(
-        _icon_x1, _icon_y1,
-        _icon_x1 + _icon_box, _icon_y1 + _icon_box,
-        10, 10, false
-    );
+    draw_roundrect_ext(_icon_x1, _icon_y1, _icon_x1 + TREE_ICON, _icon_y1 + TREE_ICON, 10, 10, false);
     draw_set_color(_border);
-    draw_roundrect_ext(
-        _icon_x1, _icon_y1,
-        _icon_x1 + _icon_box, _icon_y1 + _icon_box,
-        10, 10, true
-    );
+    draw_roundrect_ext(_icon_x1, _icon_y1, _icon_x1 + TREE_ICON, _icon_y1 + TREE_ICON, 10, 10, true);
+    draw_roundrect_ext(_icon_x1 + 1, _icon_y1 + 1, _icon_x1 + TREE_ICON - 1, _icon_y1 + TREE_ICON - 1, 10, 10, true);
 
     tree_draw_icon(
         _node.icon,
-        _icon_x1 + _icon_box * 0.5,
-        _icon_y1 + _icon_box * 0.5,
-        _icon_box * 0.44,
+        _icon_x1 + TREE_ICON * 0.5,
+        _icon_y1 + TREE_ICON * 0.5,
+        TREE_ICON * 0.44,
         _border
     );
 
-    // ── Название и эффект (крупный шрифт под телефон) ──
-    var _text_x = _icon_x1 + _icon_box + 14;
+    // ── Полоса 1: название ──
+    var _text_x = _icon_x1 + TREE_ICON + 16;
+    var _text_w = (_x2 - TREE_PAD) - _text_x;
+    var _line_y = _y1 + TREE_PAD;
+
+    var _title = tree_node_title(_node);
+    var _title_scale = tree_fit_scale(_title, _text_w, TREE_FS_TITLE);
 
     draw_set_halign(fa_left);
-    draw_set_valign(fa_top);
+    draw_set_valign(fa_middle);
     draw_set_color(_ink);
-    draw_text_transformed(_text_x, _y1 + 16, tree_node_title(_node), 1.55, 1.55, 0);
+    draw_text_transformed(_text_x, _line_y + TREE_H_TITLE * 0.5, _title, _title_scale, _title_scale, 0);
+
+    // ── Полоса 2: подсказка (эффект) ──
+    _line_y += TREE_H_TITLE;
 
     var _effect = tree_node_effect(_node);
 
     if (_effect != "") {
+        var _eff_scale = tree_fit_scale(_effect, _text_w, TREE_FS_EFFECT);
+
         draw_set_color(tree_color_text_soft());
-        draw_text_transformed(_text_x, _y1 + 48, _effect, 1.05, 1.05, 0);
+        draw_text_transformed(_text_x, _line_y + TREE_H_EFFECT * 0.5, _effect, _eff_scale, _eff_scale, 0);
     }
 
-    // ── Цена: правый верхний угол ──
+    // ── Полоса 3: цена ──
+    _line_y += TREE_H_EFFECT;
+
     var _cost_text = tree_node_cost_text(_node, _state);
-    var _cost_w = string_width(_cost_text) * 1.35 + 28;
-    var _cost_x2 = _x2 - 14;
-    var _cost_x1 = _cost_x2 - _cost_w;
-    var _cost_y1 = _y1 + 14;
-    var _cost_y2 = _cost_y1 + 44;
+    var _cost_scale = tree_fit_scale(_cost_text, _text_w - 28, TREE_FS_COST);
+    var _cost_w = string_width(_cost_text) * _cost_scale + 28;
+    var _cost_x1 = _text_x;
+    var _cost_x2 = min(_x2 - TREE_PAD, _cost_x1 + _cost_w);
+    var _cost_y1 = _line_y + 4;
+    var _cost_y2 = _line_y + TREE_H_COST - 8;
 
     var _cost_bg = _is_points ? tree_color_gold_bg() : make_color_rgb(226, 239, 224);
     var _cost_border = _is_points ? tree_color_gold() : tree_color_green();
@@ -440,7 +452,7 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
 
     if (_state == "done") {
         _cost_bg = tree_color_green();
-        _cost_border = make_color_rgb(45, 84, 54);
+        _cost_border = tree_color_green_dark();
         _cost_ink = c_white;
     }
     else if (_state == "lock" || !tree_node_affordable(_node)) {
@@ -453,23 +465,20 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
     draw_roundrect_ext(_cost_x1, _cost_y1, _cost_x2, _cost_y2, 9, 9, false);
     draw_set_color(_cost_border);
     draw_roundrect_ext(_cost_x1, _cost_y1, _cost_x2, _cost_y2, 9, 9, true);
+    draw_roundrect_ext(_cost_x1 + 1, _cost_y1 + 1, _cost_x2 - 1, _cost_y2 - 1, 8, 8, true);
 
     draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
     draw_set_color(_cost_ink);
     draw_text_transformed(
         (_cost_x1 + _cost_x2) * 0.5,
         (_cost_y1 + _cost_y2) * 0.5,
         _cost_text,
-        1.35,
-        1.35,
+        _cost_scale,
+        _cost_scale,
         0
     );
 
-    // ── Точки уровня: крупные, по самому низу кнопки ──
-    // Пакет №173 (правка): шаг ОДИНАКОВЫЙ у всех улучшений — он считается
-    // так, будто точек всегда TREE_DOT_REFERENCE (15). У пятиуровневых
-    // улучшений точек просто меньше, но расстояние между ними то же самое.
+    // ── Полоса 4: кружки уровня, зелёные, по низу ──
     if (_node.kind == "upg") {
         var _level = clinic_upgrade_level(_node.key);
         var _max_level = clinic_upgrade_max_level_for(_node.key);
@@ -480,7 +489,7 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
 
         var _row_w = (_max_level - 1) * _gap;
         var _dot_x = (_x1 + _x2) * 0.5 - _row_w * 0.5;
-        var _dot_y = _y2 - _dot_r - 12;
+        var _dot_y = _y2 - TREE_H_DOTS * 0.5;
 
         for (var _dot = 0; _dot < _max_level; _dot++) {
             var _px = _dot_x + _dot * _gap;
@@ -490,10 +499,11 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
             draw_circle(_px + 1, _dot_y + 2, _dot_r, false);
             draw_set_alpha(1);
 
-            draw_set_color((_dot < _level) ? tree_color_gold() : tree_color_lock_bg());
+            // Заполненные — зелёные (пакет №173, правка 3).
+            draw_set_color((_dot < _level) ? tree_color_green() : tree_color_lock_bg());
             draw_circle(_px, _dot_y, _dot_r, false);
 
-            draw_set_color(tree_color_line());
+            draw_set_color((_dot < _level) ? tree_color_green_dark() : tree_color_line());
             draw_circle(_px, _dot_y, _dot_r, true);
             draw_circle(_px, _dot_y, _dot_r - 1, true);
         }
@@ -507,57 +517,19 @@ function tree_draw_node(_node, _x1, _y1, _x2, _y2, _hovered) {
 
 
 // ═══════════════════════════════════════════════════════════════
-// 6. СОЕДИНИТЕЛИ
+// 6. СОЕДИНИТЕЛЬ МЕЖДУ УЗЛАМИ ВЕТКИ
 // ═══════════════════════════════════════════════════════════════
 
 function tree_draw_stem(_cx, _y1, _y2, _active) {
     draw_set_color(_active ? tree_color_wood_light() : make_color_rgb(141, 129, 114));
-
-    var _w = 3;
-    draw_roundrect_ext(_cx - _w, _y1, _cx + _w, _y2, 3, 3, false);
-}
-
-// Развилка: вертикаль вниз, горизонталь, вертикали к двум узлам.
-function tree_draw_fork(_cx, _y1, _y2, _left_x, _right_x, _active) {
-    var _mid_y = (_y1 + _y2) * 0.5;
-
-    tree_draw_stem(_cx, _y1, _mid_y, _active);
-
-    draw_set_color(_active ? tree_color_wood_light() : make_color_rgb(141, 129, 114));
-    draw_roundrect_ext(_left_x - 3, _mid_y - 3, _right_x + 3, _mid_y + 3, 3, 3, false);
-
-    tree_draw_stem(_left_x, _mid_y, _y2, _active);
-    tree_draw_stem(_right_x, _mid_y, _y2, _active);
+    draw_roundrect_ext(_cx - 4, _y1, _cx + 4, _y2, 4, 4, false);
 }
 
 
 // ═══════════════════════════════════════════════════════════════
-// 7. ПОКУПКА
+// 7. КРУПНАЯ КНОПКА ДЛЯ ВКЛАДОК
 // ═══════════════════════════════════════════════════════════════
 
-function tree_node_buy(_node) {
-    switch (_node.kind) {
-        case "room":
-        case "bed":
-            return clinic_room_purchase(_node.key);
-
-        case "oper":
-            return clinic_room_purchase("operating");
-
-        case "upg":
-            return clinic_upgrade_apply(_node.key);
-    }
-
-    return false;
-}
-
-
-// ═══════════════════════════════════════════════════════════════
-// 8. ПАНЕЛЬ ЦЕЛИКОМ
-// Вызывается из hud_draw_clinic_upgrades вместо старых двух колонок.
-// ═══════════════════════════════════════════════════════════════
-
-// Крупная кнопка с масштабируемым текстом — для вкладок РАЗВИТИЕ и СКЛАД.
 function hud_draw_button_big(
     _x1, _y1, _x2, _y2, _text, _active, _hover,
     _fill, _hover_fill, _active_fill, _line_dark, _text_color
@@ -567,9 +539,7 @@ function hud_draw_button_big(
     draw_roundrect_ext(_x1 + 3, _y1 + 4, _x2 + 3, _y2 + 4, 14, 14, false);
     draw_set_alpha(1);
 
-    draw_set_color(
-        _active ? _active_fill : (_hover ? _hover_fill : _fill)
-    );
+    draw_set_color(_active ? _active_fill : (_hover ? _hover_fill : _fill));
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 14, 14, false);
 
     draw_set_color(_line_dark);
@@ -577,20 +547,20 @@ function hud_draw_button_big(
     draw_roundrect_ext(_x1 + 1, _y1 + 1, _x2 - 1, _y2 - 1, 13, 13, true);
     draw_roundrect_ext(_x1 + 2, _y1 + 2, _x2 - 2, _y2 - 2, 12, 12, true);
 
+    var _scale = tree_fit_scale(_text, (_x2 - _x1) - 24, 1.7);
+
     draw_set_halign(fa_center);
     draw_set_valign(fa_middle);
     draw_set_color(_text_color);
-    draw_text_transformed(
-        (_x1 + _x2) * 0.5,
-        (_y1 + _y2) * 0.5 + 1,
-        _text,
-        1.6,
-        1.6,
-        0
-    );
+    draw_text_transformed((_x1 + _x2) * 0.5, (_y1 + _y2) * 0.5 + 1, _text, _scale, _scale, 0);
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 8. ПАНЕЛЬ ЦЕЛИКОМ
+// ═══════════════════════════════════════════════════════════════
 
 function clinic_tree_draw(_hud) {
     if (!instance_exists(_hud)) return;
@@ -604,57 +574,34 @@ function clinic_tree_draw(_hud) {
         if (!variable_instance_exists(id, "tree_scroll")) tree_scroll = 0;
         if (!variable_instance_exists(id, "tree_touch_active")) tree_touch_active = false;
         if (!variable_instance_exists(id, "tree_touch_last_y")) tree_touch_last_y = 0;
+        if (!variable_instance_exists(id, "tree_content_h")) tree_content_h = 0;
 
         var _mx = device_mouse_x_to_gui(0);
         var _my = device_mouse_y_to_gui(0);
 
         var _panel_x1 = main_panel_x1 + 24;
-        var _panel_x2 = main_panel_x2 - 24;
-        var _panel_y1 = main_panel_y1 + 170;
-        var _panel_y2 = main_panel_y2 - 24;
+        var _panel_x2 = main_panel_x2 - 30;
+        var _panel_y1 = main_panel_y1 + 104;
+        var _panel_y2 = main_panel_y2 - 20;
 
-        // ── Балансы в шапке, крупно ──
-        var _bal_h = 52;
-        var _bal_y2 = _panel_y1 - 16;
-        var _bal_y1 = _bal_y2 - _bal_h;
+        var _panel_w = _panel_x2 - _panel_x1;
+        var _panel_h = _panel_y2 - _panel_y1;
 
-        var _money_text = "$ " + string(global.clinic_money);
-        var _points_text = "* " + string(global.clinic_points);
+        // ── Сколько колонок влезет ──
+        var _col_gap = 16;
+        var _cols = clamp(
+            floor((_panel_w + _col_gap) / (TREE_NODE_MIN_W + _col_gap)),
+            1,
+            3
+        );
+        var _col_w = (_panel_w - _col_gap * (_cols - 1)) / _cols;
 
-        var _money_w = string_width(_money_text) * 1.5 + 34;
-        var _pts_w = string_width(_points_text) * 1.5 + 34;
-        var _pts_x2 = _panel_x2;
-        var _pts_x1 = _pts_x2 - _pts_w;
-        var _money_x2 = _pts_x1 - 14;
-        var _money_x1 = _money_x2 - _money_w;
+        // ── Ввод: колесо и перетаскивание ──
+        var _in_panel = point_in_rectangle(_mx, _my, _panel_x1, _panel_y1, _panel_x2, _panel_y2);
 
-        draw_set_color(tree_color_paper());
-        draw_roundrect_ext(_money_x1, _bal_y1, _money_x2, _bal_y2, 11, 11, false);
-        draw_set_color(tree_color_green());
-        draw_roundrect_ext(_money_x1, _bal_y1, _money_x2, _bal_y2, 11, 11, true);
-        draw_roundrect_ext(_money_x1 + 1, _bal_y1 + 1, _money_x2 - 1, _bal_y2 - 1, 10, 10, true);
-
-        draw_set_color(tree_color_gold_bg());
-        draw_roundrect_ext(_pts_x1, _bal_y1, _pts_x2, _bal_y2, 11, 11, false);
-        draw_set_color(tree_color_gold());
-        draw_roundrect_ext(_pts_x1, _bal_y1, _pts_x2, _bal_y2, 11, 11, true);
-        draw_roundrect_ext(_pts_x1 + 1, _bal_y1 + 1, _pts_x2 - 1, _bal_y2 - 1, 10, 10, true);
-
-        draw_set_halign(fa_center);
-        draw_set_valign(fa_middle);
-        draw_set_color(make_color_rgb(47, 92, 58));
-        draw_text_transformed((_money_x1 + _money_x2) * 0.5, (_bal_y1 + _bal_y2) * 0.5, _money_text, 1.5, 1.5, 0);
-        draw_set_color(make_color_rgb(122, 90, 20));
-        draw_text_transformed((_pts_x1 + _pts_x2) * 0.5, (_bal_y1 + _bal_y2) * 0.5, _points_text, 1.5, 1.5, 0);
-        draw_set_halign(fa_left);
-        draw_set_valign(fa_top);
-
-        // ── Прокрутка ──
-        var _wheel_in = point_in_rectangle(_mx, _my, _panel_x1, _panel_y1, _panel_x2, _panel_y2);
-
-        if (_wheel_in) {
-            if (mouse_wheel_down()) tree_scroll += 64;
-            if (mouse_wheel_up()) tree_scroll -= 64;
+        if (_in_panel) {
+            if (mouse_wheel_down()) tree_scroll += 70;
+            if (mouse_wheel_up()) tree_scroll -= 70;
         }
 
         var _pressed = mouse_check_button_pressed(mb_left)
@@ -664,7 +611,7 @@ function clinic_tree_draw(_hud) {
         var _released = mouse_check_button_released(mb_left)
             || device_mouse_check_button_released(0, mb_left);
 
-        if (_pressed && _wheel_in) {
+        if (_pressed && _in_panel) {
             tree_touch_active = true;
             tree_touch_last_y = _my;
         }
@@ -680,168 +627,114 @@ function clinic_tree_draw(_hud) {
                     tree_touch_last_y = _my;
                 }
 
-                if (abs(_delta) > 2) _dragged = true;
+                if (abs(_delta) > 3) _dragged = true;
             }
 
             if (_released) tree_touch_active = false;
         }
 
-        // ── Размеры узлов (крупные, под палец) ──
-        var _node_h = 118;
+        var _max_scroll = max(0, tree_content_h - _panel_h);
+        tree_scroll = clamp(tree_scroll, 0, _max_scroll);
+
+        // ── Раскладка: секции идут сверху вниз, узлы внутри — по колонкам ──
+        var _sections = tree_sections();
+        var _y = _panel_y1 - tree_scroll;
         var _click_node = undefined;
-        var _content_y = _panel_y1 - tree_scroll;
+        var _header_h = 56;
+        var _section_gap = 26;
 
-        // ── ОБЩЕЕ: четыре узла в два ряда, чтобы не мельчить ──
-        var _common = tree_common_nodes();
-        var _gap = 14;
-        var _half_w = (_panel_x2 - _panel_x1 - _gap) * 0.5;
+        for (var _s = 0; _s < array_length(_sections); _s++) {
+            var _section = _sections[_s];
 
-        draw_set_color(tree_color_text());
-        draw_set_halign(fa_center);
-        draw_text_transformed(
-            (_panel_x1 + _panel_x2) * 0.5,
-            _content_y,
-            "ОБЩЕЕ ДЛЯ КЛИНИКИ",
-            1.4,
-            1.4,
-            0
-        );
-        draw_set_halign(fa_left);
-
-        var _common_top = _content_y + 38;
-
-        for (var _c = 0; _c < array_length(_common); _c++) {
-            var _row_i = _c div 2;
-            var _col_i = _c mod 2;
-
-            var _cx1 = _panel_x1 + _col_i * (_half_w + _gap);
-            var _cx2 = _cx1 + _half_w;
-            var _cy1 = _common_top + _row_i * (_node_h + _gap);
-            var _cy2 = _cy1 + _node_h;
-
-            if (_cy2 < _panel_y1 || _cy1 > _panel_y2) continue;
-
-            var _c_hover = point_in_rectangle(_mx, _my, _cx1, _cy1, _cx2, _cy2);
-
-            tree_draw_node(_common[_c], _cx1, _cy1, _cx2, _cy2, _c_hover);
-
-            if (_c_hover && _pressed) _click_node = _common[_c];
-        }
-
-        var _common_bottom = _common_top + 2 * (_node_h + _gap) - _gap;
-
-        // Ствол от общего блока к веткам.
-        tree_draw_stem((_panel_x1 + _panel_x2) * 0.5, _common_bottom, _common_bottom + 28, true);
-
-        // ── Четыре ветки ──
-        var _branches = tree_branches();
-        var _count = array_length(_branches);
-        var _branch_gap = 12;
-        var _branch_w = (_panel_x2 - _panel_x1 - _branch_gap * (_count - 1)) / _count;
-        var _branch_y = _common_bottom + 34;
-        var _deepest = _branch_y;
-
-        for (var _b = 0; _b < _count; _b++) {
-            var _branch = _branches[_b];
-            var _bx1 = _panel_x1 + _b * (_branch_w + _branch_gap);
-            var _bx2 = _bx1 + _branch_w;
-            var _bcx = (_bx1 + _bx2) * 0.5;
-
-            // Заголовок ветки.
-            if (_branch_y + 48 > _panel_y1 && _branch_y < _panel_y2) {
+            // Заголовок секции на всю ширину.
+            if (_y + _header_h > _panel_y1 && _y < _panel_y2) {
                 draw_set_color(tree_color_wood_dark());
-                draw_roundrect_ext(_bx1, _branch_y, _bx2, _branch_y + 48, 11, 11, false);
+                draw_roundrect_ext(_panel_x1, _y, _panel_x2, _y + _header_h, 12, 12, false);
+                draw_set_color(tree_color_wood_light());
+                draw_roundrect_ext(_panel_x1 + 2, _y + 2, _panel_x2 - 2, _y + _header_h - 2, 10, 10, true);
+
+                var _h_scale = tree_fit_scale(_section.title, _panel_w - 40, TREE_FS_HEADER);
+
                 draw_set_halign(fa_center);
                 draw_set_valign(fa_middle);
                 draw_set_color(make_color_rgb(255, 233, 194));
-                draw_text_transformed(_bcx, _branch_y + 24, _branch.title, 1.3, 1.3, 0);
+                draw_text_transformed(
+                    (_panel_x1 + _panel_x2) * 0.5,
+                    _y + _header_h * 0.5,
+                    _section.title,
+                    _h_scale,
+                    _h_scale,
+                    0
+                );
                 draw_set_halign(fa_left);
                 draw_set_valign(fa_top);
             }
 
-            var _row_y = _branch_y + 48;
+            _y += _header_h + 14;
 
-            for (var _r = 0; _r < array_length(_branch.rows); _r++) {
-                var _row = _branch.rows[_r];
-                var _pair = (array_length(_row) > 1);
+            // Узлы секции по колонкам.
+            var _nodes = _section.nodes;
+            var _row_y = _y;
+            var _row_max_h = 0;
 
-                var _link_y1 = _row_y;
-                var _link_y2 = _row_y + 26;
+            for (var _n = 0; _n < array_length(_nodes); _n++) {
+                var _node = _nodes[_n];
+                var _col = _n mod _cols;
 
-                if (_pair) {
-                    tree_draw_fork(
-                        _bcx,
-                        _link_y1,
-                        _link_y2,
-                        _bx1 + _branch_w * 0.25,
-                        _bx1 + _branch_w * 0.75,
-                        true
-                    );
-                } else {
-                    tree_draw_stem(_bcx, _link_y1, _link_y2, true);
+                if (_col == 0 && _n > 0) {
+                    _row_y += _row_max_h + 14;
+                    _row_max_h = 0;
                 }
 
-                // Парные узлы ниже: им нужна своя высота (короче, без эффекта).
-                var _this_h = _pair ? 96 : _node_h;
-                var _node_y1 = _link_y2;
-                var _node_y2 = _node_y1 + _this_h;
-                var _visible = (_node_y2 > _panel_y1) && (_node_y1 < _panel_y2);
+                var _nx1 = _panel_x1 + _col * (_col_w + _col_gap);
+                var _nx2 = _nx1 + _col_w;
+                var _nh = tree_node_height(_node);
+                var _ny1 = _row_y;
+                var _ny2 = _ny1 + _nh;
 
-                for (var _n = 0; _n < array_length(_row); _n++) {
-                    var _nx1, _nx2;
+                if (_nh > _row_max_h) _row_max_h = _nh;
 
-                    if (_pair) {
-                        var _half = (_branch_w - 10) * 0.5;
-                        _nx1 = _bx1 + _n * (_half + 10);
-                        _nx2 = _nx1 + _half;
-                    } else {
-                        _nx1 = _bx1;
-                        _nx2 = _bx2;
-                    }
-
-                    if (!_visible) continue;
-
-                    var _hover = point_in_rectangle(_mx, _my, _nx1, _node_y1, _nx2, _node_y2);
-
-                    tree_draw_node(_row[_n], _nx1, _node_y1, _nx2, _node_y2, _hover);
-
-                    if (_hover && _pressed) _click_node = _row[_n];
+                // Соединитель к предыдущему узлу этой же колонки.
+                if (_n >= _cols) {
+                    tree_draw_stem((_nx1 + _nx2) * 0.5, _ny1 - 14, _ny1, true);
                 }
 
-                _row_y = _node_y2;
+                if (_ny2 > _panel_y1 && _ny1 < _panel_y2) {
+                    var _hover = point_in_rectangle(_mx, _my, _nx1, _ny1, _nx2, _ny2);
+
+                    tree_draw_node(_node, _nx1, _ny1, _nx2, _ny2, _hover);
+
+                    if (_hover && _pressed) _click_node = _node;
+                }
             }
 
-            if (_row_y > _deepest) _deepest = _row_y;
+            _y = _row_y + _row_max_h + _section_gap;
         }
 
-        // ── Прокрутка по фактической высоте ──
-        var _content_h = (_deepest + tree_scroll - _panel_y1) + 40;
-        var _max_scroll = max(0, _content_h - (_panel_y2 - _panel_y1));
-        tree_scroll = clamp(tree_scroll, 0, _max_scroll);
+        // Фактическая высота содержимого — для следующего кадра.
+        tree_content_h = (_y + tree_scroll) - _panel_y1;
 
+        // ── Бегунок ──
         if (_max_scroll > 0) {
-            var _sb_x2 = _panel_x2 + 14;
-            var _sb_x1 = _sb_x2 - 10;
+            var _sb_x2 = _panel_x2 + 18;
+            var _sb_x1 = _sb_x2 - 12;
 
             draw_set_alpha(0.18);
             draw_set_color(c_black);
-            draw_roundrect_ext(_sb_x1, _panel_y1, _sb_x2, _panel_y2, 5, 5, false);
+            draw_roundrect_ext(_sb_x1, _panel_y1, _sb_x2, _panel_y2, 6, 6, false);
             draw_set_alpha(1);
 
-            var _track_h = _panel_y2 - _panel_y1;
-            var _thumb_h = max(50, _track_h * (_track_h / max(1, _content_h)));
-            var _thumb_y = _panel_y1 + (_track_h - _thumb_h) * (tree_scroll / max(1, _max_scroll));
+            var _thumb_h = max(60, _panel_h * (_panel_h / max(1, tree_content_h)));
+            var _thumb_y = _panel_y1 + (_panel_h - _thumb_h) * (tree_scroll / max(1, _max_scroll));
 
             draw_set_color(tree_color_wood_light());
-            draw_roundrect_ext(_sb_x1, _thumb_y, _sb_x2, _thumb_y + _thumb_h, 5, 5, false);
+            draw_roundrect_ext(_sb_x1, _thumb_y, _sb_x2, _thumb_y + _thumb_h, 6, 6, false);
+            draw_set_color(tree_color_wood_dark());
+            draw_roundrect_ext(_sb_x1, _thumb_y, _sb_x2, _thumb_y + _thumb_h, 6, 6, true);
         }
 
         // ── Покупка ──
-        if (
-            !is_undefined(_click_node)
-            && !_dragged
-            && tablet_click_lock <= 0
-        ) {
+        if (!is_undefined(_click_node) && !_dragged && tablet_click_lock <= 0) {
             var _state = tree_node_state(_click_node);
 
             if (_state == "open") {

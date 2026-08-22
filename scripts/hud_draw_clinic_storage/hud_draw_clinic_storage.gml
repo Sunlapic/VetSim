@@ -79,7 +79,18 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text_transformed(main_panel_x1 + 28, main_panel_y1 + 96, "КЛИНИКА", 1.4, 1.4, 0);
+        // Пакет №173 (правка): заголовок справа от вкладок — под ними теперь
+        // сразу начинается содержимое, налезать нечему.
+        draw_set_valign(fa_middle);
+        draw_text_transformed(
+            clinic_tab_storage_x2 + 26,
+            (clinic_tab_clinic_y1 + clinic_tab_clinic_y2) * 0.5,
+            "КЛИНИКА",
+            1.5,
+            1.5,
+            0
+        );
+        draw_set_valign(fa_top);
 
         // Пакет №173: крупные вкладки с увеличенным шрифтом.
         hud_draw_button_big(
