@@ -280,13 +280,20 @@ function restock_scan_needs() {
             var _in_cabinet = inventory_get_amount(_cabinet.storage_inventory, _item_id);
             var _in_main = inventory_get_amount(global.inventory_main, _item_id);
 
-            // Ассистент поддерживает шкаф на целевом уровне, а не ждёт,
-            // пока запас упадёт ниже трёх единиц. Поэтому любой шкаф
-            // ниже RESTOCK_TARGET создаёт плановое задание пополнения.
-            var _planned_restock_threshold = max(1, global.RESTOCK_TARGET);
+            // Пакет №211: ассистент выходит, только когда в шкафу не хватает
+            // хотя бы RESTOCK_MIN_GAP единиц. Раньше задание создавалось при
+            // нехватке одной штуки, и ассистент бегал туда-сюда без остановки.
+            if (!variable_global_exists("RESTOCK_MIN_GAP")) {
+                global.RESTOCK_MIN_GAP = 5;
+            }
+
+            var _planned_restock_threshold = max(
+                1,
+                global.RESTOCK_TARGET - global.RESTOCK_MIN_GAP
+            );
 
             if (
-                _in_cabinet >= _planned_restock_threshold
+                _in_cabinet > _planned_restock_threshold
                 || _in_main <= 0
             ) {
                 continue;
@@ -354,6 +361,14 @@ function assistant_try_take_restock_job(_assistant, _only_critical = false) {
     if (!variable_instance_exists(_assistant, "assistant_state")) return false;
 
     var _can_take = (_assistant.assistant_state == "idle");
+
+    // Пакет №211: ассистент стационара тоже пополняет шкафы, пока в палате
+    // нет работы. Раньше задание брал только ассистент в состоянии «idle»,
+    // а стационарный всегда числится «inpatient_available» — поэтому шкаф
+    // стационара никто не пополнял, и ассистент топтался у стола.
+    if (!_can_take && _assistant.assistant_state == "inpatient_available") {
+        _can_take = true;
+    }
 
     if (
         !_can_take

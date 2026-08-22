@@ -29,6 +29,9 @@ global.restock_jobs = [];
 global.restock_scan_timer = 0;
 global.RESTOCK_BATCH = 5;
 global.RESTOCK_TARGET = 10;
+// Пакет №211: ассистент идёт пополнять шкаф, только если не хватает
+// хотя бы стольких единиц. Из-за нехватки одной штуки он больше не бегает.
+global.RESTOCK_MIN_GAP = 5;
 global.RESTOCK_MAX = 10;
 
 
@@ -418,6 +421,38 @@ global.daily_stats = {
     reputation_delta : 0,
     day_start_money : global.clinic_money
 };
+
+// Пакет №211: обнуление дневной статистики вынесено в функцию —
+// её вызывает и полночь, и закрытие окна итогов.
+global.daily_stats_reset_pending = false;
+
+function daily_stats_reset_now() {
+    global.daily_stats.paid_visits = 0;
+    global.daily_stats.earned_money = 0;
+    global.daily_stats.spent_money = 0;
+    global.daily_stats.salary_expense = 0;
+    global.daily_stats.new_diagnosed = 0;
+    global.daily_stats.procedures_done = 0;
+    global.daily_stats.cured = 0;
+    global.daily_stats.followups_scheduled = 0;
+    global.daily_stats.reputation_start = global.clinic_reputation;
+    global.daily_stats.reputation_delta = 0;
+    global.daily_stats.day_start_money = global.clinic_money;
+
+    // Доход по отделениям (приём / стационар / операционная) обнуляется
+    // вместе с остальным — иначе утром в ФИНАНСАХ висели вчерашние цифры.
+    if (
+        variable_global_exists("finance_income_by_dept")
+        && is_struct(global.finance_income_by_dept)
+    ) {
+        global.finance_income_by_dept.reception = 0;
+        global.finance_income_by_dept.inpatient = 0;
+        global.finance_income_by_dept.operating = 0;
+        global.finance_income_by_dept.day = variable_global_exists("game_day")
+            ? global.game_day
+            : 0;
+    }
+}
 
 global.day_summary_open = false;
 global.day_summary_ready = false;

@@ -176,7 +176,9 @@ function hud_draw_main_bars(_hud) {
             _x + _box_w * 0.5, _y1, _y2,
             _date_text, _time_text,
             _time_col, _label_light,
-            _date_scale, _time_scale, _fit_w, 0, 0
+            // Пакет №211: дата опущена на 6 пикселей — крупный шрифт
+            // упирался в верхний край окошка.
+            _date_scale, _time_scale, _fit_w, 6, 0
         );
         _x += _box_w + _gap;
 

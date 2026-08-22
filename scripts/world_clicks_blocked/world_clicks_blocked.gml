@@ -237,8 +237,13 @@ function ui_modal_guard_step() {
 
     // Нажатие произошло, пока окно было открыто (сейчас или в прошлом кадре).
     // Гасим мир на несколько кадров: этот клик принадлежит интерфейсу.
+    // Пакет №211: на телефоне нажатие приходит через device_mouse_*,
+    // обычная проверка мыши его не ловила.
+    var _pressed_any = mouse_check_button_pressed(mb_left)
+        || device_mouse_check_button_pressed(0, mb_left);
+
     if (
-        mouse_check_button_pressed(mb_left)
+        _pressed_any
         && (_now || global.ui_modal_open_prev)
     ) {
         global.ui_modal_close_guard = 10;

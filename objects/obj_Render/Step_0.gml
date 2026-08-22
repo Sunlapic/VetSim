@@ -525,15 +525,8 @@ if (
             _live_visitors = active_visitors_live_count();
             _pending_followups = followup_count_pending_today();
 
-            if (instance_exists(obj_UI_HUD)) {
-                with (obj_UI_HUD) {
-                    show_notice(
-                        "ПОВТОРНЫЙ ПРИЁМ",
-                        "Прибыл постоянный клиент на контрольный визит.",
-                        room_speed * 4
-                    );
-                }
-            }
+            // Пакет №211: уведомление о повторном визите убрано —
+            // приход клиента и так видно в мире.
         }
     }
 }
@@ -574,15 +567,7 @@ else {
                 if (instance_exists(_spawned_random)) {
                     global.daily_random_spawned_today += 1;
 
-                    if (instance_exists(obj_UI_HUD)) {
-                        with (obj_UI_HUD) {
-                            show_notice(
-                                "НОВЫЙ КЛИЕНТ",
-                                "В клинику пришёл новый клиент.",
-                                room_speed * 4
-                            );
-                        }
-                    }
+                    // Пакет №211: уведомление «пришёл новый клиент» убрано.
                 }
 
                 _live_visitors = active_visitors_live_count();
@@ -1034,16 +1019,18 @@ else {
 
     // Пакет №141: палец поднялся без движения — подтверждаем тап по миру.
     // Пакет №142: после щипка тап не срабатывает, пока не подняты все пальцы.
-    if (!_t0_down && !_t1_down) {
-        global.touch_suppress_tap = false;
-    }
-
+    //
+    // Пакет №211: подавление тапа снималось ЗДЕСЬ ЖЕ, до проверки ниже —
+    // поэтому тап по кнопке «ОТКАЗАТЬ» / «НАНЯТЬ» всё равно уходил в мир,
+    // и игрок шёл туда, где была кнопка. Теперь флаг снимается уже ПОСЛЕ
+    // проверки, в самом конце блока.
     if (
         !_t0_down
         && !_t1_down
         && global.touch_tap_pending
         && !global.touch_tap_moved
         && !global.touch_suppress_tap
+        && !world_clicks_blocked()
     ) {
         global.touch_tap_wx = camera_get_view_x(view_camera[0])
             + (_t0x / max(1, _gui_w)) * camera_get_view_width(view_camera[0]);
@@ -1051,6 +1038,12 @@ else {
             + (_t0y / max(1, _gui_h)) * camera_get_view_height(view_camera[0]);
         global.touch_tap_confirmed = true;
         global.touch_tap_pending = false;
+    }
+
+    // Палец поднят — сбрасываем и ожидание тапа, и подавление.
+    if (!_t0_down && !_t1_down) {
+        global.touch_tap_pending = false;
+        global.touch_suppress_tap = false;
     }
 }
 
@@ -1071,18 +1064,15 @@ if (render_last_day != global.game_day) {
         global.staff_daily_recharge();
     }
 
-    if (!global.day_summary_open) {
-        global.daily_stats.paid_visits = 0;
-        global.daily_stats.earned_money = 0;
-        global.daily_stats.spent_money = 0;
-        global.daily_stats.salary_expense = 0;
-        global.daily_stats.new_diagnosed = 0;
-        global.daily_stats.procedures_done = 0;
-        global.daily_stats.cured = 0;
-        global.daily_stats.followups_scheduled = 0;
-        global.daily_stats.reputation_start = global.clinic_reputation;
-        global.daily_stats.reputation_delta = 0;
-        global.daily_stats.day_start_money = global.clinic_money;
+    // Пакет №211: если в этот момент показываются итоги дня, обнуление
+    // откладывается — цифры в окне должны остаться вчерашними. Раньше
+    // сброс просто пропускался и НИКОГДА не выполнялся: наутро в ФИНАНСАХ
+    // висел вчерашний доход, пока кто-нибудь не заплатит.
+    if (global.day_summary_open) {
+        global.daily_stats_reset_pending = true;
+    }
+    else {
+        daily_stats_reset_now();
     }
 }
 
@@ -1094,6 +1084,14 @@ if (global.day_summary_open) {
             global.day_summary_ready = true;
         }
     }
+}
+else if (
+    variable_global_exists("daily_stats_reset_pending")
+    && global.daily_stats_reset_pending
+) {
+    // Окно итогов закрылось (кнопкой или само) — вот теперь обнуляем.
+    global.daily_stats_reset_pending = false;
+    daily_stats_reset_now();
 }
 
 

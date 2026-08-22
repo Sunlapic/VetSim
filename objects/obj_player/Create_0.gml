@@ -1140,7 +1140,8 @@ player_finish_procedure_visit = function() {
     if (instance_exists(obj_UI_HUD)) {
         with (obj_UI_HUD) {
             if (_next_proc_id != "") {
-                show_notice("НА ОПЛАТУ", "Процедуры выполнены. Клиент идёт к стойке, следующий процедурный визит назначен.", room_speed * 3);
+                // Пакет №211: строка про назначенный процедурный визит убрана.
+                show_notice("НА ОПЛАТУ", "Процедуры выполнены. Клиент идёт к стойке.", room_speed * 3);
             } else if (_next_doctor_id != "") {
                 show_notice("НА ОПЛАТУ", "Процедуры выполнены. Клиент идёт к стойке, затем будет контроль у врача.", room_speed * 3);
             } else {

@@ -684,15 +684,7 @@ switch (assistant_state) {
             procedure_retry = 0;
             assistant_state = "performing_procedure";
 
-            if (instance_exists(obj_UI_HUD)) {
-                with (obj_UI_HUD) {
-                    show_notice(
-                        "АССИСТЕНТ",
-                        "Ассистент начал выполнение назначений.",
-                        room_speed * 2
-                    );
-                }
-            }
+            // Пакет №211: уведомление «ассистент начал назначения» убрано.
         }
     }
     break;

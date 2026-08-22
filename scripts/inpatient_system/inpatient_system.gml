@@ -2562,7 +2562,19 @@ function inpatient_controller_step(_ward) {
     }
 
     // Врач стационара подходит и один раз назначает лечение.
-    if (_ward.phase == "waiting_doctor") {
+    //
+    // Пакет №211: если после осмотра назначений не появилось (все нужные
+    // процедуры уже выполнены, а до выписки пациент ещё не дотянул), врача
+    // больше не зовут сразу же. Раньше получался круг: врач подходил,
+    // «назначал» пустоту, уходил к креслу и тут же шёл обратно.
+    if (!variable_struct_exists(_ward, "doctor_recheck_minute")) {
+        _ward.doctor_recheck_minute = 0;
+    }
+
+    if (
+        _ward.phase == "waiting_doctor"
+        && inpatient_now_absolute_minute() >= _ward.doctor_recheck_minute
+    ) {
         if (!instance_exists(_ward.ward_doctor)) {
             _ward.ward_doctor = inpatient_find_doctor();
 
@@ -2631,6 +2643,14 @@ function inpatient_controller_step(_ward) {
 
             if (_ward.doctor_action_timer <= 0) {
                 inpatient_assign_treatments(_ward, _doctor);
+
+                // Пакет №211: назначить нечего — следующий осмотр не раньше
+                // чем через час игрового времени.
+                if (array_length(_ward.treatment_actions) <= 0) {
+                    _ward.doctor_recheck_minute =
+                        inpatient_now_absolute_minute() + 60;
+                }
+
                 _doctor.exam_timer = 0;
                 _doctor.exam_timer_max = 0;
                 _doctor.action_progress_active = false;
