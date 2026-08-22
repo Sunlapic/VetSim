@@ -447,6 +447,48 @@ switch (doctor_state) {
                 // настоящий первичный осмотр. case_add_diagnostic защищён
                 // от повторов, поэтому дублей в чеке не появится.
                 _case = case_add_diagnostic(_case, "diag_physical_exam");
+
+                // ═══════════════════════════════════════════════════
+                // Пакет №214: ВРАЧ ДЕЛАЕТ НУЖНЫЕ ОБСЛЕДОВАНИЯ
+                //
+                // Без этого хирургические случаи не доходили до
+                // операционной. Пример: мочекаменная болезнь. Операция
+                // «цистотомия» в справочнике открывается только с
+                // reveal_level 3, а его даёт рентген. NPC-врач делал
+                // один осмотр (reveal_level 1), поэтому операции просто
+                // не видел и назначал обезболивание и диету. Пациент
+                // лечился «наполовину» и уезжал домой.
+                //
+                // Теперь врач, поставив диагноз, проводит все
+                // обследования этой болезни: reveal_level поднимается,
+                // операция становится видимой, а сами обследования
+                // попадают в чек (клиника получает за них деньги).
+                // ═══════════════════════════════════════════════════
+                var _need_diags = [];
+
+                for (
+                    var _dd = 0;
+                    _dd < array_length(global.med_db.disease_diagnostics);
+                    _dd++
+                ) {
+                    var _dlink = global.med_db.disease_diagnostics[_dd];
+
+                    if (_dlink.disease_id != _case.hidden_disease_id) continue;
+                    if (_dlink.diagnostic_id == "diag_physical_exam") continue;
+
+                    // Берём то, что подтверждает диагноз или открывает
+                    // более глубокий уровень, чем есть сейчас.
+                    if (
+                        _dlink.required_to_confirm
+                        || _dlink.unlocks_reveal_level > _case.reveal_level
+                    ) {
+                        array_push(_need_diags, _dlink.diagnostic_id);
+                    }
+                }
+
+                for (var _nd = 0; _nd < array_length(_need_diags); _nd++) {
+                    _case = case_add_diagnostic(_case, _need_diags[_nd]);
+                }
             }
 
             // 1. Врач автоматически назначает ВСЕ правильные доступные назначения
