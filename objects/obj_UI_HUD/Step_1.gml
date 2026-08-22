@@ -580,17 +580,16 @@ client_history_x2 = 0;
 client_history_y2 = 0;
 
 if (clients_panel_open && clients_subtab == "all") {
-    var _list_x1_hist = clients_panel_x1 + 28;
-    var _list_x2_hist = _list_x1_hist + 380;
-    var _detail_x1_hist = _list_x2_hist + 20;
-    var _detail_y1_hist = clients_panel_y1 + 122;
-    var _detail_x2_hist = clients_panel_x2 - 28;
-    var _detail_y2_hist = clients_panel_y2 - 32;
+    // Пакет №189: координаты берутся из общей раскладки окна КЛИЕНТЫ,
+    // той же самой, по которой панель рисуется. Раньше здесь стояли
+    // отдельные числа (ширина списка 380 вместо 470) — и зоны кликов
+    // не совпадали с картинкой.
+    var _clients_layout = hud_clients_layout(id);
 
-    client_history_x1 = _detail_x1_hist + 10;
-    client_history_y1 = _detail_y2_hist - client_history_box_h;
-    client_history_x2 = _detail_x2_hist - 10;
-    client_history_y2 = _detail_y2_hist - 10;
+    client_history_x1 = _clients_layout.hist_x1;
+    client_history_y1 = _clients_layout.hist_y1;
+    client_history_x2 = _clients_layout.hist_x2;
+    client_history_y2 = _clients_layout.hist_y2;
 }
 
 // ─────────────────────────────────────────────
@@ -687,15 +686,18 @@ followup_row_hover = -1;
 client_visit_row_hover = -1;
 
 if (clients_panel_open) {
-    var _cl_list_x1 = clients_panel_x1 + 28;
-    var _cl_list_y1 = clients_panel_y1 + 122;
-    var _cl_list_x2 = _cl_list_x1 + 380;
-    var _cl_list_y2 = clients_panel_y2 - 32;
-    var _cl_row_h = 68;
-    var _cl_row_top = _cl_list_y1 + 30;
+    // Пакет №189: одна раскладка на рисование и на клики.
+    var _cl_layout = hud_clients_layout(id);
+
+    var _cl_list_x1 = _cl_layout.list_x1;
+    var _cl_list_y1 = _cl_layout.list_y1;
+    var _cl_list_x2 = _cl_layout.list_x2;
+    var _cl_list_y2 = _cl_layout.list_y2;
+    var _cl_row_h = _cl_layout.row_h;
+    var _cl_row_top = _cl_layout.row_top;
 
     if (clients_subtab == "all") {
-        var _cl_visible_rows = max(1, floor((_cl_list_y2 - _cl_row_top) / _cl_row_h));
+        var _cl_visible_rows = _cl_layout.row_visible;
         var _cl_max_scroll = max(0, array_length(client_entries) - _cl_visible_rows);
 
         client_scroll = clamp(client_scroll, 0, _cl_max_scroll);
@@ -710,7 +712,7 @@ if (clients_panel_open) {
             if (_cidx >= array_length(client_entries)) break;
 
             var _cry1 = _cl_row_top + _cj * _cl_row_h;
-            var _cry2 = _cry1 + (_cl_row_h - 6);
+            var _cry2 = _cry1 + (_cl_row_h - 8);
             var _crx1 = _cl_list_x1 + 8;
             var _crx2 = _cl_list_x2 - 8;
 
@@ -728,9 +730,9 @@ if (clients_panel_open) {
 
         // История визитов выбранного клиента
         if (client_history_x2 > client_history_x1 && client_history_y2 > client_history_y1) {
-            var _hist_row_h = 54;
-            var _hist_row_top = client_history_y1 + 28;
-            var _hist_visible_rows = max(1, floor((client_history_y2 - _hist_row_top - 8) / _hist_row_h));
+            var _hist_row_h = _cl_layout.hist_row_h;
+            var _hist_row_top = _cl_layout.hist_row_top;
+            var _hist_visible_rows = _cl_layout.hist_visible;
             var _hist_max_scroll = max(0, array_length(client_visit_entries) - _hist_visible_rows);
 
             client_visit_scroll = clamp(client_visit_scroll, 0, _hist_max_scroll);
@@ -745,9 +747,9 @@ if (clients_panel_open) {
                 if (_hidx >= array_length(client_visit_entries)) break;
 
                 var _hry1 = _hist_row_top + _hj * _hist_row_h;
-                var _hry2 = _hry1 + (_hist_row_h - 6);
-                var _hrx1 = client_history_x1 + 8;
-                var _hrx2 = client_history_x2 - 8;
+                var _hry2 = _hry1 + (_hist_row_h - 8);
+                var _hrx1 = client_history_x1 + 10;
+                var _hrx2 = client_history_x2 - 10;
 
                 if (point_in_rectangle(_mx, _my, _hrx1, _hry1, _hrx2, _hry2)) {
                     client_visit_row_hover = _hidx;
@@ -759,7 +761,7 @@ if (clients_panel_open) {
             }
         }
     } else {
-        var _fu_visible_rows = max(1, floor((_cl_list_y2 - _cl_row_top) / _cl_row_h));
+        var _fu_visible_rows = _cl_layout.row_visible;
         var _fu_max_scroll = max(0, array_length(followup_entries) - _fu_visible_rows);
 
         followup_scroll = clamp(followup_scroll, 0, _fu_max_scroll);
@@ -774,7 +776,7 @@ if (clients_panel_open) {
             if (_fidx >= array_length(followup_entries)) break;
 
             var _fry1 = _cl_row_top + _fj * _cl_row_h;
-            var _fry2 = _fry1 + (_cl_row_h - 6);
+            var _fry2 = _fry1 + (_cl_row_h - 8);
             var _frx1 = _cl_list_x1 + 8;
             var _frx2 = _cl_list_x2 - 8;
 
