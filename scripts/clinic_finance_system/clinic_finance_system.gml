@@ -1422,6 +1422,44 @@ function finance_ui_draw_outer_panel(_x1, _y1, _x2, _y2) {
     finance_draw_wood_frame(_x1, _y1, _x2, _y2, 12, 12);
 }
 
+/// Пакет №205: круглая крупная кнопка «+» / «-» для прайс-листа.
+/// Палец на телефоне попадает по ней без прицеливания.
+function finance_ui_draw_step_button(_x1, _y1, _x2, _y2, _text, _hovered, _plus) {
+    var _cx = (_x1 + _x2) * 0.5;
+    var _cy = (_y1 + _y2) * 0.5;
+    var _r = min(_x2 - _x1, _y2 - _y1) * 0.5;
+
+    var _fill = _plus
+        ? (_hovered ? make_color_rgb(206, 232, 205) : make_color_rgb(224, 240, 222))
+        : (_hovered ? make_color_rgb(242, 214, 208) : make_color_rgb(240, 226, 222));
+    var _line = _plus
+        ? make_color_rgb(62, 112, 74)
+        : make_color_rgb(148, 74, 64);
+
+    // Мягкая тень под кнопкой.
+    draw_set_alpha(0.14);
+    draw_set_color(c_black);
+    draw_circle(_cx, _cy + 3, _r, false);
+    draw_set_alpha(1);
+
+    draw_set_color(_fill);
+    draw_circle(_cx, _cy, _r, false);
+    draw_set_color(_line);
+    draw_circle(_cx, _cy, _r, true);
+    draw_circle(_cx, _cy, _r - 1, true);
+
+    // Знак рисуется линиями: в шрифте «+» и «-» слишком тонкие.
+    var _arm = _r * 0.46;
+    var _thick = max(4, _r * 0.22);
+
+    draw_set_color(_line);
+    draw_line_width(_cx - _arm, _cy, _cx + _arm, _cy, _thick);
+
+    if (_plus) {
+        draw_line_width(_cx, _cy - _arm, _cx, _cy + _arm, _thick);
+    }
+}
+
 function finance_ui_draw_button(
     _x1,
     _y1,
@@ -1783,9 +1821,24 @@ function finance_ui_draw_service_prices(
     _mouse_x,
     _mouse_y
 ) {
+    // ═══════════════════════════════════════════════════════════
+    // Пакет №205: строки вплотную, без подписи группы.
+    //
+    // Было: строка занимала 86 пикселей, а светлая плашка — только 53.
+    // Оставшиеся 33 пикселя были прозрачной дырой, из-за неё список
+    // выглядел рваным и в него влезало вдвое меньше строк.
+    //
+    // Стало: плашка почти во всю высоту строки, между строками 6 пикселей.
+    // Название, цена и обе кнопки стоят по центру строки — ничего не
+    // «сползает» вниз, как раньше.
+    // ═══════════════════════════════════════════════════════════
+
     var _entries = finance_get_service_entries();
-    var _row_h = 86;
+    var _row_h = 72;
+    var _row_pad = 6;
     var _font = 1.70;
+    var _price_font = 2.10;
+    var _btn = 56;
     var _visible_rows = max(1, floor((_y2 - _y1 - 34) / _row_h));
 
     finance_ui_prepare_scroll(
@@ -1818,15 +1871,18 @@ function finance_ui_draw_service_prices(
         var _entry = _entries[_index];
         var _price = finance_service_price_get(_entry.id, 0);
 
-        // Правая зона: [−] [цена] [+] и бегунок у самого края.
-        var _minus_x2 = _x2 - 190;
-        var _minus_x1 = _minus_x2 - 40;
-        var _plus_x2 = _x2 - 52;
-        var _plus_x1 = _plus_x2 - 40;
-        var _price_right = _plus_x1 - 10;
+        var _row_y1 = _draw_y;
+        var _row_y2 = _draw_y + _row_h - _row_pad;
+        var _row_cy = (_row_y1 + _row_y2) * 0.5;
 
-        var _button_y1 = _draw_y + 9;
-        var _button_y2 = _draw_y + 49;
+        // Правая зона: [-] [цена] [+], бегунок у самого края.
+        var _plus_x2 = _x2 - 34;
+        var _plus_x1 = _plus_x2 - _btn;
+        var _price_right = _plus_x1 - 16;
+        var _minus_x2 = _price_right - 190;
+        var _minus_x1 = _minus_x2 - _btn;
+        var _button_y1 = _row_cy - _btn * 0.5;
+        var _button_y2 = _row_cy + _btn * 0.5;
 
         var _minus_hover = point_in_rectangle(
             _mouse_x, _mouse_y,
@@ -1842,41 +1898,33 @@ function finance_ui_draw_service_prices(
         draw_set_color((_index mod 2 == 0)
             ? make_color_rgb(248, 240, 224)
             : make_color_rgb(239, 231, 216));
-        draw_roundrect_ext(
-            _x1 + 4, _draw_y + 2,
-            _x2 - 20, _draw_y + 55,
-            7, 7, false
-        );
+        draw_roundrect_ext(_x1 + 4, _row_y1, _x2 - 20, _row_y2, 8, 8, false);
+
+        // Название услуги — по центру строки, с автоподгонкой по ширине.
+        var _name_w = (_minus_x1 - (_x1 + 18)) - 20;
+        var _name_scale = ui_fit_scale(_entry.name, _name_w, _font);
 
         draw_set_halign(fa_left);
+        draw_set_valign(fa_middle);
         draw_set_color(make_color_rgb(50, 38, 28));
-        draw_text_transformed(
-            _x1 + 18, _draw_y + 16,
-            _entry.name,
-            _font, _font, 0
-        );
-        draw_set_color(make_color_rgb(104, 135, 160));
-        draw_text_transformed(
-            _x1 + 18, _draw_y + 52,
-            _entry.group,
-            UI_FS_ROW, UI_FS_ROW, 0
-        );
+        draw_text_transformed(_x1 + 18, _row_cy, _entry.name, _name_scale, _name_scale, 0);
 
+        // Цена — крупная, ровно между кнопками.
         draw_set_halign(fa_right);
         draw_set_color(make_color_rgb(148, 74, 64));
         draw_text_transformed(
-            _price_right, _draw_y + 34,
+            _price_right, _row_cy,
             "$ " + string(_price),
-            _font, _font, 0
+            _price_font, _price_font, 0
         );
 
-        finance_ui_draw_button(
+        finance_ui_draw_step_button(
             _minus_x1, _button_y1, _minus_x2, _button_y2,
-            "-", false, _minus_hover
+            "-", _minus_hover, false
         );
-        finance_ui_draw_button(
+        finance_ui_draw_step_button(
             _plus_x1, _button_y1, _plus_x2, _button_y2,
-            "+", false, _plus_hover
+            "+", _plus_hover, true
         );
 
         if (_pressed) {
@@ -1886,6 +1934,9 @@ function finance_ui_draw_service_prices(
 
         _draw_y += _row_h;
     }
+
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
 
     finance_ui_draw_scrollbar(
         _hud,
@@ -1908,9 +1959,13 @@ function finance_ui_draw_medicine_prices(
     _mouse_x,
     _mouse_y
 ) {
+    // Пакет №205: та же плотная раскладка, что и в услугах.
     var _item_ids = finance_get_item_ids();
-    var _row_h = 88;
+    var _row_h = 72;
+    var _row_pad = 6;
     var _font = 1.70;
+    var _price_font = 2.10;
+    var _btn = 56;
     var _visible_rows = max(1, floor((_y2 - _y1 - 34) / _row_h));
 
     finance_ui_prepare_scroll(
@@ -1944,16 +1999,18 @@ function finance_ui_draw_medicine_prices(
         var _purchase = finance_get_item_purchase_price(_item_id);
         var _sale = finance_get_item_sale_price(_item_id);
 
-        // Правая зона: [−] [цена продажи] [+] и бегунок у самого края.
-        var _minus_x2 = _x2 - 190;
-        var _minus_x1 = _minus_x2 - 40;
-        var _plus_x2 = _x2 - 52;
-        var _plus_x1 = _plus_x2 - 40;
-        var _sale_right = _plus_x1 - 10;
-        var _purchase_right = _minus_x1 - 12;
+        var _row_y1 = _draw_y;
+        var _row_y2 = _draw_y + _row_h - _row_pad;
+        var _row_cy = (_row_y1 + _row_y2) * 0.5;
 
-        var _button_y1 = _draw_y + 10;
-        var _button_y2 = _draw_y + 50;
+        var _plus_x2 = _x2 - 34;
+        var _plus_x1 = _plus_x2 - _btn;
+        var _sale_right = _plus_x1 - 16;
+        var _minus_x2 = _sale_right - 190;
+        var _minus_x1 = _minus_x2 - _btn;
+        var _purchase_right = _minus_x1 - 18;
+        var _button_y1 = _row_cy - _btn * 0.5;
+        var _button_y2 = _row_cy + _btn * 0.5;
 
         var _minus_hover = point_in_rectangle(
             _mouse_x, _mouse_y,
@@ -1969,42 +2026,44 @@ function finance_ui_draw_medicine_prices(
         draw_set_color((_index mod 2 == 0)
             ? make_color_rgb(248, 240, 224)
             : make_color_rgb(239, 231, 216));
-        draw_roundrect_ext(
-            _x1 + 4, _draw_y + 2,
-            _x2 - 20, _draw_y + 57,
-            7, 7, false
-        );
+        draw_roundrect_ext(_x1 + 4, _row_y1, _x2 - 20, _row_y2, 8, 8, false);
+
+        var _name_w = (_purchase_right - 170 - (_x1 + 18));
+        var _name_scale = ui_fit_scale(item_get_name(_item_id), max(80, _name_w), _font);
 
         draw_set_halign(fa_left);
         draw_set_valign(fa_middle);
         draw_set_color(make_color_rgb(50, 38, 28));
         draw_text_transformed(
-            _x1 + 18, _draw_y + 32,
+            _x1 + 18, _row_cy,
             item_get_name(_item_id),
-            _font, _font, 0
+            _name_scale, _name_scale, 0
         );
 
+        // Закупочная цена — серым, перед кнопками.
         draw_set_halign(fa_right);
-        draw_set_color(make_color_rgb(148, 74, 64));
+        draw_set_color(make_color_rgb(120, 104, 88));
         draw_text_transformed(
-            _purchase_right, _draw_y + 34,
+            _purchase_right, _row_cy,
             "закупка $ " + string(_purchase),
-            UI_FS_VALUE, UI_FS_VALUE, 0
-        );
-        draw_set_color(make_color_rgb(148, 74, 64));
-        draw_text_transformed(
-            _sale_right, _draw_y + 34,
-            "$ " + string(_sale),
-            _font, _font, 0
+            UI_FS_ROW, UI_FS_ROW, 0
         );
 
-        finance_ui_draw_button(
-            _minus_x1, _button_y1, _minus_x2, _button_y2,
-            "-", false, _minus_hover
+        // Цена продажи — крупная, ровно между кнопками.
+        draw_set_color(make_color_rgb(148, 74, 64));
+        draw_text_transformed(
+            _sale_right, _row_cy,
+            "$ " + string(_sale),
+            _price_font, _price_font, 0
         );
-        finance_ui_draw_button(
+
+        finance_ui_draw_step_button(
+            _minus_x1, _button_y1, _minus_x2, _button_y2,
+            "-", _minus_hover, false
+        );
+        finance_ui_draw_step_button(
             _plus_x1, _button_y1, _plus_x2, _button_y2,
-            "+", false, _plus_hover
+            "+", _plus_hover, true
         );
 
         if (_pressed) {
@@ -2014,6 +2073,9 @@ function finance_ui_draw_medicine_prices(
 
         _draw_y += _row_h;
     }
+
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
 
     finance_ui_draw_scrollbar(
         _hud,
