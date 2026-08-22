@@ -264,6 +264,10 @@ function doctor_get_specialty_title(_target) {
     }
 
     if (_best_level < 0) return "";
+
+    // Пакет №187: перевод названия навыка в профессию идёт последним шагом,
+    // поэтому «АНЕСТЕЗИОЛОГИЯ» превращается в «АНЕСТЕЗИОЛОГ» и в карточке,
+    // и в карточке кандидата, и на табличке над человеком.
     return doctor_specialty_profession(_names[_best_index]);
 }
 

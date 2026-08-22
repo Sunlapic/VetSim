@@ -222,8 +222,10 @@ function hud_draw_hover_tooltip(_hud) {
     else if (variable_instance_exists(_target, "role")) {
         switch (_target.role) {
             case "doctor":
+                // Пакет №187: на табличке профессия, а не название навыка
+                // («АНЕСТЕЗИОЛОГ», а не «АНЕСТЕЗИОЛОГИЯ»).
                 _subtitle = variable_instance_exists(_target, "specialty_title")
-                    ? string(_target.specialty_title)
+                    ? doctor_specialty_profession(_target.specialty_title)
                     : "ВРАЧ";
             break;
             case "assistant": _subtitle = "АССИСТЕНТ"; break;

@@ -481,8 +481,10 @@ function staff_workplace_get_label(_workplace_id) {
     switch (string(_workplace_id)) {
         case "inpatient": return "СТАЦИОНАР";
         case "operating": return "ОПЕРАЦИОННАЯ";
-        case "op_surgeon": return "ОПЕРАЦИОННАЯ: ХИРУРГ";
-        case "op_anesthetist": return "ОПЕРАЦИОННАЯ: АНЕСТЕЗИОЛОГ";
+        // Пакет №187: слово «ОПЕРАЦИОННАЯ» убрано — по должности «хирург»
+        // и «анестезиолог» и так понятно, где человек работает.
+        case "op_surgeon": return "ХИРУРГ";
+        case "op_anesthetist": return "АНЕСТЕЗИОЛОГ";
         case "op_assistant": return "ОПЕРАЦИОННАЯ";
     }
 
@@ -555,8 +557,8 @@ function staff_workplace_label_for(_staff) {
             : "";
 
         switch (_role) {
-            case "surgeon": return "ОПЕРАЦИОННАЯ: ХИРУРГ";
-            case "anesthetist": return "ОПЕРАЦИОННАЯ: АНЕСТЕЗИОЛОГ";
+            case "surgeon": return "ХИРУРГ";
+            case "anesthetist": return "АНЕСТЕЗИОЛОГ";
             case "assistant": return "ОПЕРАЦИОННАЯ";
         }
     }
