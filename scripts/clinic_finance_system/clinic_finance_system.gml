@@ -313,6 +313,109 @@ function finance_get_treatment_name(_action_id) {
 
 
 // ═══════════════════════════════════════════════════════════════
+// 1.9 ОТДЕЛЕНИЯ, ПО КОТОРЫМ РАЗНОСИТСЯ ДОХОД (пакет №188)
+//
+// Деньги приходят один раз — когда владелец платит на регистратуре.
+// Но каждая строка чека помнит, ГДЕ услуга была фактически оказана,
+// и при оплате сумма раскладывается по трём графам.
+// ═══════════════════════════════════════════════════════════════
+
+#macro FINANCE_DEPT_RECEPTION "reception"
+#macro FINANCE_DEPT_INPATIENT "inpatient"
+#macro FINANCE_DEPT_OPERATING "operating"
+
+/// Дневной доход по отделениям. Сам обнуляется при смене игрового дня,
+/// поэтому obj_Render трогать не нужно.
+function finance_income_stats() {
+    var _day = variable_global_exists("game_day") ? global.game_day : 0;
+
+    if (
+        !variable_global_exists("finance_income_by_dept")
+        || !is_struct(global.finance_income_by_dept)
+    ) {
+        global.finance_income_by_dept = {
+            day : _day,
+            reception : 0,
+            inpatient : 0,
+            operating : 0,
+            total_reception : 0,
+            total_inpatient : 0,
+            total_operating : 0
+        };
+    }
+
+    var _stats = global.finance_income_by_dept;
+
+    if (_stats.day != _day) {
+        _stats.day = _day;
+        _stats.reception = 0;
+        _stats.inpatient = 0;
+        _stats.operating = 0;
+    }
+
+    return _stats;
+}
+
+/// Разложить строки чека по отделениям: { reception, inpatient, operating }.
+function finance_invoice_split_by_dept(_items) {
+    var _split = { reception : 0, inpatient : 0, operating : 0 };
+
+    if (!is_array(_items)) return _split;
+
+    for (var _index = 0; _index < array_length(_items); _index++) {
+        var _item = _items[_index];
+
+        if (!is_struct(_item)) continue;
+
+        var _sum = variable_struct_exists(_item, "total")
+            ? max(0, _item.total)
+            : 0;
+        var _dept = variable_struct_exists(_item, "dept")
+            ? string(_item.dept)
+            : FINANCE_DEPT_RECEPTION;
+
+        switch (_dept) {
+            case FINANCE_DEPT_INPATIENT: _split.inpatient += _sum; break;
+            case FINANCE_DEPT_OPERATING: _split.operating += _sum; break;
+            default: _split.reception += _sum; break;
+        }
+    }
+
+    return _split;
+}
+
+/// Записать оплаченный чек в доход отделений.
+/// _paid_total — сколько реально заплатили (может отличаться от суммы строк,
+/// если чек собрался по старой схеме); разница уходит в приём.
+function finance_income_register(_items, _paid_total) {
+    var _stats = finance_income_stats();
+    var _split = finance_invoice_split_by_dept(_items);
+    var _sum = _split.reception + _split.inpatient + _split.operating;
+    var _paid = max(0, round(_paid_total));
+
+    if (_sum <= 0) {
+        _split.reception = _paid;
+    }
+    else if (_paid != _sum) {
+        // Округления и старые чеки: остаток относим к приёму.
+        _split.reception += (_paid - _sum);
+
+        if (_split.reception < 0) _split.reception = 0;
+    }
+
+    _stats.reception += _split.reception;
+    _stats.inpatient += _split.inpatient;
+    _stats.operating += _split.operating;
+
+    _stats.total_reception += _split.reception;
+    _stats.total_inpatient += _split.inpatient;
+    _stats.total_operating += _split.operating;
+
+    return _split;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // 2. СТРОКИ ЧЕКА
 // ═══════════════════════════════════════════════════════════════
 
@@ -322,15 +425,22 @@ function finance_bill_add_item(
     _name,
     _unit_price,
     _kind,
-    _quantity = 1
+    _quantity = 1,
+    _dept = FINANCE_DEPT_RECEPTION
 ) {
     var _price = max(0, round(_unit_price));
     var _add_quantity = max(1, round(_quantity));
 
     for (var _index = 0; _index < array_length(_items); _index++) {
         var _item = _items[_index];
+        var _item_dept = variable_struct_exists(_item, "dept")
+            ? string(_item.dept)
+            : FINANCE_DEPT_RECEPTION;
 
-        if (_item.key == _key && _item.kind == _kind) {
+        // Пакет №188: одинаковая услуга из разных отделений — это РАЗНЫЕ
+        // строки. Иначе укол, сделанный на приёме и в стационаре, слился бы
+        // в одну строку и весь доход ушёл бы в одну графу.
+        if (_item.key == _key && _item.kind == _kind && _item_dept == _dept) {
             _item.quantity += _add_quantity;
             _item.total = _item.quantity * _item.unit_price;
             _items[_index] = _item;
@@ -344,7 +454,8 @@ function finance_bill_add_item(
         name : string(_name),
         quantity : _add_quantity,
         unit_price : _price,
-        total : _price * _add_quantity
+        total : _price * _add_quantity,
+        dept : string(_dept)
     });
 
     return _items;
@@ -353,14 +464,17 @@ function finance_bill_add_item(
 function finance_bill_add_treatment_with_items(
     _items,
     _action_id,
-    _kind
+    _kind,
+    _dept = FINANCE_DEPT_RECEPTION
 ) {
     _items = finance_bill_add_item(
         _items,
         _action_id,
         finance_get_treatment_name(_action_id),
         finance_get_treatment_price(_action_id),
-        _kind
+        _kind,
+        1,
+        _dept
     );
 
     // Препараты показываются в чеке отдельно от стоимости работы.
@@ -383,7 +497,8 @@ function finance_bill_add_treatment_with_items(
             item_get_name(_item_id) + " (препарат)",
             finance_get_item_sale_price(_item_id),
             "medicine",
-            _quantity
+            _quantity,
+            _dept
         );
     }
 
@@ -455,7 +570,9 @@ function finance_owner_rebuild_invoice(_owner) {
                 _diagnostic_id,
                 finance_get_diagnostic_name(_diagnostic_id),
                 finance_get_diagnostic_price(_diagnostic_id),
-                "diagnostic"
+                "diagnostic",
+                1,
+                FINANCE_DEPT_RECEPTION
             );
         }
 
@@ -481,7 +598,9 @@ function finance_owner_rebuild_invoice(_owner) {
                     finance_get_diagnostic_name(_wrong_id)
                         + " (лишнее)",
                     finance_get_diagnostic_price(_wrong_id),
-                    "diagnostic_wrong"
+                    "diagnostic_wrong",
+                    1,
+                    FINANCE_DEPT_RECEPTION
                 );
             }
         }
@@ -501,7 +620,9 @@ function finance_owner_rebuild_invoice(_owner) {
                 "inpatient_stay",
                 "Стационар",
                 finance_service_price_get("inpatient_stay", 150),
-                "inpatient"
+                "inpatient",
+                1,
+                FINANCE_DEPT_INPATIENT
             );
 
             // В стационаре журнал не очищается между двухчасовыми циклами.
@@ -516,10 +637,13 @@ function finance_owner_rebuild_invoice(_owner) {
                         ? string(_log_entry.action_id)
                         : string(_log_entry);
 
+                // Пакет №188: всё, что выполнено в палате, идёт в доход
+                // стационара.
                 _items = finance_bill_add_treatment_with_items(
                     _items,
                     _action_id,
-                    "inpatient_treatment"
+                    "inpatient_treatment",
+                    FINANCE_DEPT_INPATIENT
                 );
             }
         }
@@ -537,10 +661,46 @@ function finance_owner_rebuild_invoice(_owner) {
                     _case.visit_treatments_done[_treatment_index]
                 );
 
+                // Операции считаются отдельно, ниже.
+                if (operating_action_is_surgery(_treatment_id)) continue;
+
                 _items = finance_bill_add_treatment_with_items(
                     _items,
                     _treatment_id,
-                    "treatment"
+                    "treatment",
+                    FINANCE_DEPT_RECEPTION
+                );
+            }
+        }
+
+        // ───────────────────────────────────────────────────────
+        // Пакет №188: ОПЕРАЦИИ.
+        // Раньше операция терялась в чеке: пациент с операцией всегда лежит
+        // в стационаре, а при непустом журнале палаты ветка амбулаторных
+        // процедур не выполнялась вовсе. Теперь хирургия ищется отдельным
+        // проходом и попадает в доход операционной.
+        // ───────────────────────────────────────────────────────
+
+        if (
+            variable_struct_exists(_case, "visit_treatments_done")
+            && is_array(_case.visit_treatments_done)
+        ) {
+            for (
+                var _surgery_index = 0;
+                _surgery_index < array_length(_case.visit_treatments_done);
+                _surgery_index++
+            ) {
+                var _surgery_id = string(
+                    _case.visit_treatments_done[_surgery_index]
+                );
+
+                if (!operating_action_is_surgery(_surgery_id)) continue;
+
+                _items = finance_bill_add_treatment_with_items(
+                    _items,
+                    _surgery_id,
+                    "surgery",
+                    FINANCE_DEPT_OPERATING
                 );
             }
         }
@@ -570,7 +730,9 @@ function finance_owner_rebuild_invoice(_owner) {
                 "legacy_medical_service",
                 "Медицинские услуги",
                 _legacy_total,
-                "legacy"
+                "legacy",
+                1,
+                FINANCE_DEPT_RECEPTION
             );
             _total = finance_bill_total(_items);
         }
@@ -1310,9 +1472,17 @@ function finance_ui_pointer_released() {
 }
 
 function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
-    var _balance = variable_global_exists("clinic_money")
-        ? global.clinic_money
-        : 0;
+    // ═══════════════════════════════════════════════════════════
+    // Пакет №188: БАЛАНС КЛИНИКИ отсюда убран — он и так всегда виден
+    // в верхней панели HUD. Осталось ровно две карточки: ДОХОД и РАСХОД.
+    //
+    // Доход больше НЕ делится «на глазок» (было 45% / 30% / остаток):
+    // каждая строка чека помнит своё отделение, и при оплате на
+    // регистратуре сумма раскладывается по настоящим графам.
+    // ═══════════════════════════════════════════════════════════
+
+    var _stats = finance_income_stats();
+
     var _earned = 0;
     var _spent = 0;
     var _salary = 0;
@@ -1329,60 +1499,104 @@ function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
         }
     }
 
-    var _gap = 12;
-    var _card_w = (_x2 - _x1 - _gap * 2) / 3;
-    var _labels = ["БАЛАНС КЛИНИКИ", "ДОХОД СЕГОДНЯ", "РАСХОД СЕГОДНЯ"];
-    var _values = [_balance, _earned, _spent];
+    // Зарплата за день по всему штату — сколько будет списано вечером.
+    var _projected_salary = 0;
+    with (obj_staff_doctor) _projected_salary += finance_calculate_staff_salary(id);
+    with (obj_staff_admin) _projected_salary += finance_calculate_staff_salary(id);
+    with (obj_staff_assistant) _projected_salary += finance_calculate_staff_salary(id);
+    _projected_salary = round(_projected_salary);
 
-    for (var _index = 0; _index < 3; _index++) {
+    var _purchases = max(0, round(_spent - _salary));
+
+    var _gap = 16;
+    var _card_w = (_x2 - _x1 - _gap) / 2;
+    var _card_h = 282;
+    var _green = make_color_rgb(62, 112, 74);
+    var _red = make_color_rgb(148, 74, 64);
+    var _ink = make_color_rgb(84, 68, 54);
+
+    for (var _index = 0; _index < 2; _index++) {
         var _cx1 = _x1 + _index * (_card_w + _gap);
         var _cx2 = _cx1 + _card_w;
+        var _is_income = (_index == 0);
+        var _color = _is_income ? _green : _red;
 
         draw_set_color(make_color_rgb(248, 240, 224));
-        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + 282, 10, 10, false);
+        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + _card_h, 10, 10, false);
         draw_set_color(make_color_rgb(180, 160, 140));
-        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + 282, 10, 10, true);
+        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + _card_h, 10, 10, true);
+
         draw_set_halign(fa_center);
         draw_set_valign(fa_top);
-        draw_set_color(make_color_rgb(84, 68, 54));
-        ui_text_fit_center((_cx1 + _cx2) * 0.5, _y1 + 34, _labels[_index], _card_w - 24, UI_FS_HEADER);
-        draw_set_color((_index == 2)
-            ? make_color_rgb(148, 74, 64)
-            : make_color_rgb(62, 112, 74));
-        draw_text_transformed(
+        draw_set_color(_ink);
+        ui_text_fit_center(
             (_cx1 + _cx2) * 0.5,
-            _y1 + 96,
-            "$ " + string(round(_values[_index])),
-            2.60,
-            2.60,
-            0
+            _y1 + 34,
+            _is_income ? "ДОХОД СЕГОДНЯ" : "РАСХОД СЕГОДНЯ",
+            _card_w - 24,
+            UI_FS_HEADER
         );
-        // Дополнительные строки внутри карточек доход/расход
-        if (_index == 1) {
-            var _adm = max(0, round(_earned * 0.45));
-            var _stat = max(0, round(_earned * 0.30));
-            var _op = max(0, round(_earned - _adm - _stat));
+
+        draw_set_color(_color);
+        ui_text_fit_center(
+            (_cx1 + _cx2) * 0.5,
+            _y1 + 108,
+            "$ " + string(round(_is_income ? _earned : _spent)),
+            _card_w - 30,
+            2.60
+        );
+
+        // Строки расшифровки: каждая в своей полосе, подпись слева,
+        // сумма справа — ничего не наезжает даже на больших числах.
+        var _rows = _is_income
+            ? [
+                ["Приём", _stats.reception],
+                ["Стационар", _stats.inpatient],
+                ["Операционная", _stats.operating]
+            ]
+            : [
+                ["Зарплаты выплачено", _salary],
+                ["Закупка препаратов", _purchases],
+                ["Зарплата за день", _projected_salary]
+            ];
+
+        var _row_y = _y1 + 152;
+        var _row_h = 40;
+        var _pad = 18;
+
+        for (var _row = 0; _row < array_length(_rows); _row++) {
+            var _label = string(_rows[_row][0]);
+            var _value = "$ " + string(round(_rows[_row][1]));
+            var _half = (_card_w - _pad * 2) * 0.58;
+
+            draw_set_color(_ink);
             draw_set_halign(fa_left);
-            draw_set_color(make_color_rgb(84, 68, 54));
-            // Пакет №176: крупнее, шаг строк увеличен с 25 до 38.
-            draw_text_transformed(_cx1 + 16, _y1 + 164, "Приём: $ " + string(_adm), UI_FS_VALUE, UI_FS_VALUE, 0);
-            draw_text_transformed(_cx1 + 16, _y1 + 196, "Стационар: $ " + string(_stat), UI_FS_VALUE, UI_FS_VALUE, 0);
-            draw_text_transformed(_cx1 + 16, _y1 + 228, "Операционная: $ " + string(_op), UI_FS_VALUE, UI_FS_VALUE, 0);
-        }
-        if (_index == 2) {
-            var _projected_salary = 0;
-            with (obj_staff_doctor) _projected_salary += finance_calculate_staff_salary(id);
-            with (obj_staff_admin) _projected_salary += finance_calculate_staff_salary(id);
-            with (obj_staff_assistant) _projected_salary += finance_calculate_staff_salary(id);
-            var _pur = max(0, round(_spent - _salary));
-            draw_set_halign(fa_left);
-            draw_set_color(make_color_rgb(148, 74, 64));
-            draw_text_transformed(_cx1 + 16, _y1 + 164, "Зарплаты: $ " + string(round(_projected_salary)), UI_FS_VALUE, UI_FS_VALUE, 0);
-            draw_text_transformed(_cx1 + 16, _y1 + 196, "Закупка: $ " + string(round(_pur)), UI_FS_VALUE, UI_FS_VALUE, 0);
+            draw_set_valign(fa_middle);
+            ui_text_fit_middle(
+                _cx1 + _pad,
+                _row_y + _row_h * 0.5,
+                _label,
+                _half,
+                UI_FS_ROW
+            );
+
+            draw_set_color(_color);
+            ui_text_fit_right(
+                _cx2 - _pad,
+                _row_y + _row_h * 0.5,
+                _value,
+                (_card_w - _pad * 2) - _half - 10,
+                UI_FS_VALUE
+            );
+
+            _row_y += _row_h;
         }
     }
 
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
 }
+
 function finance_ui_draw_scrollbar(
     _hud,
     _right_x,
