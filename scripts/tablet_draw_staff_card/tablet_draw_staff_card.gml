@@ -4,6 +4,8 @@
 /// Пакет №110: в «Месте работы» — роли операционной (Хирург / Анестезиолог / Ассистент).
 /// Пакет №159: специализация = самый прокачанный навык врача; кнопка места работы ×2.
 /// Пакет №160: подпись «Место работы» выше, чтобы кнопка не закрывала низ букв.
+/// Пакет №186: под именем пишется профессия («АНЕСТЕЗИОЛОГ», а не
+/// «АНЕСТЕЗИОЛОГИЯ»), а из места работы убрано лишнее слово «ОПЕРАЦИОННАЯ».
 /// Пакет №185: подпись «Место работы:» убрана из-над кнопки и переехала внутрь
 /// неё («МЕСТО: СТАЦИОНАР»), кнопка выше; весь текст карточки ещё крупнее.
 /// Пакет №184: имя, роль, возраст и характер крупнее (каждая строка — своя
@@ -184,6 +186,41 @@ function tablet_staff_get_trait_name(_target) {
 // У ассистента и администратора строки нет.
 // ═══════════════════════════════════════════════════════════════
 
+// Пакет №186: в карточке пишется ПРОФЕССИЯ, а не название навыка.
+// Навык называется «АНЕСТЕЗИОЛОГИЯ», а врач при этом «АНЕСТЕЗИОЛОГ».
+function doctor_specialty_profession(_skill_name) {
+    switch (string_upper(string(_skill_name))) {
+        case "ТЕРАПИЯ":          return "ТЕРАПЕВТ";
+        case "ПРОЦЕДУРЫ":        return "ФЕЛЬДШЕР";
+        case "ХИРУРГИЯ":         return "ХИРУРГ";
+        case "ОФТАЛЬМОЛОГИЯ":    return "ОФТАЛЬМОЛОГ";
+        case "ОТОЛАРИНГОЛОГИЯ":  return "ЛОР-ВРАЧ";
+        case "ДЕРМАТОЛОГИЯ":     return "ДЕРМАТОЛОГ";
+        case "ИНФЕКЦИИ/ТОКС.":   return "ИНФЕКЦИОНИСТ";
+        case "ИНФЕКЦИИ":         return "ИНФЕКЦИОНИСТ";
+        case "АНЕСТЕЗИОЛОГИЯ":   return "АНЕСТЕЗИОЛОГ";
+        case "ЛАБОРАТОРИЯ":      return "ЛАБОРАНТ";
+        case "СТОМАТОЛОГИЯ":     return "СТОМАТОЛОГ";
+        case "СТАЦИОНАР":        return "ВРАЧ СТАЦИОНАРА";
+    }
+
+    // Незнакомый навык — показываем как есть, лишь бы строка не пропала.
+    return string(_skill_name);
+}
+
+// Пакет №186: в карточке «ОПЕРАЦИОННАЯ: ХИРУРГ» сокращается до «ХИРУРГ» —
+// по самой должности и так понятно, что человек работает в операционной.
+function tablet_staff_workplace_short(_label) {
+    var _str = string(_label);
+    var _prefix = "ОПЕРАЦИОННАЯ: ";
+
+    if (string_pos(_prefix, _str) == 1) {
+        return string_delete(_str, 1, string_length(_prefix));
+    }
+
+    return _str;
+}
+
 function doctor_get_specialty_title(_target) {
     if (!instance_exists(_target)) return "";
 
@@ -227,7 +264,7 @@ function doctor_get_specialty_title(_target) {
     }
 
     if (_best_level < 0) return "";
-    return string(_names[_best_index]);
+    return doctor_specialty_profession(_names[_best_index]);
 }
 
 
@@ -666,7 +703,9 @@ function tablet_draw_staff_card(
             true
         );
 
-        var _workplace_label = "МЕСТО: " + staff_workplace_label_for(_target);
+        var _workplace_label = "МЕСТО: " + tablet_staff_workplace_short(
+            staff_workplace_label_for(_target)
+        );
 
         if (_target.workplace_pending != "") {
             _workplace_label += " *";
@@ -907,7 +946,7 @@ function tablet_draw_staff_card(
 
         if (_role == "doctor") {
             _option_ids = ["reception", "inpatient", "op_surgeon", "op_anesthetist"];
-            _option_labels = ["НА ПРИЁМЕ", "СТАЦИОНАР", "ОПЕРАЦИОННАЯ: ХИРУРГ", "ОПЕРАЦИОННАЯ: АНЕСТЕЗИОЛОГ"];
+            _option_labels = ["НА ПРИЁМЕ", "СТАЦИОНАР", "ХИРУРГ", "АНЕСТЕЗИОЛОГ"];
         } else {
             _option_ids = ["reception", "inpatient", "op_assistant"];
             _option_labels = ["НА ПРИЁМЕ", "СТАЦИОНАР", "ОПЕРАЦИОННАЯ"];
@@ -973,12 +1012,18 @@ function tablet_draw_staff_card(
             draw_set_color(_option_allowed
                 ? (_option_selected ? _blue : _text)
                 : make_color_rgb(150, 140, 126));
+            var _option_scale = tablet_staff_fit_scale(
+                _option_labels[_option_index],
+                (_option_x2 - _option_x1) - 10 * _ui_scale,
+                0.85 * _font_ui
+            );
+
             draw_text_transformed(
                 (_option_x1 + _option_x2) * 0.5,
                 (_option_y1 + _option_y2) * 0.5,
                 _option_labels[_option_index],
-                0.68 * _font_ui,
-                0.78 * _font_ui,
+                _option_scale,
+                _option_scale,
                 0
             );
 
