@@ -36,9 +36,10 @@ function clinic_upgrade_max_level() {
 }
 
 // Пакет №71 (правка): у каждого улучшения свой потолок.
-// «Слот найма» прокачивается до 9 уровня (1 + 9 = 10 сотрудников максимум).
+// Пакет №173 (правка): «Слот найма» прокачивается до 14 уровня —
+// 1 стартовый + 14 = 15 сотрудников максимум.
 function clinic_upgrade_max_level_for(_upgrade_id) {
-    if (string(_upgrade_id) == "hire_slot") return 9;
+    if (string(_upgrade_id) == "hire_slot") return TREE_HIRE_MAX_LEVEL;
 
     return clinic_upgrade_max_level();
 }
@@ -129,6 +130,12 @@ function clinic_upgrade_cost(_upgrade_id) {
                 case 7: return 44;
                 case 8: return 56;
                 case 9: return 70;
+                // Пакет №173: уровни 10–14, штат до 15 сотрудников.
+                case 10: return 86;
+                case 11: return 104;
+                case 12: return 124;
+                case 13: return 146;
+                case 14: return 170;
             }
         break;
 
@@ -210,7 +217,7 @@ function clinic_upgrade_apply(_upgrade_id) {
                 show_notice(
                     clinic_upgrade_name(_key),
                     "Уровень " + string(_new_level)
-                        + " из " + string(clinic_upgrade_max_level()),
+                        + " из " + string(clinic_upgrade_max_level_for(_key)),
                     max(1, game_get_speed(gamespeed_fps)) * 2
                 );
             }
@@ -227,7 +234,7 @@ function clinic_upgrade_apply(_upgrade_id) {
 
 function clinic_get_hire_slots() {
     // Стартовый лимит — 1 сотрудник (не считая главного игрока).
-    // Максимум: 1 + 9 = 10 сотрудников.
+    // Пакет №173: максимум 1 + 14 = 15 сотрудников.
     return 1 + clinic_upgrade_level("hire_slot");
 }
 
