@@ -31,13 +31,15 @@ function hud_draw_time_button(_x1, _y1, _x2, _y2, _text, _active, _hover) {
     draw_set_color(make_color_rgb(168, 150, 126));
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 8, 8, true);
 
-    // Текст по центру.
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
+    // Текст по центру. Пакет №175: крупно, с автоподгонкой под ширину.
     draw_set_color(make_color_rgb(50, 38, 28));
-    draw_text((_x1 + _x2) * 0.5, (_y1 + _y2) * 0.5 + 1, _text);
-    draw_set_halign(fa_left);
-    draw_set_valign(fa_top);
+    ui_text_fit_center(
+        (_x1 + _x2) * 0.5,
+        (_y1 + _y2) * 0.5 + 1,
+        _text,
+        (_x2 - _x1) - 16,
+        UI_FS_BUTTON
+    );
 }
 
 // Окошко верхней панели: матовое стекло + тонкая светлая окантовка.

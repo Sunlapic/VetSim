@@ -276,7 +276,7 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text(_left_x1 + 10, _left_y1 + 14, "ХРАНИЛИЩА");
+        ui_text_fit_left(_left_x1 + 12, _left_y1 + 12, "ХРАНИЛИЩА", (_left_x2 - _left_x1) - 26, UI_FS_HEADER);
 
         var _selected_label = "СКЛАД";
         var _selected_inventory = global.inventory_main;
@@ -322,7 +322,8 @@ function hud_draw_clinic_storage(_hud) {
         // ─────────────────────────────────────────────
         // ПАКЕТ №70: ПРОКРУТКА СПИСКА ХРАНИЛИЩ (левая колонка)
         // ─────────────────────────────────────────────
-        var _scope_row_height = 36;
+        // Пакет №175: строки выше — крупный шрифт помещается целиком.
+        var _scope_row_height = 56;
         var _scope_start_y = _left_y1 + 36;
         var _scope_view_bottom = _left_y2 - 8;
         var _scope_visible_count = max(
@@ -396,7 +397,7 @@ function hud_draw_clinic_storage(_hud) {
 
             var _scope_entry = storage_scope_entries[_scope_index];
             var _scope_y1 = _scope_start_y + _scope_vis * _scope_row_height;
-            var _scope_y2 = _scope_y1 + 28;
+            var _scope_y2 = _scope_y1 + 48;
             var _scope_x1 = _left_x1 + 8;
             var _scope_x2 = _left_x2 - 8;
 
@@ -421,7 +422,14 @@ function hud_draw_clinic_storage(_hud) {
             draw_set_color(_line_dark);
             draw_roundrect_ext(_scope_x1, _scope_y1, _scope_x2, _scope_y2, 8, 8, true);
             draw_set_color(_text_dark);
-            draw_text(_scope_x1 + 8, _scope_y1 + 6, _scope_entry.label_ru);
+            ui_text_row(
+                _scope_x1 + 10,
+                _scope_y1,
+                _scope_y2 - _scope_y1,
+                _scope_entry.label_ru,
+                (_scope_x2 - _scope_x1) - 24,
+                UI_FS_ROW
+            );
 
             if (
                 _scope_hovered
@@ -450,32 +458,45 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text(_right_x1 + 10, _right_y1 + 8, _selected_label);
+        ui_text_fit_left(_right_x1 + 12, _right_y1 + 8, _selected_label, (_right_x2 - _right_x1) - 26, UI_FS_HEADER);
         draw_set_color(_text_soft);
 
         if (_is_main_storage) {
-            draw_text_ext(
-                _right_x1 + 10,
-                _right_y1 + 28,
+            var _hint_w = _right_x2 - _right_x1 - 24;
+            var _hint_s = UI_FS_ROW;
+
+            draw_text_ext_transformed(
+                _right_x1 + 12,
+                _right_y1 + 42,
                 "Здесь можно закупить препараты. Кабинетные шкафы автоматически пополняются ассистентом.",
-                18,
-                _right_x2 - _right_x1 - 20
+                24,
+                _hint_w / _hint_s,
+                _hint_s,
+                _hint_s,
+                0
             );
         }
         else {
-            draw_text_ext(
-                _right_x1 + 10,
-                _right_y1 + 28,
+            var _cab_w = _right_x2 - _right_x1 - 24;
+            var _cab_s = UI_FS_ROW;
+
+            draw_text_ext_transformed(
+                _right_x1 + 12,
+                _right_y1 + 42,
                 "Это кабинетный шкаф. Препараты сюда приносит ассистент.\nКупить препараты можно на СКЛАДЕ.",
-                18,
-                _right_x2 - _right_x1 - 20
+                24,
+                _cab_w / _cab_s,
+                _cab_s,
+                _cab_s,
+                0
             );
 
             var _link_text = "► Перейти к СКЛАДУ для закупки";
             var _link_x1 = _right_x1 + 10;
-            var _link_y1 = _right_y1 + 64;
-            var _link_x2 = _link_x1 + string_width(_link_text) + 6;
-            var _link_y2 = _link_y1 + string_height(_link_text);
+            var _link_y1 = _right_y1 + 110;
+            var _link_scale = ui_fit_scale(_link_text, (_right_x2 - _right_x1) - 26, UI_FS_ROW);
+            var _link_x2 = _link_x1 + string_width(_link_text) * _link_scale + 10;
+            var _link_y2 = _link_y1 + string_height(_link_text) * _link_scale;
             var _link_hover = point_in_rectangle(
                 _mouse_x,
                 _mouse_y,
@@ -490,7 +511,7 @@ function hud_draw_clinic_storage(_hud) {
                     ? _accent_blue
                     : make_color_rgb(50, 90, 140)
             );
-            draw_text(_link_x1, _link_y1, _link_text);
+            ui_text_fit_left(_link_x1, _link_y1, _link_text, (_right_x2 - _right_x1) - 26, UI_FS_ROW);
 
             if (
                 _link_hover
@@ -544,7 +565,7 @@ function hud_draw_clinic_storage(_hud) {
             // ─────────────────────────────────────────────
             // ПАКЕТ №70: ПРОКРУТКА СПИСКА ПРЕПАРАТОВ (правая колонка)
             // ─────────────────────────────────────────────
-            var _item_row_height = 44;
+            var _item_row_height = 62;
             var _items_view_top = _list_top_y + 26;
             var _items_view_bottom = _shortage_y - 8;
             var _items_visible = max(
@@ -758,26 +779,51 @@ function hud_draw_clinic_storage(_hud) {
         draw_set_color(_paper_2);
         draw_line(_right_x1 + 10, _shortage_y - 8, _right_x2 - 10, _shortage_y - 8);
         draw_set_color(_text_dark);
-        draw_text(_right_x1 + 10, _shortage_y, "НУЖНО ДОКУПИТЬ");
+        ui_text_fit_left(_right_x1 + 12, _shortage_y, "НУЖНО ДОКУПИТЬ", (_right_x2 - _right_x1) - 26, UI_FS_HEADER);
 
         if (array_length(_shortages) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_ext(
-                _right_x1 + 10,
-                _shortage_y + 24,
+            var _ok_w = _right_x2 - _right_x1 - 24;
+            var _ok_s = UI_FS_ROW;
+
+            draw_text_ext_transformed(
+                _right_x1 + 12,
+                _shortage_y + 44,
                 "Все текущие назначения обеспечены препаратами.",
-                18,
-                _right_x2 - _right_x1 - 20
+                24,
+                _ok_w / _ok_s,
+                _ok_s,
+                _ok_s,
+                0
             );
         }
         else {
             for (var _shortage_index = 0; _shortage_index < array_length(_shortages); _shortage_index++) {
                 var _shortage = _shortages[_shortage_index];
-                var _shortage_row_y = _shortage_y + 24 + _shortage_index * 20;
+                // Пакет №175: строка дефицита в своей полосе, две колонки.
+                var _short_row_h = 40;
+                var _shortage_row_y = _shortage_y + 44 + _shortage_index * _short_row_h;
+                var _short_split = _right_x1 + (_right_x2 - _right_x1) * 0.55;
+
                 draw_set_color(_text_dark);
-                draw_text(_right_x1 + 10, _shortage_row_y, _shortage.item_name_ru);
+                ui_text_row(
+                    _right_x1 + 12,
+                    _shortage_row_y,
+                    _short_row_h,
+                    _shortage.item_name_ru,
+                    _short_split - _right_x1 - 24,
+                    UI_FS_ROW
+                );
+
                 draw_set_color(_accent_red);
-                draw_text(_right_x1 + 230, _shortage_row_y, "Не хватает: " + string(_shortage.shortage));
+                ui_text_row(
+                    _short_split,
+                    _shortage_row_y,
+                    _short_row_h,
+                    "Не хватает: " + string(_shortage.shortage),
+                    _right_x2 - _short_split - 16,
+                    UI_FS_ROW
+                );
             }
         }
     }

@@ -190,12 +190,26 @@ function hud_draw_storage_radial_menu(_hud) {
             draw_set_halign(fa_left);
             draw_set_valign(fa_middle);
             draw_set_color(_menu_item.enabled ? _text_dark : _text_soft);
-            draw_text(_button_x1 + 10, (_button_y1 + _button_y2) * 0.5 + 1, _menu_item.label);
+            // Пакет №175: название и количество крупно, каждое в своей зоне.
+            var _label_w = (_button_x2 - _button_x1) * 0.62 - 20;
+            ui_text_fit_middle(
+                _button_x1 + 12,
+                (_button_y1 + _button_y2) * 0.5 + 1,
+                _menu_item.label,
+                _label_w,
+                UI_FS_ROW
+            );
 
             if (_menu_item.quantity > 0) {
                 draw_set_halign(fa_right);
                 draw_set_color(_menu_item.enabled ? _green : _text_soft);
-                draw_text(_button_x2 - 10, (_button_y1 + _button_y2) * 0.5 + 1, string(_menu_item.quantity) + " шт.");
+                ui_text_fit_right(
+                    _button_x2 - 12,
+                    (_button_y1 + _button_y2) * 0.5 + 1,
+                    string(_menu_item.quantity) + " шт.",
+                    (_button_x2 - _button_x1) * 0.34,
+                    UI_FS_VALUE
+                );
             }
         }
 

@@ -97,13 +97,14 @@ function hud_staff_manage_draw_button(
     draw_set_color(_wood_dark);
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 9, 9, true);
 
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
+    // Пакет №175: крупный текст с автоподгонкой под ширину кнопки.
     draw_set_color(_text_color);
-    draw_text(
+    ui_text_fit_center(
         (_x1 + _x2) * 0.5,
         (_y1 + _y2) * 0.5,
-        _text
+        _text,
+        (_x2 - _x1) - 20,
+        UI_FS_BUTTON
     );
 }
 
@@ -301,7 +302,7 @@ function hud_staff_manage_draw_roster(
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
     draw_set_color(_text_dark);
-    draw_text(_x1 + 14, _y1 + 10, "ПЕРСОНАЛ КЛИНИКИ");
+    ui_text_fit_left(_x1 + 16, _y1 + 10, "ПЕРСОНАЛ КЛИНИКИ", (_x2 - _x1) - 40, UI_FS_TITLE);
 
     var _rows_x1 = _x1 + 12;
     var _rows_x2 = _x2 - 12;
@@ -441,10 +442,13 @@ function hud_staff_manage_draw_roster(
                 false
             );
             draw_set_color(_text_soft);
-            draw_text(
-                _rows_x1 + 9,
-                _draw_y + 7,
-                _entry.text
+            ui_text_row(
+                _rows_x1 + 10,
+                _draw_y,
+                _entry_y2 - _draw_y,
+                _entry.text,
+                (_rows_x2 - _rows_x1) - 24,
+                UI_FS_ROW
             );
 
             _draw_y = _entry_y2;
@@ -602,10 +606,12 @@ function hud_staff_manage_draw_roster(
             + string(_entry_count);
     }
 
-    draw_text(
+    ui_text_fit_center(
         (_x1 + _x2) * 0.5,
-        _y2 - 14,
-        _scroll_hint
+        _y2 - 18,
+        _scroll_hint,
+        (_x2 - _x1) - 40,
+        UI_FS_ROW
     );
 
     draw_set_halign(fa_left);
@@ -668,10 +674,12 @@ function hud_staff_manage_draw_card(
         draw_set_halign(fa_center);
         draw_set_valign(fa_middle);
         draw_set_color(make_color_rgb(84, 68, 54));
-        draw_text(
+        ui_text_fit_center(
             _slot_x + _card_w * 0.5,
             _slot_y + _card_h * 0.5,
-            "ВЫБЕРИТЕ СОТРУДНИКА"
+            "ВЫБЕРИТЕ СОТРУДНИКА",
+            _card_w - 40,
+            UI_FS_HEADER
         );
         return;
     }
@@ -726,7 +734,7 @@ function hud_staff_manage_draw_actions(
     draw_set_halign(fa_center);
     draw_set_valign(fa_top);
     draw_set_color(_text_dark);
-    draw_text((_x1 + _x2) * 0.5, _y1 + 13, "ДЕЙСТВИЯ");
+    ui_text_fit_center((_x1 + _x2) * 0.5, _y1 + 20, "ДЕЙСТВИЯ", (_x2 - _x1) - 30, UI_FS_HEADER);
 
     var _button_x1 = _x1 + 12;
     var _button_x2 = _x2 - 12;
@@ -790,12 +798,18 @@ function hud_staff_manage_draw_actions(
         draw_set_halign(fa_center);
         draw_set_valign(fa_top);
         draw_set_color(make_color_rgb(105, 100, 92));
-        draw_text_ext(
+        var _note_w = _x2 - _x1 - 28;
+        var _note_scale = ui_fit_scale("Главного игрока нельзя уволить", _note_w, UI_FS_ROW);
+
+        draw_text_ext_transformed(
             (_x1 + _x2) * 0.5,
             _note_y,
             "Главного игрока нельзя уволить",
-            16,
-            _x2 - _x1 - 24
+            20,
+            _note_w / _note_scale,
+            _note_scale,
+            _note_scale,
+            0
         );
     }
 }
@@ -825,8 +839,9 @@ function hud_staff_manage_draw_fire_confirm(
 
     var _gui_w = display_get_gui_width();
     var _gui_h = display_get_gui_height();
-    var _panel_w = 430;
-    var _panel_h = 165;
+    // Пакет №175: окно подтверждения крупнее под телефон.
+    var _panel_w = 660;
+    var _panel_h = 260;
     var _x1 = (_gui_w - _panel_w) * 0.5;
     var _y1 = (_gui_h - _panel_h) * 0.5;
     var _x2 = _x1 + _panel_w;
@@ -842,22 +857,24 @@ function hud_staff_manage_draw_fire_confirm(
     draw_set_halign(fa_center);
     draw_set_valign(fa_top);
     draw_set_color(make_color_rgb(50, 38, 28));
-    draw_text(
+    ui_text_fit_center(
         (_x1 + _x2) * 0.5,
-        _y1 + 28,
+        _y1 + 60,
         "УВОЛИТЬ "
             + string_upper(
                 string(_hud.staff_manage_fire_target.char_name)
             )
-            + "?"
+            + "?",
+        (_x2 - _x1) - 48,
+        UI_FS_TITLE
     );
 
     var _yes_x1 = _x1 + 28;
     var _yes_x2 = (_x1 + _x2) * 0.5 - 7;
     var _no_x1 = (_x1 + _x2) * 0.5 + 7;
     var _no_x2 = _x2 - 28;
-    var _button_y1 = _y2 - 66;
-    var _button_y2 = _y2 - 24;
+    var _button_y1 = _y2 - 96;
+    var _button_y2 = _y2 - 32;
     var _yes_hover = point_in_rectangle(
         _mouse_x,
         _mouse_y,

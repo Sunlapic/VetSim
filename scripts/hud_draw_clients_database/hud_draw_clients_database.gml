@@ -37,7 +37,7 @@ function hud_draw_clients_database(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text(_content_x1 + 14, _content_y1 + 10, "БАЗА КЛИЕНТОВ");
+        ui_text_fit_left(_content_x1 + 16, _content_y1 + 8, "БАЗА КЛИЕНТОВ", 520, UI_FS_TITLE);
 
         hud_draw_button(
             clients_tab_all_x1,
@@ -79,16 +79,18 @@ function hud_draw_clients_database(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_middle);
 
+        var _search_w = (client_search_x2 - client_search_x1) - 26;
+
         if (client_search_text == "") {
             draw_set_color(_text_soft);
-            draw_text(client_search_x1 + 12, (client_search_y1 + client_search_y2) * 0.5 + 1, "Поиск по фамилии или кличке...");
+            ui_text_fit_middle(client_search_x1 + 14, (client_search_y1 + client_search_y2) * 0.5 + 1, "Поиск по фамилии или кличке...", _search_w, UI_FS_ROW);
         }
         else {
             draw_set_color(_text_dark);
-            draw_text(client_search_x1 + 12, (client_search_y1 + client_search_y2) * 0.5 + 1, client_search_text);
+            var _search_scale = ui_text_fit_middle(client_search_x1 + 14, (client_search_y1 + client_search_y2) * 0.5 + 1, client_search_text, _search_w, UI_FS_ROW);
 
             if (client_search_active && client_search_caret_visible) {
-                var _caret_x = client_search_x1 + 14 + string_width(client_search_text);
+                var _caret_x = client_search_x1 + 16 + string_width(client_search_text) * _search_scale;
                 draw_line(_caret_x, client_search_y1 + 8, _caret_x, client_search_y2 - 8);
             }
         }
@@ -100,11 +102,12 @@ function hud_draw_clients_database(_hud) {
         draw_set_halign(fa_center);
         draw_set_valign(fa_middle);
         draw_set_color(_accent_red);
-        draw_text((client_clear_x1 + client_clear_x2) * 0.5, (client_clear_y1 + client_clear_y2) * 0.5 + 1, "X");
+        ui_text_fit_center((client_clear_x1 + client_clear_x2) * 0.5, (client_clear_y1 + client_clear_y2) * 0.5 + 1, "X", (client_clear_x2 - client_clear_x1) - 10, UI_FS_TITLE);
 
         var _list_x1 = _content_x1 + 14;
         var _list_y1 = _content_y1 + 108;
-        var _list_x2 = _list_x1 + 380;
+        // Пакет №175: список шире — в него влезает крупный шрифт.
+        var _list_x2 = _list_x1 + 470;
         var _list_y2 = _content_y2 - 18;
         var _detail_x1 = _list_x2 + 20;
         var _detail_y1 = _list_y1;
@@ -120,17 +123,17 @@ function hud_draw_clients_database(_hud) {
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text(_list_x1 + 10, _list_y1 + 8, clients_subtab == "all" ? "КЛИЕНТЫ" : "ПОВТОРНЫЕ ПРИЁМЫ");
-        draw_text(_detail_x1 + 10, _detail_y1 + 8, clients_subtab == "all" ? "КАРТОЧКА КЛИЕНТА" : "НАЗНАЧЕННЫЙ ВИЗИТ");
+        ui_text_fit_left(_list_x1 + 12, _list_y1 + 8, clients_subtab == "all" ? "КЛИЕНТЫ" : "ПОВТОРНЫЕ ПРИЁМЫ", (_list_x2 - _list_x1) - 24, UI_FS_HEADER);
+        ui_text_fit_left(_detail_x1 + 12, _detail_y1 + 8, clients_subtab == "all" ? "КАРТОЧКА КЛИЕНТА" : "НАЗНАЧЕННЫЙ ВИЗИТ", (_detail_x2 - _detail_x1) - 24, UI_FS_HEADER);
 
         if (clients_subtab == "all") {
-            var _client_row_height = 68;
-            var _client_row_top = _list_y1 + 30;
+            var _client_row_height = 104;
+            var _client_row_top = _list_y1 + 52;
             var _client_visible = max(1, floor((_list_y2 - _client_row_top) / _client_row_height));
 
             if (array_length(client_entries) <= 0) {
                 draw_set_color(_text_soft);
-                draw_text_ext(_list_x1 + 10, _list_y1 + 36, "В базе пока нет клиентов.", 20, 280);
+                ui_text_fit_left(_list_x1 + 12, _list_y1 + 58, "В базе пока нет клиентов.", (_list_x2 - _list_x1) - 24, UI_FS_ROW);
             }
             else {
                 for (var _row = 0; _row < _client_visible; _row++) {
@@ -166,12 +169,15 @@ function hud_draw_clients_database(_hud) {
                     draw_roundrect_ext(_list_x1 + 8, _row_y1, _list_x2 - 8, _row_y2, 8, 8, false);
                     draw_set_color(_line_dark);
                     draw_roundrect_ext(_list_x1 + 8, _row_y1, _list_x2 - 8, _row_y2, 8, 8, true);
+                    // Пакет №175: три строки, каждая в своей полосе по 30px.
+                    var _cell_w = (_list_x2 - _list_x1) - 48;
+
                     draw_set_color(_text_dark);
-                    draw_text_ext(_list_x1 + 18, _row_y1 + 6, string_upper(_owner_name), 18, 270);
+                    ui_text_row(_list_x1 + 20, _row_y1 + 4, 32, string_upper(_owner_name), _cell_w, UI_FS_ROW);
                     draw_set_color(_accent_blue);
-                    draw_text_ext(_list_x1 + 18, _row_y1 + 24, _pet_name, 18, 270);
+                    ui_text_row(_list_x1 + 20, _row_y1 + 34, 30, _pet_name, _cell_w, UI_FS_ROW);
                     draw_set_color(_text_soft);
-                    draw_text_ext(_list_x1 + 18, _row_y1 + 42, _pet_breed, 18, 270);
+                    ui_text_row(_list_x1 + 20, _row_y1 + 62, 30, _pet_breed, _cell_w, UI_FS_SMALL);
                 }
             }
 
@@ -180,7 +186,7 @@ function hud_draw_clients_database(_hud) {
                 || !variable_struct_exists(global.owner_db, selected_client_owner_id)
             ) {
                 draw_set_color(_text_soft);
-                draw_text_ext(_detail_x1 + 10, _detail_y1 + 36, "Выбери клиента в списке слева.", 20, _detail_x2 - _detail_x1 - 20);
+                ui_text_fit_left(_detail_x1 + 12, _detail_y1 + 56, "Выбери клиента в списке слева.", (_detail_x2 - _detail_x1) - 24, UI_FS_ROW);
                 return;
             }
 
@@ -197,32 +203,58 @@ function hud_draw_clients_database(_hud) {
                 _pet_data = variable_struct_get(global.pet_db, selected_client_pet_id);
             }
 
+            // ═══ Пакет №175: правая колонка на последовательных полосах ═══
+            // Раньше все строки стояли на жёстких отступах (+72, +96, +120…)
+            // по 22–24 пикселя — при крупном шрифте они бы наложились.
+            var _det_x = _detail_x1 + 14;
+            var _det_w = (_detail_x2 - _detail_x1) - 28;
+            var _det_half = _det_w * 0.5;
+            var _row_h = 40;
+            var _row_y = _detail_y1 + 48;
+
             draw_set_color(_text_dark);
-            draw_text_ext(_detail_x1 + 10, _detail_y1 + 36, string_upper(_owner_name_detail), 20, _detail_x2 - _detail_x1 - 20);
+            ui_text_row(_det_x, _row_y, 46, string_upper(_owner_name_detail), _det_w, UI_FS_TITLE);
+            _row_y += 52;
+
             draw_set_color(_text_soft);
-            draw_text(_detail_x1 + 10, _detail_y1 + 72, "ВОЗРАСТ: " + string(variable_struct_exists(_owner_data, "age") ? _owner_data.age : 0));
-            draw_text(_detail_x1 + 190, _detail_y1 + 72, "ДОВЕРИЕ: " + string(variable_struct_exists(_owner_data, "trust") ? _owner_data.trust : 0));
-            draw_text(_detail_x1 + 10, _detail_y1 + 96, "ДЕНЬГИ: $ " + string(variable_struct_exists(_owner_data, "money") ? _owner_data.money : 0));
-            draw_text(_detail_x1 + 190, _detail_y1 + 96, "ТЕРПЕНИЕ: " + string(variable_struct_exists(_owner_data, "patience") ? _owner_data.patience : 0));
-            draw_text(_detail_x1 + 10, _detail_y1 + 120, "ВСЕГО ВИЗИТОВ: " + string(variable_struct_exists(_owner_data, "visits_total") ? _owner_data.visits_total : 0));
+            ui_text_row(_det_x, _row_y, _row_h, "ВОЗРАСТ: " + string(variable_struct_exists(_owner_data, "age") ? _owner_data.age : 0), _det_half - 12, UI_FS_ROW);
+            ui_text_row(_det_x + _det_half, _row_y, _row_h, "ДОВЕРИЕ: " + string(variable_struct_exists(_owner_data, "trust") ? _owner_data.trust : 0), _det_half - 12, UI_FS_ROW);
+            _row_y += _row_h;
+
+            ui_text_row(_det_x, _row_y, _row_h, "ДЕНЬГИ: $ " + string(variable_struct_exists(_owner_data, "money") ? _owner_data.money : 0), _det_half - 12, UI_FS_ROW);
+            ui_text_row(_det_x + _det_half, _row_y, _row_h, "ТЕРПЕНИЕ: " + string(variable_struct_exists(_owner_data, "patience") ? _owner_data.patience : 0), _det_half - 12, UI_FS_ROW);
+            _row_y += _row_h;
+
+            ui_text_row(_det_x, _row_y, _row_h, "ВСЕГО ВИЗИТОВ: " + string(variable_struct_exists(_owner_data, "visits_total") ? _owner_data.visits_total : 0), _det_w, UI_FS_ROW);
+            _row_y += _row_h + 10;
 
             draw_set_color(_accent_blue);
-            draw_text(_detail_x1 + 10, _detail_y1 + 154, "ПАЦИЕНТ");
+            ui_text_row(_det_x, _row_y, _row_h, "ПАЦИЕНТ", _det_w, UI_FS_HEADER);
+            _row_y += _row_h + 4;
+
             draw_set_color(_text_soft);
 
             if (is_struct(_pet_data)) {
-                draw_text(_detail_x1 + 10, _detail_y1 + 178, "КЛИЧКА: " + string(variable_struct_exists(_pet_data, "name") ? _pet_data.name : ""));
-                draw_text(_detail_x1 + 190, _detail_y1 + 178, "ПОРОДА: " + string(variable_struct_exists(_pet_data, "breed") ? _pet_data.breed : ""));
-                draw_text(_detail_x1 + 10, _detail_y1 + 202, "СОСТОЯНИЕ: " + string(round(variable_struct_exists(_pet_data, "condition") ? _pet_data.condition : 0)) + "%");
+                ui_text_row(_det_x, _row_y, _row_h, "КЛИЧКА: " + string(variable_struct_exists(_pet_data, "name") ? _pet_data.name : ""), _det_half - 12, UI_FS_ROW);
+                ui_text_row(_det_x + _det_half, _row_y, _row_h, "ПОРОДА: " + string(variable_struct_exists(_pet_data, "breed") ? _pet_data.breed : ""), _det_half - 12, UI_FS_ROW);
+                _row_y += _row_h;
+
+                ui_text_row(_det_x, _row_y, _row_h, "СОСТОЯНИЕ: " + string(round(variable_struct_exists(_pet_data, "condition") ? _pet_data.condition : 0)) + "%", _det_w, UI_FS_ROW);
+                _row_y += _row_h;
             }
             else {
-                draw_text(_detail_x1 + 10, _detail_y1 + 178, "У клиента нет привязанного питомца.");
+                ui_text_row(_det_x, _row_y, _row_h, "У клиента нет привязанного питомца.", _det_w, UI_FS_ROW);
+                _row_y += _row_h;
             }
 
+            _row_y += 12;
             draw_set_color(_paper_2);
-            draw_line(_detail_x1 + 10, _detail_y1 + 232, _detail_x2 - 10, _detail_y1 + 232);
+            draw_line(_det_x, _row_y, _detail_x2 - 14, _row_y);
+            _row_y += 10;
+
             draw_set_color(_accent_gold);
-            draw_text(_detail_x1 + 10, _detail_y1 + 242, "ВЫБРАННЫЙ ВИЗИТ");
+            ui_text_row(_det_x, _row_y, _row_h, "ВЫБРАННЫЙ ВИЗИТ", _det_w, UI_FS_HEADER);
+            _row_y += _row_h + 4;
 
             var _selected_visit = undefined;
 
@@ -242,7 +274,7 @@ function hud_draw_clients_database(_hud) {
 
             if (!is_struct(_selected_visit)) {
                 draw_set_color(_text_soft);
-                draw_text_ext(_detail_x1 + 10, _detail_y1 + 268, "История визитов пока пуста.", 20, _detail_x2 - _detail_x1 - 20);
+                ui_text_row(_det_x, _row_y, _row_h, "История визитов пока пуста.", _det_w, UI_FS_ROW);
             }
             else {
                 var _visit_type = variable_struct_exists(_selected_visit, "visit_type_name_ru") ? string(_selected_visit.visit_type_name_ru) : "Приём";
@@ -262,17 +294,30 @@ function hud_draw_clients_database(_hud) {
                 var _plan_lines = hud_visit_build_plan_lines(_selected_visit);
 
                 draw_set_color(_text_dark);
-                draw_text(_detail_x1 + 10, _detail_y1 + 268, "ТИП: " + _visit_type);
-                draw_text(_detail_x1 + 10, _detail_y1 + 290, "ДАТА: ДЕНЬ " + string(_visit_day) + " • " + hud_clock_text(_visit_hour, _visit_minute));
-                draw_text(_detail_x1 + 10, _detail_y1 + 312, "БОЛЕЗНЬ: " + ((_disease_id != "") ? hud_get_disease_name(_disease_id) : "Не указано"));
-                draw_text(_detail_x1 + 10, _detail_y1 + 334, "СТЕПЕНЬ: " + hud_get_severity_name(_severity_level, _severity_name) + " • СТАТУС: " + _case_status);
-                draw_set_color(_accent_green);
-                draw_text(_detail_x1 + 10, _detail_y1 + 356, "ИТОГ: " + _outcome);
-                draw_set_color(_text_soft);
-                draw_text(_detail_x1 + 10, _detail_y1 + 378, "СОСТОЯНИЕ: " + string(round(_condition_before)) + "% → " + string(round(_condition_after)) + "%");
-                draw_text(_detail_x1 + 10, _detail_y1 + 400, "ПОДТВЕРЖДЁН: " + hud_bool_text(_confirmed) + " • КУРС ЗАВЕРШЁН: " + hud_bool_text(_course_done));
+                ui_text_row(_det_x, _row_y, _row_h, "ТИП: " + _visit_type, _det_w, UI_FS_ROW);
+                _row_y += _row_h;
 
-                var _procedure_box_y1 = _detail_y1 + 432;
+                ui_text_row(_det_x, _row_y, _row_h, "ДАТА: ДЕНЬ " + string(_visit_day) + " • " + hud_clock_text(_visit_hour, _visit_minute), _det_w, UI_FS_ROW);
+                _row_y += _row_h;
+
+                ui_text_row(_det_x, _row_y, _row_h, "БОЛЕЗНЬ: " + ((_disease_id != "") ? hud_get_disease_name(_disease_id) : "Не указано"), _det_w, UI_FS_ROW);
+                _row_y += _row_h;
+
+                ui_text_row(_det_x, _row_y, _row_h, "СТЕПЕНЬ: " + hud_get_severity_name(_severity_level, _severity_name) + " • СТАТУС: " + _case_status, _det_w, UI_FS_ROW);
+                _row_y += _row_h;
+
+                draw_set_color(_accent_green);
+                ui_text_row(_det_x, _row_y, _row_h, "ИТОГ: " + _outcome, _det_w, UI_FS_ROW);
+                _row_y += _row_h;
+
+                draw_set_color(_text_soft);
+                ui_text_row(_det_x, _row_y, _row_h, "СОСТОЯНИЕ: " + string(round(_condition_before)) + "% → " + string(round(_condition_after)) + "%", _det_w, UI_FS_ROW);
+                _row_y += _row_h;
+
+                ui_text_row(_det_x, _row_y, _row_h, "ПОДТВЕРЖДЁН: " + hud_bool_text(_confirmed) + " • КУРС: " + hud_bool_text(_course_done), _det_w, UI_FS_ROW);
+                _row_y += _row_h + 8;
+
+                var _procedure_box_y1 = _row_y;
                 var _procedure_box_y2 = client_history_y1 - 10;
 
                 if (_procedure_box_y2 > _procedure_box_y1 + 50) {
@@ -282,10 +327,10 @@ function hud_draw_clients_database(_hud) {
                     var _middle_x = floor((_detail_x1 + _detail_x2) * 0.5);
                     draw_line(_middle_x, _procedure_box_y1 + 8, _middle_x, _procedure_box_y2 - 8);
                     draw_set_color(_text_dark);
-                    draw_text(_detail_x1 + 20, _procedure_box_y1 + 6, "ПРОЦЕДУРЫ ВИЗИТА");
-                    draw_text(_middle_x + 10, _procedure_box_y1 + 6, "КУРС ЛЕЧЕНИЯ");
-                    hud_draw_string_list(_procedure_lines, _detail_x1 + 20, _procedure_box_y1 + 28, 20, client_proc_preview_limit, _middle_x - _detail_x1 - 34, _text_dark, _text_soft);
-                    hud_draw_string_list(_plan_lines, _middle_x + 10, _procedure_box_y1 + 28, 20, client_plan_preview_limit, _detail_x2 - _middle_x - 30, _text_dark, _text_soft);
+                    ui_text_row(_detail_x1 + 20, _procedure_box_y1 + 4, 38, "ПРОЦЕДУРЫ ВИЗИТА", _middle_x - _detail_x1 - 36, UI_FS_HEADER);
+                    ui_text_row(_middle_x + 12, _procedure_box_y1 + 4, 38, "КУРС ЛЕЧЕНИЯ", _detail_x2 - _middle_x - 32, UI_FS_HEADER);
+                    hud_draw_string_list(_procedure_lines, _detail_x1 + 20, _procedure_box_y1 + 46, 34, client_proc_preview_limit, _middle_x - _detail_x1 - 36, _text_dark, _text_soft);
+                    hud_draw_string_list(_plan_lines, _middle_x + 12, _procedure_box_y1 + 46, 34, client_plan_preview_limit, _detail_x2 - _middle_x - 32, _text_dark, _text_soft);
                 }
             }
 
@@ -293,10 +338,10 @@ function hud_draw_clients_database(_hud) {
             draw_set_color(_paper_2);
             draw_roundrect_ext(client_history_x1, client_history_y1, client_history_x2, client_history_y2, 8, 8, true);
             draw_set_color(_text_dark);
-            draw_text(client_history_x1 + 10, client_history_y1 + 6, "ИСТОРИЯ ВИЗИТОВ");
+            ui_text_row(client_history_x1 + 12, client_history_y1 + 4, 40, "ИСТОРИЯ ВИЗИТОВ", (client_history_x2 - client_history_x1) - 24, UI_FS_HEADER);
 
-            var _history_row_height = 54;
-            var _history_top = client_history_y1 + 28;
+            var _history_row_height = 82;
+            var _history_top = client_history_y1 + 48;
             var _history_visible = max(1, floor((client_history_y2 - _history_top - 8) / _history_row_height));
 
             for (var _history_row = 0; _history_row < _history_visible; _history_row++) {
@@ -316,23 +361,25 @@ function hud_draw_clients_database(_hud) {
                 draw_roundrect_ext(client_history_x1 + 8, _history_y1, client_history_x2 - 8, _history_y2, 8, 8, false);
                 draw_set_color(_line_dark);
                 draw_roundrect_ext(client_history_x1 + 8, _history_y1, client_history_x2 - 8, _history_y2, 8, 8, true);
+                var _hist_w = (client_history_x2 - client_history_x1) - 48;
+
                 draw_set_color(_text_dark);
-                draw_text_ext(client_history_x1 + 18, _history_y1 + 6, "ДЕНЬ " + string(variable_struct_exists(_visit_record, "visit_day") ? _visit_record.visit_day : 0) + " • " + (variable_struct_exists(_visit_record, "visit_type_name_ru") ? string(_visit_record.visit_type_name_ru) : "Приём"), 18, client_history_x2 - client_history_x1 - 40);
+                ui_text_row(client_history_x1 + 20, _history_y1 + 4, 36, "ДЕНЬ " + string(variable_struct_exists(_visit_record, "visit_day") ? _visit_record.visit_day : 0) + " • " + (variable_struct_exists(_visit_record, "visit_type_name_ru") ? string(_visit_record.visit_type_name_ru) : "Приём"), _hist_w, UI_FS_ROW);
                 draw_set_color(_text_soft);
-                draw_text_ext(client_history_x1 + 18, _history_y1 + 28, variable_struct_exists(_visit_record, "outcome_name_ru") ? string(_visit_record.outcome_name_ru) : "Приём завершён", 18, client_history_x2 - client_history_x1 - 40);
+                ui_text_row(client_history_x1 + 20, _history_y1 + 38, 34, variable_struct_exists(_visit_record, "outcome_name_ru") ? string(_visit_record.outcome_name_ru) : "Приём завершён", _hist_w, UI_FS_ROW);
             }
 
             return;
         }
 
         // Повторные приёмы.
-        var _follow_row_height = 68;
-        var _follow_top = _list_y1 + 30;
+        var _follow_row_height = 104;
+        var _follow_top = _list_y1 + 52;
         var _follow_visible = max(1, floor((_list_y2 - _follow_top) / _follow_row_height));
 
         if (array_length(followup_entries) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_ext(_list_x1 + 10, _list_y1 + 36, "Нет клиентов с назначенным повторным приёмом.", 20, 300);
+            ui_text_fit_left(_list_x1 + 12, _list_y1 + 58, "Нет клиентов с повторным приёмом.", (_list_x2 - _list_x1) - 24, UI_FS_ROW);
         }
         else {
             for (var _follow_row = 0; _follow_row < _follow_visible; _follow_row++) {
@@ -363,21 +410,23 @@ function hud_draw_clients_database(_hud) {
                 draw_roundrect_ext(_list_x1 + 8, _follow_y1, _list_x2 - 8, _follow_y2, 8, 8, false);
                 draw_set_color(_line_dark);
                 draw_roundrect_ext(_list_x1 + 8, _follow_y1, _list_x2 - 8, _follow_y2, 8, 8, true);
+                var _fcell_w = (_list_x2 - _list_x1) - 48;
+
                 draw_set_color(_text_dark);
-                draw_text_ext(_list_x1 + 18, _follow_y1 + 6, string_upper(string(_follow_owner.full_name)), 18, 270);
+                ui_text_row(_list_x1 + 20, _follow_y1 + 4, 32, string_upper(string(_follow_owner.full_name)), _fcell_w, UI_FS_ROW);
                 draw_set_color(_accent_blue);
-                draw_text_ext(_list_x1 + 18, _follow_y1 + 24, string(_follow_pet.name) + " • " + string(_follow_pet.breed), 18, 270);
+                ui_text_row(_list_x1 + 20, _follow_y1 + 34, 30, string(_follow_pet.name) + " • " + string(_follow_pet.breed), _fcell_w, UI_FS_ROW);
                 draw_set_color(_text_soft);
 
                 if (is_struct(_scheduled)) {
-                    draw_text_ext(_list_x1 + 18, _follow_y1 + 42, "ДЕНЬ " + string(_scheduled.scheduled_day) + " • " + hud_minute_to_clock(_scheduled.scheduled_minute), 18, 270);
+                    ui_text_row(_list_x1 + 20, _follow_y1 + 62, 30, "ДЕНЬ " + string(_scheduled.scheduled_day) + " • " + hud_minute_to_clock(_scheduled.scheduled_minute), _fcell_w, UI_FS_SMALL);
                 }
             }
         }
 
         if (selected_followup_id == "") {
             draw_set_color(_text_soft);
-            draw_text_ext(_detail_x1 + 10, _detail_y1 + 36, "Выбери повторный приём в списке слева.", 20, _detail_x2 - _detail_x1 - 20);
+            ui_text_fit_left(_detail_x1 + 14, _detail_y1 + 56, "Выбери повторный приём в списке слева.", (_detail_x2 - _detail_x1) - 28, UI_FS_ROW);
             return;
         }
 
@@ -392,38 +441,64 @@ function hud_draw_clients_database(_hud) {
 
         if (!is_struct(_selected_schedule)) {
             draw_set_color(_text_soft);
-            draw_text_ext(_detail_x1 + 10, _detail_y1 + 36, "Запись повторного приёма уже неактуальна.", 20, _detail_x2 - _detail_x1 - 20);
+            ui_text_fit_left(_detail_x1 + 14, _detail_y1 + 56, "Запись повторного приёма уже неактуальна.", (_detail_x2 - _detail_x1) - 28, UI_FS_ROW);
             return;
         }
 
         var _scheduled_owner = variable_struct_get(global.owner_db, _selected_schedule.owner_id);
         var _scheduled_pet = variable_struct_get(global.pet_db, _selected_schedule.pet_id);
 
+        // Пакет №175: те же последовательные полосы, что и в карточке клиента.
+        var _fd_x = _detail_x1 + 14;
+        var _fd_w = (_detail_x2 - _detail_x1) - 28;
+        var _fd_row = 40;
+        var _fd_y = _detail_y1 + 48;
+
         draw_set_color(_text_dark);
-        draw_text_ext(_detail_x1 + 10, _detail_y1 + 36, string_upper(string(_scheduled_owner.full_name)), 20, _detail_x2 - _detail_x1 - 20);
+        ui_text_row(_fd_x, _fd_y, 46, string_upper(string(_scheduled_owner.full_name)), _fd_w, UI_FS_TITLE);
+        _fd_y += 52;
+
         draw_set_color(_accent_blue);
-        draw_text(_detail_x1 + 10, _detail_y1 + 74, "ПИТОМЕЦ: " + string(_scheduled_pet.name));
+        ui_text_row(_fd_x, _fd_y, _fd_row, "ПИТОМЕЦ: " + string(_scheduled_pet.name), _fd_w, UI_FS_ROW);
+        _fd_y += _fd_row;
+
         draw_set_color(_text_soft);
-        draw_text(_detail_x1 + 10, _detail_y1 + 100, "ПОРОДА: " + string(_scheduled_pet.breed));
-        draw_text(_detail_x1 + 10, _detail_y1 + 126, "ТИП ВИЗИТА: " + string(_selected_schedule.visit_type_name_ru));
-        draw_text(_detail_x1 + 10, _detail_y1 + 152, "ДЕНЬ: " + string(_selected_schedule.scheduled_day));
-        draw_text(_detail_x1 + 10, _detail_y1 + 178, "ВРЕМЯ: " + hud_minute_to_clock(_selected_schedule.scheduled_minute));
-        draw_text(_detail_x1 + 10, _detail_y1 + 204, "ПРИЧИНА: " + string(_selected_schedule.reason));
-        draw_text(_detail_x1 + 10, _detail_y1 + 230, "БОЛЕЗНЬ: " + hud_get_disease_name(_selected_schedule.disease_id));
-        draw_text(_detail_x1 + 10, _detail_y1 + 256, "СТЕПЕНЬ: " + hud_get_severity_name(variable_struct_exists(_selected_schedule, "severity_level") ? _selected_schedule.severity_level : 0, variable_struct_exists(_selected_schedule, "severity_name_ru") ? string(_selected_schedule.severity_name_ru) : ""));
-        draw_text(_detail_x1 + 10, _detail_y1 + 282, "ПОДТВЕРЖДЁН: " + hud_bool_text(_selected_schedule.confirmed));
-        draw_text(_detail_x1 + 10, _detail_y1 + 308, "СТАРТОВОЕ СОСТОЯНИЕ: " + string(round(_selected_schedule.start_condition)) + "%");
-        draw_text(_detail_x1 + 10, _detail_y1 + 334, "СТАТУС: " + hud_get_visit_status_ru(_selected_schedule.status));
+
+        var _fd_lines = [
+            "ПОРОДА: " + string(_scheduled_pet.breed),
+            "ТИП ВИЗИТА: " + string(_selected_schedule.visit_type_name_ru),
+            "ДЕНЬ: " + string(_selected_schedule.scheduled_day),
+            "ВРЕМЯ: " + hud_minute_to_clock(_selected_schedule.scheduled_minute),
+            "ПРИЧИНА: " + string(_selected_schedule.reason),
+            "БОЛЕЗНЬ: " + hud_get_disease_name(_selected_schedule.disease_id),
+            "СТЕПЕНЬ: " + hud_get_severity_name(
+                variable_struct_exists(_selected_schedule, "severity_level") ? _selected_schedule.severity_level : 0,
+                variable_struct_exists(_selected_schedule, "severity_name_ru") ? string(_selected_schedule.severity_name_ru) : ""
+            ),
+            "ПОДТВЕРЖДЁН: " + hud_bool_text(_selected_schedule.confirmed),
+            "СТАРТОВОЕ СОСТОЯНИЕ: " + string(round(_selected_schedule.start_condition)) + "%",
+            "СТАТУС: " + hud_get_visit_status_ru(_selected_schedule.status)
+        ];
+
+        for (var _fd_i = 0; _fd_i < array_length(_fd_lines); _fd_i++) {
+            ui_text_row(_fd_x, _fd_y, _fd_row, _fd_lines[_fd_i], _fd_w, UI_FS_ROW);
+            _fd_y += _fd_row;
+        }
 
         var _follow_plan_lines = hud_visit_build_plan_lines(_selected_schedule);
 
         if (array_length(_follow_plan_lines) > 0) {
-            hud_frosted_fill(_detail_x1 + 10, _detail_y1 + 364, _detail_x2 - 10, _detail_y1 + 492, 8);
-            draw_set_color(_paper_2);
-            draw_roundrect_ext(_detail_x1 + 10, _detail_y1 + 364, _detail_x2 - 10, _detail_y1 + 492, 8, 8, true);
-            draw_set_color(_text_dark);
-            draw_text(_detail_x1 + 20, _detail_y1 + 370, "ПЛАН ЛЕЧЕНИЯ");
-            hud_draw_string_list(_follow_plan_lines, _detail_x1 + 20, _detail_y1 + 392, 20, 5, _detail_x2 - _detail_x1 - 40, _text_dark, _text_soft);
+            var _plan_y1 = _fd_y + 12;
+            var _plan_y2 = min(_detail_y2 - 10, _plan_y1 + 46 + 5 * 34);
+
+            if (_plan_y2 > _plan_y1 + 60) {
+                hud_frosted_fill(_fd_x, _plan_y1, _detail_x2 - 14, _plan_y2, 8);
+                draw_set_color(_paper_2);
+                draw_roundrect_ext(_fd_x, _plan_y1, _detail_x2 - 14, _plan_y2, 8, 8, true);
+                draw_set_color(_text_dark);
+                ui_text_row(_fd_x + 12, _plan_y1 + 4, 38, "ПЛАН ЛЕЧЕНИЯ", _fd_w - 24, UI_FS_HEADER);
+                hud_draw_string_list(_follow_plan_lines, _fd_x + 12, _plan_y1 + 46, 34, 5, _fd_w - 24, _text_dark, _text_soft);
+            }
         }
     }
 }

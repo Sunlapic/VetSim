@@ -21,15 +21,18 @@ function hud_measure_box(
     _pad_bottom,
     _line_gap
 ) {
+    // Пакет №175: коробка меряется под КРУПНЫЙ шрифт, которым её потом
+    // и рисуют (заголовок UI_FS_HEADER, текст UI_FS_ROW). Иначе рамка
+    // остаётся маленькой, а текст из неё вылезает.
     var _title_draw = string(_title);
     var _text_draw = string(_text);
-    var _text_sep = 20;
+    var _text_sep = round(20 * UI_FS_ROW);
     var _title_h = (_title_draw != "")
-        ? string_height(_title_draw)
+        ? string_height(_title_draw) * UI_FS_HEADER
         : 0;
     var _raw_w = max(
-        (_title_draw != "") ? string_width(_title_draw) : 0,
-        (_text_draw != "") ? string_width(_text_draw) : 0
+        (_title_draw != "") ? string_width(_title_draw) * UI_FS_HEADER : 0,
+        (_text_draw != "") ? string_width(_text_draw) * UI_FS_ROW : 0
     );
     var _w = clamp(
         _raw_w + _pad_left + _pad_right + 14,
@@ -38,7 +41,7 @@ function hud_measure_box(
     );
     var _wrap_w = _w - _pad_left - _pad_right;
     var _text_h = (_text_draw != "")
-        ? string_height_ext(_text_draw, _text_sep, _wrap_w)
+        ? string_height_ext(_text_draw, _text_sep / UI_FS_ROW, _wrap_w / UI_FS_ROW) * UI_FS_ROW
         : 0;
     var _gap = (
         _title_draw != ""

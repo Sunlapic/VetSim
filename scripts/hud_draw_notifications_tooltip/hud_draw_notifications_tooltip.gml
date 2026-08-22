@@ -174,17 +174,21 @@ function hud_draw_notifications(_hud) {
 
             draw_set_halign(fa_left);
             draw_set_valign(fa_top);
+            // Пакет №175: заголовок и текст уведомления крупным шрифтом.
             draw_set_color(_text_dark);
-            draw_text(_x1 + 34, _y1 + 16, _title);
+            ui_text_fit_left(_x1 + 36, _y1 + 16, _title, _m.wrap_w, UI_FS_HEADER);
 
             if (is_struct(_m)) {
                 draw_set_color(_text_soft);
-                draw_text_ext(
-                    _x1 + 34,
-                    _y1 + 16 + _m.title_h + 6,
+                draw_text_ext_transformed(
+                    _x1 + 36,
+                    _y1 + 16 + _m.title_h + 8,
                     _nt.text,
-                    _m.text_sep,
-                    _m.wrap_w
+                    _m.text_sep / UI_FS_ROW,
+                    _m.wrap_w / UI_FS_ROW,
+                    UI_FS_ROW,
+                    UI_FS_ROW,
+                    0
                 );
             }
 
@@ -265,16 +269,19 @@ function hud_draw_hover_tooltip(_hud) {
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
     draw_set_color(make_color_rgb(50, 38, 28));
-    draw_text(_x + 16, _y + 10, _title);
+    ui_text_fit_left(_x + 16, _y + 10, _title, _measure.wrap_w, UI_FS_HEADER);
 
     if (_subtitle != "") {
         draw_set_color(make_color_rgb(84, 68, 54));
-        draw_text_ext(
+        draw_text_ext_transformed(
             _x + 16,
-            _y + 10 + _measure.title_h + 4,
+            _y + 10 + _measure.title_h + 6,
             _subtitle,
-            _measure.text_sep,
-            _measure.wrap_w
+            _measure.text_sep / UI_FS_ROW,
+            _measure.wrap_w / UI_FS_ROW,
+            UI_FS_ROW,
+            UI_FS_ROW,
+            0
         );
     }
 }
