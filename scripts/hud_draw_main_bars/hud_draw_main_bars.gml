@@ -150,7 +150,7 @@ function hud_draw_main_bars(_hud) {
             _line_dark
         );
 
-        // ── Пять окошек одинаковой ширины ──
+        // ── Шесть окошек одинаковой ширины (пакет №196: добавлен ШТАТ) ──
         var _y1 = topbar_y1 + 8;
         var _y2 = topbar_y2 - 8;
         var _gap = 10;
@@ -160,9 +160,9 @@ function hud_draw_main_bars(_hud) {
         var _pad = 30;
         var _box_w = string_width("РЕПУТАЦИЯ") * _label_scale + _pad;
 
-        var _avail = (_right - _left) - _gap * 4;
-        if (5 * _box_w > _avail) {
-            _box_w = floor(_avail / 5);
+        var _avail = (_right - _left) - _gap * 5;
+        if (6 * _box_w > _avail) {
+            _box_w = floor(_avail / 6);
         }
 
         var _fit_w = _box_w - 16;
@@ -214,6 +214,26 @@ function hud_draw_main_bars(_hud) {
             _x + _box_w * 0.5, _y1, _y2,
             "БАЛЛЫ", string(clinic_get_points()),
             _accent_gold, _label_light,
+            _label_scale, _value_scale, _fit_w, _shift_down, _value_gap
+        );
+        _x += _box_w + _gap;
+
+        // 6) ШТАТ (пакет №196): сколько сотрудников нанято и сколько
+        // всего слотов найма. Главный игрок не считается — слоты всегда
+        // считались без него, как и в дереве развития.
+        var _staff_hired = instance_number(obj_staff_doctor)
+            + instance_number(obj_staff_admin)
+            + instance_number(obj_staff_assistant);
+        var _staff_slots = clinic_get_hire_slots();
+        var _staff_col = (_staff_hired >= _staff_slots)
+            ? make_color_rgb(235, 120, 105)
+            : _accent_green;
+
+        hud_draw_top_card(_x, _y1, _x + _box_w, _y2);
+        hud_draw_top_value(
+            _x + _box_w * 0.5, _y1, _y2,
+            "ШТАТ", string(_staff_hired) + "/" + string(_staff_slots),
+            _staff_col, _label_light,
             _label_scale, _value_scale, _fit_w, _shift_down, _value_gap
         );
 
