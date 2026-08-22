@@ -422,6 +422,9 @@ global.daily_stats = {
 global.day_summary_open = false;
 global.day_summary_ready = false;
 global.day_summary_wait_frames = 0;
+// Пакет №210: обратный отсчёт до автоматического начала нового дня.
+// -1 означает «окно закрыто, отсчёт не идёт».
+global.day_summary_autoclose = -1;
 
 // Состояние ежедневной выплаты зарплаты.
 global.finance_last_payroll_day = -1;

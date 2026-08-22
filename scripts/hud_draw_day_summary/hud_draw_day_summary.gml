@@ -9,10 +9,33 @@
 ///   • Всё окно и текст крупнее в 2 раза (_scale). Если окно не влезает
 ///     по высоте экрана, масштаб автоматически уменьшается.
 
+/// Пакет №210: окно само закрывается через 10 секунд, рядом с кнопкой
+/// идёт обратный отсчёт.
 function hud_draw_day_summary(_hud) {
     if (!instance_exists(_hud)) return;
     if (!variable_global_exists("day_summary_open")) return;
-    if (!global.day_summary_open || !global.day_summary_ready) return;
+
+    // Окно закрыто — таймер сбрасывается, чтобы завтра отсчёт начался заново.
+    if (!global.day_summary_open || !global.day_summary_ready) {
+        global.day_summary_autoclose = -1;
+        return;
+    }
+
+    if (!variable_global_exists("day_summary_autoclose")) {
+        global.day_summary_autoclose = -1;
+    }
+
+    var _fps_auto = max(1, game_get_speed(gamespeed_fps));
+
+    if (global.day_summary_autoclose < 0) {
+        global.day_summary_autoclose = _fps_auto * 10;
+    }
+    else if (global.day_summary_autoclose > 0) {
+        global.day_summary_autoclose -= 1;
+    }
+
+    var _auto_left = global.day_summary_autoclose;
+    var _auto_seconds = max(0, ceil(_auto_left / _fps_auto));
 
     with (_hud) {
         // ── Шрифт обязателен: без него кириллица не рисуется ──
@@ -276,11 +299,16 @@ function hud_draw_day_summary(_hud) {
         draw_set_color(_line_dark);
         draw_roundrect_ext(_button_x1, _button_y1, _button_x2, _button_y2, 10, 10, true);
 
+        // Пакет №210: кружок обратного отсчёта в правой части кнопки.
+        var _timer_r = (_button_y2 - _button_y1) * 0.34;
+        var _timer_cx = _button_x2 - _timer_r - 18;
+        var _timer_cy = (_button_y1 + _button_y2) * 0.5;
+
         draw_set_halign(fa_center);
         draw_set_valign(fa_middle);
         draw_set_color(_text_dark);
         draw_text_transformed(
-            (_button_x1 + _button_x2) * 0.5,
+            ((_button_x1 + (_timer_cx - _timer_r)) * 0.5),
             (_button_y1 + _button_y2) * 0.5 + 1,
             "НОВЫЙ ДЕНЬ",
             _scale * 1.2,
@@ -288,14 +316,59 @@ function hud_draw_day_summary(_hud) {
             0
         );
 
+        // Кружок с числом секунд: чем меньше осталось, тем он краснее.
+        var _timer_fill = (_auto_seconds <= 3)
+            ? make_color_rgb(232, 200, 194)
+            : make_color_rgb(226, 236, 222);
+        var _timer_line = (_auto_seconds <= 3) ? _red : _green;
+
+        draw_set_color(_timer_fill);
+        draw_circle(_timer_cx, _timer_cy, _timer_r, false);
+        draw_set_color(_timer_line);
+        draw_circle(_timer_cx, _timer_cy, _timer_r, true);
+        draw_circle(_timer_cx, _timer_cy, _timer_r - 1, true);
+
+        draw_set_color(_timer_line);
+        draw_text_transformed(
+            _timer_cx,
+            _timer_cy + 1,
+            string(_auto_seconds),
+            _scale * 1.25,
+            _scale * 1.25,
+            0
+        );
+
+        // Подпись под кнопкой — понятно, что окно закроется само.
+        draw_set_color(_text_soft);
+        draw_text_transformed(
+            (_button_x1 + _button_x2) * 0.5,
+            _button_y1 - 16 * _scale,
+            "Новый день начнётся сам через " + string(_auto_seconds) + " сек",
+            _scale * 0.8,
+            _scale * 0.8,
+            0
+        );
+
+        var _start_new_day = false;
+
         if (
             _button_hovered
             && tablet_click_lock <= 0
             && mouse_check_button_pressed(mb_left)
         ) {
             tablet_click_lock = 5;
+            _start_new_day = true;
+        }
+
+        // Отсчёт дошёл до нуля — кнопка нажимается сама.
+        if (_auto_left <= 0) {
+            _start_new_day = true;
+        }
+
+        if (_start_new_day) {
             global.day_summary_open = false;
             global.day_summary_ready = false;
+            global.day_summary_autoclose = -1;
             global.time_paused = false;
         }
 
