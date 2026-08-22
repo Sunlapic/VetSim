@@ -11,13 +11,17 @@ function tablet_candidate_draw_hidden_skill_row(
     _x,
     _y,
     _width,
-    _ui_scale
+    _ui_scale,
+    _metrics = undefined
 ) {
-    var _level_x = _x + 108 * _ui_scale;
-    var _bar_x = _x + 124 * _ui_scale;
-    var _bar_w = 92 * _ui_scale;
-    var _bar_h = 9 * _ui_scale;
-    var _row_h = 10.5 * _ui_scale;
+    if (!is_struct(_metrics)) _metrics = tablet_skill_metrics_default(_ui_scale);
+
+    // Пакет №197: колонки и шрифт — как в обычной строке навыка.
+    var _level_x = _x + _width * 0.32;
+    var _bar_x = _x + _width * 0.37;
+    var _bar_w = _width * 0.27;
+    var _bar_h = min(_metrics.row_h * 0.72, 13) * _ui_scale;
+    var _row_h = _metrics.row_h * _ui_scale;
     var _row_center_y = _y + _row_h * 0.5;
     var _bar_y1 = _row_center_y - _bar_h * 0.5;
     var _bar_y2 = _row_center_y + _bar_h * 0.5;
@@ -30,8 +34,8 @@ function tablet_candidate_draw_hidden_skill_row(
         _x,
         _row_center_y,
         "???",
-        0.52 * _ui_scale,
-        0.58 * _ui_scale,
+        _metrics.font * _ui_scale,
+        _metrics.font * _ui_scale,
         0
     );
 
@@ -40,8 +44,8 @@ function tablet_candidate_draw_hidden_skill_row(
         _level_x,
         _row_center_y,
         "?",
-        0.52 * _ui_scale,
-        0.58 * _ui_scale,
+        _metrics.font * _ui_scale,
+        _metrics.font * _ui_scale,
         0
     );
 
@@ -74,27 +78,28 @@ function tablet_candidate_draw_hidden_skill_row(
         _bar_x + _bar_w * 0.5,
         _row_center_y,
         "???",
-        0.44 * _ui_scale,
-        0.50 * _ui_scale,
+        _metrics.font_small * _ui_scale,
+        _metrics.font_small * _ui_scale,
         0
     );
 
+    draw_set_halign(fa_center);
     draw_set_color(make_color_rgb(84, 68, 54));
     draw_text_transformed(
-        _x + 242 * _ui_scale,
+        _x + _width * 0.72,
         _row_center_y,
         "?",
-        0.52 * _ui_scale,
-        0.58 * _ui_scale,
+        _metrics.font * _ui_scale,
+        _metrics.font * _ui_scale,
         0
     );
 
     draw_text_transformed(
-        _x + 292 * _ui_scale,
+        _x + _width * 0.90,
         _row_center_y,
         "?",
-        0.52 * _ui_scale,
-        0.58 * _ui_scale,
+        _metrics.font * _ui_scale,
+        _metrics.font * _ui_scale,
         0
     );
 
@@ -118,12 +123,14 @@ function tablet_candidate_draw_compact_skill_group(
     _fill_color,
     _line_color,
     _best_uid_1,
-    _best_uid_2
+    _best_uid_2,
+    _metrics = undefined
 ) {
     if (!is_array(_rows) || array_length(_rows) <= 0) return _y;
+    if (!is_struct(_metrics)) _metrics = tablet_skill_metrics_default(_ui_scale);
 
-    var _header_h = 14 * _ui_scale;
-    var _row_h = 10.5 * _ui_scale;
+    var _header_h = _metrics.header_h * _ui_scale;
+    var _row_h = _metrics.row_h * _ui_scale;
     var _bottom_padding = 3 * _ui_scale;
     var _height = _header_h + array_length(_rows) * _row_h + _bottom_padding;
 
@@ -154,8 +161,8 @@ function tablet_candidate_draw_compact_skill_group(
         _x + 6 * _ui_scale,
         _y + 3 * _ui_scale,
         _title,
-        0.58 * _ui_scale,
-        0.64 * _ui_scale,
+        _metrics.font_title * _ui_scale,
+        _metrics.font_title * _ui_scale,
         0
     );
 
@@ -188,14 +195,16 @@ function tablet_candidate_draw_compact_skill_group(
                 _row_y,
                 _width - 14 * _ui_scale,
                 _ui_scale,
-                _row
+                _row,
+                _metrics
             );
         } else {
             tablet_candidate_draw_hidden_skill_row(
                 _x + 7 * _ui_scale,
                 _row_y,
                 _width - 14 * _ui_scale,
-                _ui_scale
+                _ui_scale,
+                _metrics
             );
         }
     }
@@ -459,11 +468,31 @@ function tablet_draw_candidate_skills(
     _x,
     _y,
     _width,
-    _ui_scale
+    _ui_scale,
+    _max_height = 0
 ) {
     if (!instance_exists(_target)) return;
 
     var _data = tablet_candidate_get_skill_data(_target);
+
+    // Пакет №197: те же адаптивные размеры, что и в карточке сотрудника.
+    var _cand_rows = array_length(_data.doctor_rows)
+        + array_length(_data.admin_rows)
+        + array_length(_data.assistant_rows)
+        + array_length(_data.common_rows);
+    var _cand_groups = 0;
+
+    if (array_length(_data.doctor_rows) > 0) _cand_groups += 1;
+    if (array_length(_data.admin_rows) > 0) _cand_groups += 1;
+    if (array_length(_data.assistant_rows) > 0) _cand_groups += 1;
+    if (array_length(_data.common_rows) > 0) _cand_groups += 1;
+
+    var _metrics = tablet_skill_metrics(
+        _ui_scale,
+        _cand_rows,
+        _cand_groups,
+        _max_height
+    );
 
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
@@ -472,34 +501,34 @@ function tablet_draw_candidate_skills(
         _x,
         _y,
         "НАВЫКИ:",
-        0.72 * _ui_scale,
-        0.78 * _ui_scale,
+        _metrics.font_title * _ui_scale * 1.15,
+        _metrics.font_title * _ui_scale * 1.15,
         0
     );
 
     draw_set_halign(fa_center);
     draw_set_color(make_color_rgb(84, 68, 54));
     draw_text_transformed(
-        _x + 249 * _ui_scale,
+        _x + _width * 0.72,
         _y + 3 * _ui_scale,
         "СКОРОСТЬ",
-        0.52 * _ui_scale,
-        0.58 * _ui_scale,
+        _metrics.font_small * _ui_scale,
+        _metrics.font_small * _ui_scale,
         0
     );
 
     draw_text_transformed(
-        _x + 299 * _ui_scale,
+        _x + _width * 0.90,
         _y + 3 * _ui_scale,
         "КАЧЕСТВО",
-        0.52 * _ui_scale,
-        0.58 * _ui_scale,
+        _metrics.font_small * _ui_scale,
+        _metrics.font_small * _ui_scale,
         0
     );
 
     draw_set_halign(fa_left);
 
-    var _group_y = _y + 20 * _ui_scale;
+    var _group_y = _y + 22 * _ui_scale;
     var _group_gap = 4 * _ui_scale;
 
     if (array_length(_data.doctor_rows) > 0) {
@@ -513,7 +542,8 @@ function tablet_draw_candidate_skills(
             make_color_rgb(232, 240, 248),
             make_color_rgb(104, 135, 160),
             _data.best_uid_1,
-            _data.best_uid_2
+            _data.best_uid_2,
+            _metrics
         ) + _group_gap;
     }
 
@@ -528,7 +558,8 @@ function tablet_draw_candidate_skills(
             make_color_rgb(248, 235, 240),
             make_color_rgb(158, 108, 128),
             _data.best_uid_1,
-            _data.best_uid_2
+            _data.best_uid_2,
+            _metrics
         ) + _group_gap;
     }
 
@@ -543,7 +574,8 @@ function tablet_draw_candidate_skills(
             make_color_rgb(235, 246, 234),
             make_color_rgb(95, 140, 96),
             _data.best_uid_1,
-            _data.best_uid_2
+            _data.best_uid_2,
+            _metrics
         ) + _group_gap;
     }
 
@@ -557,7 +589,8 @@ function tablet_draw_candidate_skills(
         make_color_rgb(246, 242, 226),
         make_color_rgb(145, 126, 84),
         _data.best_uid_1,
-        _data.best_uid_2
+        _data.best_uid_2,
+        _metrics
     );
 
     draw_set_color(c_white);

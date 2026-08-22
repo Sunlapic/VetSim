@@ -863,13 +863,16 @@ function tablet_draw_staff_card(
         _content_bottom
     );
 
+    // Пакет №197: передаём высоту панели — таблица навыков сама выберет
+    // максимально крупный шрифт, при котором всё влезает.
     tablet_draw_staff_skills(
         _target,
         _right_x1 + _padding,
         _content_top + _padding,
         _right_x2 - _right_x1 - _padding * 2,
         _ui_scale,
-        _tablet
+        _tablet,
+        (_content_bottom - _content_top) - _padding * 2
     );
 
 

@@ -457,12 +457,14 @@ function tablet_draw_candidate_card(
         _content_bottom
     );
 
+    // Пакет №197: передаём высоту панели — шрифт навыков подберётся сам.
     tablet_draw_candidate_skills(
         _target,
         _right_x1 + _padding,
         _content_top + _padding,
         _right_x2 - _right_x1 - _padding * 2,
-        _ui_scale
+        _ui_scale,
+        (_content_bottom - _content_top) - _padding * 2
     );
 
 

@@ -791,7 +791,9 @@ tablet_draw_staff_skills(
     _skills_x,
     _skills_y,
     _skills_width,
-    _ui_scale
+    _ui_scale,
+    noone,
+    200 * _ui_scale
 );
 // ─────────────────────────────────────────────
 // 9. СОЦИАЛЬНЫЙ/ПРАВЫЙ БЛОК
