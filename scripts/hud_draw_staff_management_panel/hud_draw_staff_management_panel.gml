@@ -141,6 +141,46 @@ function hud_staff_manage_role_text(_staff) {
     return "СОТРУДНИК";
 }
 
+// Пакет №182: короткое название места работы для списка.
+function hud_staff_manage_workplace_text(_staff) {
+    if (!instance_exists(_staff)) return "";
+    if (_staff.object_index == obj_player) return "Главный врач";
+
+    staff_workplace_init(_staff);
+
+    var _wp = variable_instance_exists(_staff, "workplace_id")
+        ? string(_staff.workplace_id)
+        : "reception";
+
+    if (_wp == "operating") {
+        var _role = variable_instance_exists(_staff, "operating_role")
+            ? string(_staff.operating_role)
+            : "";
+
+        switch (_role) {
+            case "surgeon": return "Хирург";
+            case "anesthetist": return "Анестезиолог";
+            case "assistant": return "Операционная";
+        }
+
+        return "Операционная";
+    }
+
+    if (_wp == "inpatient") return "Стационар";
+
+    return "Приём";
+}
+
+// Строка «Врач — Стационар».
+function hud_staff_manage_role_line(_staff) {
+    var _role = hud_staff_manage_role_text(_staff);
+    var _place = hud_staff_manage_workplace_text(_staff);
+
+    if (_place == "") return _role;
+
+    return _role + " — " + _place;
+}
+
 function hud_staff_manage_status_text(_staff) {
     if (!instance_exists(_staff)) return "";
 
@@ -153,6 +193,10 @@ function hud_staff_manage_status_text(_staff) {
             case "inpatient_at_chair": return "Дежурит в стационаре";
             case "inpatient_prescribing": return "Назначает лечение";
             case "cleaning_dirt": return "Убирает";
+            // Пакет №182: состояния операционной.
+            case "operating_idle": return "Ждёт операцию";
+            case "operating_going_to_point": return "Идёт в операционную";
+            case "operating_at_point": return "На операции";
         }
     }
 
@@ -171,6 +215,18 @@ function hud_staff_manage_status_text(_staff) {
             case "cleaning_dirt": return "Убирает";
             case "inpatient_available": return "Дежурит в стационаре";
             case "inpatient_treating": return "Лечит в стационаре";
+            // Пакет №182: состояния операционной и хозяйственных дел.
+            case "operating_idle": return "Ждёт операцию";
+            case "operating_escort": return "Везёт пациента";
+            case "operating_going_to_point": return "Идёт в операционную";
+            case "operating_at_point": return "На операции";
+            case "operating_recovery": return "Везёт в палату";
+            case "operating_recovery_care": return "Ухаживает после операции";
+            case "restock_going_to_storage": return "Идёт за препаратами";
+            case "restock_picking_up": return "Берёт препараты";
+            case "restock_going_to_cabinet": return "Несёт в шкаф";
+            case "restock_putting_in": return "Пополняет шкаф";
+            case "cleaning_going_to_dirt": return "Идёт убирать";
         }
     }
 
@@ -291,9 +347,11 @@ function hud_staff_manage_draw_roster(
 
     var _entries = hud_staff_manage_build_entries();
     var _entry_count = array_length(_entries);
-    var _header_h = 30;
-    var _row_h = 78;
-    var _row_gap = 7;
+    // Пакет №182: строка вмещает имя, «роль — место работы» и статус
+    // крупным шрифтом, каждая надпись в своей полосе.
+    var _header_h = 46;
+    var _row_h = 132;
+    var _row_gap = 9;
 
     hud_frosted_fill(_x1, _y1, _x2, _y2, 10);
     draw_set_color(_line);
@@ -306,7 +364,7 @@ function hud_staff_manage_draw_roster(
 
     var _rows_x1 = _x1 + 12;
     var _rows_x2 = _x2 - 12;
-    var _rows_y1 = _y1 + 40;
+    var _rows_y1 = _y1 + 58;
     var _rows_y2 = _y2 - 28;
     var _inside_list = point_in_rectangle(
         _mouse_x,
@@ -520,57 +578,22 @@ function hud_staff_manage_draw_roster(
             true
         );
 
-        // Каждая надпись занимает ровно одну строку. Длинный текст
-        // пропорционально сжимается только по горизонтали.
-        var _text_x = _row_x1 + 12;
-        var _text_available_w = _row_x2 - _row_x1 - 24;
+        // Пакет №182: три полосы фиксированной высоты — имя крупно,
+        // под ним «роль — место работы», ниже текущее состояние.
+        var _text_x = _row_x1 + 14;
+        var _text_available_w = _row_x2 - _row_x1 - 28;
         var _name_text = string_upper(string(_staff.char_name));
-        var _role_text = hud_staff_manage_role_text(_staff);
+        var _role_text = hud_staff_manage_role_line(_staff);
         var _status_text = hud_staff_manage_status_text(_staff);
-        var _name_scale = min(
-            1,
-            _text_available_w / max(1, string_width(_name_text))
-        );
-        var _role_scale = min(
-            1,
-            _text_available_w / max(1, string_width(_role_text))
-        );
-        var _status_scale = min(
-            1,
-            _text_available_w / max(1, string_width(_status_text))
-        );
 
-        draw_set_halign(fa_left);
-        draw_set_valign(fa_top);
         draw_set_color(_text_dark);
-        draw_text_transformed(
-            _text_x,
-            _row_y1 + 8,
-            _name_text,
-            _name_scale,
-            1,
-            0
-        );
+        ui_text_row(_text_x, _row_y1 + 8, 44, _name_text, _text_available_w, UI_FS_TITLE);
 
         draw_set_color(_colors.line);
-        draw_text_transformed(
-            _text_x,
-            _row_y1 + 32,
-            _role_text,
-            _role_scale,
-            1,
-            0
-        );
+        ui_text_row(_text_x, _row_y1 + 52, 36, _role_text, _text_available_w, UI_FS_ROW);
 
         draw_set_color(_text_soft);
-        draw_text_transformed(
-            _text_x,
-            _row_y1 + 56,
-            _status_text,
-            _status_scale,
-            1,
-            0
-        );
+        ui_text_row(_text_x, _row_y1 + 88, 34, _status_text, _text_available_w, UI_FS_ROW);
 
         if (
             _hovered
@@ -982,7 +1005,8 @@ function hud_draw_staff_management_panel(_hud) {
     // Пакет №180: полоса под общий размер вкладки + зазор.
     var _tab_area_h = UI_TAB_H + 16;
     var _column_gap = 14;
-    var _list_w = clamp(_gui_w * 0.18, 280, 340);
+    // Пакет №182: колонка шире — в неё влезают имя и место работы крупно.
+    var _list_w = clamp(_gui_w * 0.26, 400, 560);
     var _actions_w = clamp(_gui_w * 0.09, 142, 172);
     var _top_limit = 14;
     var _bottom_limit = _gui_h - 14;
