@@ -1079,13 +1079,17 @@ function hud_draw_staff_management_panel(_hud) {
     var _mouse_y = device_mouse_y_to_gui(0);
     var _gui_w = display_get_gui_width();
     var _gui_h = display_get_gui_height();
+    // Пакет №193: раскладка один в один как в окне КЛИЕНТЫ, чтобы при
+    // переключении между окнами ничего не прыгало:
+    //   отступ слева 28, вкладки от +26 по Y +22, список шириной 470,
+    //   верх списка на +122 от края панели, низ на -32.
     var _outer_pad = 18;
-    // Пакет №180: полоса под общий размер вкладки + зазор.
     var _tab_area_h = UI_TAB_H + 16;
-    var _column_gap = 14;
-    // Пакет №182: колонка шире — в неё влезают имя и место работы крупно.
-    var _list_w = clamp(_gui_w * 0.26, 400, 560);
+    var _column_gap = 20;
+    var _list_w = 470;
     var _actions_w = clamp(_gui_w * 0.09, 142, 172);
+    var _side_pad = 28;
+    var _list_top_offset = 122;
     var _top_limit = 14;
     var _bottom_limit = _gui_h - 14;
 
@@ -1105,15 +1109,15 @@ function hud_draw_staff_management_panel(_hud) {
     var _standard_scale = hud_staff_manage_get_standard_scale();
     var _scale_by_width = (
         _available_w
-        - _outer_pad * 2
+        - _side_pad * 2
         - _list_w
         - _actions_w
         - _column_gap * 2
     ) / 536;
     var _scale_by_height = (
         _available_h
-        - _outer_pad * 2
-        - _tab_area_h
+        - _list_top_offset
+        - 32
     ) / 396;
     var _card_scale = max(
         0.70,
@@ -1125,13 +1129,9 @@ function hud_draw_staff_management_panel(_hud) {
     );
     var _card_w = 536 * _card_scale;
     var _card_h = 396 * _card_scale;
-    var _content_w = _list_w
-        + _column_gap
-        + _card_w
-        + _column_gap
-        + _actions_w;
     // Пакет №181: рамка окна — общая для всех пяти панелей нижнего меню.
-    // Содержимое (список + карточка + действия) центрируется внутри неё.
+    // Пакет №193: содержимое больше НЕ центрируется — список прижат к левому
+    // краю ровно так же, как список клиентов.
     var _panel_rect = ui_panel_rect();
     var _panel_x1 = _panel_rect.x1;
     var _panel_y1 = _panel_rect.y1;
@@ -1139,7 +1139,6 @@ function hud_draw_staff_management_panel(_hud) {
     var _panel_y2 = _panel_rect.y2;
     var _panel_w = _panel_x2 - _panel_x1;
     var _panel_h = _panel_y2 - _panel_y1;
-    var _content_offset_x = max(0, (_panel_w - _outer_pad * 2 - _content_w) * 0.5);
 
     hud_staff_manage_draw_outer_panel(
         _panel_x1,
@@ -1149,8 +1148,8 @@ function hud_draw_staff_management_panel(_hud) {
     );
 
     // Пакет №180: полоса вкладок под общий размер UI_TAB_H.
-    var _tab_x1 = _panel_x1 + _outer_pad;
-    var _tab_y1 = _panel_y1 + 16;
+    var _tab_x1 = _panel_x1 + 26;
+    var _tab_y1 = _panel_y1 + 22;
     var _tab_x2 = _panel_x2 - 20 - UI_TAB_H - UI_TAB_GAP;
     var _tab_y2 = _tab_y1 + UI_TAB_H;
     var _current_tab = staff_hiring_search_draw_tabs(
@@ -1163,16 +1162,16 @@ function hud_draw_staff_management_panel(_hud) {
         _mouse_y
     );
 
-    var _content_x1 = _panel_x1 + _outer_pad + _content_offset_x;
-    var _content_y1 = _panel_y1 + _outer_pad + _tab_area_h;
-    var _content_y2 = _content_y1 + _card_h;
+    var _content_x1 = _panel_x1 + _side_pad;
+    var _content_y1 = _panel_y1 + _list_top_offset;
+    var _content_y2 = _panel_y2 - 32;
 
     if (_current_tab == "search") {
         staff_hiring_search_draw_page(
             _hud,
             _content_x1,
             _content_y1,
-            _panel_x2 - _outer_pad,
+            _panel_x2 - _side_pad,
             _content_y2,
             _mouse_x,
             _mouse_y
@@ -1203,13 +1202,15 @@ function hud_draw_staff_management_panel(_hud) {
             _card_scale
         );
 
+        // Карточка ниже списка не тянется — её высота фиксированная.
+
         hud_staff_manage_draw_actions(
             _hud,
             _hud.selected_staff_id,
             _actions_x1,
             _content_y1,
             _actions_x2,
-            _content_y2,
+            _content_y1 + _card_h,
             _mouse_x,
             _mouse_y
         );
@@ -1218,7 +1219,8 @@ function hud_draw_staff_management_panel(_hud) {
     // Общий крестик закрывает обе вкладки панели.
     var _close_x2 = _panel_x2 - 20;
     var _close_x1 = _close_x2 - UI_TAB_H;
-    var _close_y1 = _panel_y1 + 16;
+    // Пакет №193: крестик на одной линии с вкладками.
+    var _close_y1 = _panel_y1 + 22;
     var _close_y2 = _close_y1 + UI_TAB_H;
     var _close_enabled = !_hud.staff_manage_fire_confirm;
     var _close_hovered = _close_enabled
