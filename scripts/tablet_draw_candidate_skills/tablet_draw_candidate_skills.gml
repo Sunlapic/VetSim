@@ -487,7 +487,8 @@ function tablet_draw_candidate_skills(
     if (array_length(_data.assistant_rows) > 0) _cand_groups += 1;
     if (array_length(_data.common_rows) > 0) _cand_groups += 1;
 
-    var _metrics = tablet_skill_metrics(
+    // У кандидата прокрутки нет — таблица обязана влезть целиком.
+    var _metrics = tablet_skill_metrics_fit(
         _ui_scale,
         _cand_rows,
         _cand_groups,
