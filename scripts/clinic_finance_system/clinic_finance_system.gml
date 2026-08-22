@@ -1859,11 +1859,24 @@ function hud_draw_finance_price_panel(_hud) {
         { id : "medicines", text : "ПРЕПАРАТЫ" }
     ];
     // Пакет №177: вкладки крупнее, места хватает.
-    var _tab_x = _x1 + 430;
+    // Пакет №178: блок вкладок прижат влево и никогда не наезжает на крестик —
+    // его правый край считается от кнопки закрытия, а не задан числом.
     var _tab_y1 = _y1 + 16;
     var _tab_y2 = _tab_y1 + 60;
     var _tab_w = 210;
     var _tab_gap = 10;
+
+    var _tabs_total = 3 * _tab_w + 2 * _tab_gap;
+
+    // Кнопка закрытия начинается на _x2 - 76, оставляем перед ней 40 px зазора.
+    var _tabs_right_limit = (_x2 - 76) - 40;
+    var _tab_x = min(_x1 + 380, _tabs_right_limit - _tabs_total);
+
+    // Но и на заголовок «ФИНАНСЫ И ПРАЙС-ЛИСТ» тоже не наезжаем.
+    _tab_x = max(
+        _x1 + 24 + string_width("ФИНАНСЫ И ПРАЙС-ЛИСТ") * UI_FS_TITLE + 30,
+        _tab_x
+    );
     var _pressed = finance_ui_pointer_pressed();
 
     for (var _tab_index = 0; _tab_index < array_length(_tabs); _tab_index++) {
