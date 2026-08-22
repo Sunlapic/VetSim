@@ -281,10 +281,10 @@ function hud_draw_clinic_storage(_hud) {
         draw_roundrect_ext(_left_x1, _left_y1, _left_x2, _left_y2, 10, 10, true);
         draw_roundrect_ext(_right_x1, _right_y1, _right_x2, _right_y2, 10, 10, true);
 
+        // Пакет №204: подпись «ХРАНИЛИЩА» убрана — список начинается сразу
+        // от верха колонки и занимает её целиком.
         draw_set_halign(fa_left);
         draw_set_valign(fa_top);
-        draw_set_color(_text_dark);
-        ui_text_fit_left(_left_x1 + 16, _left_y1 + 10, "ХРАНИЛИЩА", (_left_x2 - _left_x1) - 32, UI_FS_TITLE);
 
         var _selected_label = "СКЛАД";
         var _selected_inventory = global.inventory_main;
@@ -333,8 +333,8 @@ function hud_draw_clinic_storage(_hud) {
         // Пакет №175: строки выше — крупный шрифт помещается целиком.
         // Пакет №203: строка хранилища крупная, как карточка клиента.
         var _scope_row_height = 84;
-        var _scope_start_y = _left_y1 + 58;
-        var _scope_view_bottom = _left_y2 - 8;
+        var _scope_start_y = _left_y1 + 12;
+        var _scope_view_bottom = _left_y2 - 10;
         var _scope_visible_count = max(
             1,
             floor((_scope_view_bottom - _scope_start_y) / _scope_row_height)
@@ -470,78 +470,18 @@ function hud_draw_clinic_storage(_hud) {
             array_length(storage_scope_entries)
         );
 
-        draw_set_halign(fa_left);
-        draw_set_valign(fa_top);
-        draw_set_color(_text_dark);
-        ui_text_fit_left(_right_x1 + 16, _right_y1 + 10, _selected_label, (_right_x2 - _right_x1) - 32, UI_FS_TITLE);
-        draw_set_color(_text_soft);
-
-        if (_is_main_storage) {
-            var _hint_w = _right_x2 - _right_x1 - 24;
-            var _hint_s = UI_FS_ROW;
-
-            draw_text_ext_transformed(
-                _right_x1 + 20,
-                _right_y1 + 58,
-                "Здесь можно закупить препараты. Кабинетные шкафы автоматически пополняются ассистентом.",
-                24,
-                _hint_w / _hint_s,
-                _hint_s,
-                _hint_s,
-                0
-            );
-        }
-        else {
-            var _cab_w = _right_x2 - _right_x1 - 24;
-            var _cab_s = UI_FS_ROW;
-
-            draw_text_ext_transformed(
-                _right_x1 + 20,
-                _right_y1 + 58,
-                "Это кабинетный шкаф. Препараты сюда приносит ассистент.\nКупить препараты можно на СКЛАДЕ.",
-                24,
-                _cab_w / _cab_s,
-                _cab_s,
-                _cab_s,
-                0
-            );
-
-            var _link_text = "> Перейти к СКЛАДУ для закупки";
-            var _link_x1 = _right_x1 + 20;
-            var _link_y1 = _right_y1 + 58;
-            var _link_scale = ui_fit_scale(_link_text, (_right_x2 - _right_x1) - 26, UI_FS_ROW);
-            var _link_x2 = _link_x1 + string_width(_link_text) * _link_scale + 10;
-            var _link_y2 = _link_y1 + string_height(_link_text) * _link_scale;
-            var _link_hover = point_in_rectangle(
-                _mouse_x,
-                _mouse_y,
-                _link_x1,
-                _link_y1,
-                _link_x2,
-                _link_y2
-            );
-
-            draw_set_color(
-                _link_hover
-                    ? _accent_blue
-                    : make_color_rgb(50, 90, 140)
-            );
-            ui_text_fit_left(_link_x1, _link_y1, _link_text, (_right_x2 - _right_x1) - 26, UI_FS_ROW);
-
-            if (
-                _link_hover
-                && tablet_click_lock <= 0
-                && mouse_check_button_pressed(mb_left)
-            ) {
-                tablet_click_lock = 5;
-                storage_scope_selected = "main";
-                storage_scope_selected_inst = noone;
-            }
-        }
+        // Пакет №204: справа теперь только таблица — ни заголовка, ни
+        // пояснений, ни ссылки. Что за хранилище открыто, видно по
+        // подсвеченной строке в списке слева. Освободившееся место
+        // отдано списку препаратов.
+        //
+        // Клик по ссылке «Перейти к СКЛАДУ» больше не нужен: склад
+        // выбирается первой строкой списка слева.
 
         // Пакет №70: нижняя граница списка препаратов (над блоком «НУЖНО ДОКУПИТЬ»).
-        // Пакет №203: блок «НУЖНО ДОКУПИТЬ» выше — под крупный шрифт.
-        var _shortage_y = _right_y2 - 170;
+        // Пакет №204: блока «НУЖНО ДОКУПИТЬ» больше нет, список идёт
+        // до самого низа колонки.
+        var _shortage_y = _right_y2 - 6;
 
         if (array_length(global.item_ids) > 0) {
             // Пакет №71: скидка аптеки на закупку препаратов.
@@ -558,7 +498,7 @@ function hud_draw_clinic_storage(_hud) {
             // справа хватает с запасом — оно всё равно пустовало.
             // ═══════════════════════════════════════════════════
 
-            var _list_top_y = _right_y1 + 104;
+            var _list_top_y = _right_y1 + 14;
             var _right_w = _right_x2 - _right_x1;
             var _font_scale = 1.45;
 
@@ -802,58 +742,8 @@ function hud_draw_clinic_storage(_hud) {
             );
         }
 
-        var _shortages = inventory_collect_shortages();
-        draw_set_halign(fa_left);
-        draw_set_valign(fa_top);
-        draw_set_color(_paper_2);
-        draw_line(_right_x1 + 10, _shortage_y - 8, _right_x2 - 10, _shortage_y - 8);
-        draw_set_color(_text_dark);
-        ui_text_fit_left(_right_x1 + 20, _shortage_y, "НУЖНО ДОКУПИТЬ", (_right_x2 - _right_x1) - 40, UI_FS_HEADER);
-
-        if (array_length(_shortages) <= 0) {
-            draw_set_color(_text_soft);
-            var _ok_w = _right_x2 - _right_x1 - 24;
-            var _ok_s = UI_FS_ROW;
-
-            draw_text_ext_transformed(
-                _right_x1 + 20,
-                _shortage_y + 48,
-                "Все текущие назначения обеспечены препаратами.",
-                24,
-                _ok_w / _ok_s,
-                _ok_s,
-                _ok_s,
-                0
-            );
-        }
-        else {
-            for (var _shortage_index = 0; _shortage_index < array_length(_shortages); _shortage_index++) {
-                var _shortage = _shortages[_shortage_index];
-                // Пакет №175: строка дефицита в своей полосе, две колонки.
-                var _short_row_h = 40;
-                var _shortage_row_y = _shortage_y + 44 + _shortage_index * _short_row_h;
-                var _short_split = _right_x1 + (_right_x2 - _right_x1) * 0.55;
-
-                draw_set_color(_text_dark);
-                ui_text_row(
-                    _right_x1 + 12,
-                    _shortage_row_y,
-                    _short_row_h,
-                    _shortage.item_name_ru,
-                    _short_split - _right_x1 - 24,
-                    UI_FS_ROW
-                );
-
-                draw_set_color(_accent_red);
-                ui_text_row(
-                    _short_split,
-                    _shortage_row_y,
-                    _short_row_h,
-                    "Не хватает: " + string(_shortage.shortage),
-                    _right_x2 - _short_split - 16,
-                    UI_FS_ROW
-                );
-            }
-        }
+        // Пакет №204: блок «НУЖНО ДОКУПИТЬ» убран со склада.
+        // Нехватка препаратов и так видна: в списке стоит остаток, а при
+        // попытке лечения без препарата приходит уведомление.
     }
 }
