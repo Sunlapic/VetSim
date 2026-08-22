@@ -178,7 +178,7 @@ function hud_staff_manage_role_line(_staff) {
 
     if (_place == "") return _role;
 
-    return _role + " — " + _place;
+    return _role + " - " + _place;
 }
 
 function hud_staff_manage_status_text(_staff) {
@@ -786,7 +786,7 @@ function hud_staff_manage_draw_actions(
         );
         var _label = (_button_index == 0)
             ? "УВОЛИТЬ"
-            : "—";
+            : "-";
 
         hud_staff_manage_draw_button(
             _button_x1,

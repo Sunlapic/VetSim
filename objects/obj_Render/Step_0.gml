@@ -83,7 +83,7 @@ if (!render_timing_applied) {
     global.time_step_frames = max(1, game_get_speed(gamespeed_fps));
 
     show_debug_message(
-        "[TIMING №158] method="
+        "[TIMING 158] method="
         + string(display_get_timing_method())
         + " sleep="
         + string(display_get_sleep_margin())

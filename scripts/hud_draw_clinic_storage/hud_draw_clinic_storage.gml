@@ -481,7 +481,7 @@ function hud_draw_clinic_storage(_hud) {
                 0
             );
 
-            var _link_text = "► Перейти к СКЛАДУ для закупки";
+            var _link_text = "> Перейти к СКЛАДУ для закупки";
             var _link_x1 = _right_x1 + 10;
             var _link_y1 = _right_y1 + 110;
             var _link_scale = ui_fit_scale(_link_text, (_right_x2 - _right_x1) - 26, UI_FS_ROW);

@@ -287,13 +287,13 @@ function hud_draw_clients_database(_hud) {
                 ui_text_row(_det_x, _row_y, _row_h, "ТИП: " + _visit_type, _det_w, UI_FS_ROW);
                 _row_y += _row_h;
 
-                ui_text_row(_det_x, _row_y, _row_h, "ДАТА: ДЕНЬ " + string(_visit_day) + " • " + hud_clock_text(_visit_hour, _visit_minute), _det_w, UI_FS_ROW);
+                ui_text_row(_det_x, _row_y, _row_h, "ДАТА: ДЕНЬ " + string(_visit_day) + " - " + hud_clock_text(_visit_hour, _visit_minute), _det_w, UI_FS_ROW);
                 _row_y += _row_h;
 
                 ui_text_row(_det_x, _row_y, _row_h, "БОЛЕЗНЬ: " + ((_disease_id != "") ? hud_get_disease_name(_disease_id) : "Не указано"), _det_w, UI_FS_ROW);
                 _row_y += _row_h;
 
-                ui_text_row(_det_x, _row_y, _row_h, "СТЕПЕНЬ: " + hud_get_severity_name(_severity_level, _severity_name) + " • СТАТУС: " + _case_status, _det_w, UI_FS_ROW);
+                ui_text_row(_det_x, _row_y, _row_h, "СТЕПЕНЬ: " + hud_get_severity_name(_severity_level, _severity_name) + " - СТАТУС: " + _case_status, _det_w, UI_FS_ROW);
                 _row_y += _row_h;
 
                 draw_set_color(_accent_green);
@@ -301,10 +301,10 @@ function hud_draw_clients_database(_hud) {
                 _row_y += _row_h;
 
                 draw_set_color(_text_soft);
-                ui_text_row(_det_x, _row_y, _row_h, "СОСТОЯНИЕ: " + string(round(_condition_before)) + "% → " + string(round(_condition_after)) + "%", _det_w, UI_FS_ROW);
+                ui_text_row(_det_x, _row_y, _row_h, "СОСТОЯНИЕ: " + string(round(_condition_before)) + "% -> " + string(round(_condition_after)) + "%", _det_w, UI_FS_ROW);
                 _row_y += _row_h;
 
-                ui_text_row(_det_x, _row_y, _row_h, "ПОДТВЕРЖДЁН: " + hud_bool_text(_confirmed) + " • КУРС: " + hud_bool_text(_course_done), _det_w, UI_FS_ROW);
+                ui_text_row(_det_x, _row_y, _row_h, "ПОДТВЕРЖДЁН: " + hud_bool_text(_confirmed) + " - КУРС: " + hud_bool_text(_course_done), _det_w, UI_FS_ROW);
                 _row_y += _row_h + 8;
 
                 var _procedure_box_y1 = _row_y;
@@ -354,7 +354,7 @@ function hud_draw_clients_database(_hud) {
                 var _hist_w = (client_history_x2 - client_history_x1) - 48;
 
                 draw_set_color(_text_dark);
-                ui_text_row(client_history_x1 + 20, _history_y1 + 4, 36, "ДЕНЬ " + string(variable_struct_exists(_visit_record, "visit_day") ? _visit_record.visit_day : 0) + " • " + (variable_struct_exists(_visit_record, "visit_type_name_ru") ? string(_visit_record.visit_type_name_ru) : "Приём"), _hist_w, UI_FS_ROW);
+                ui_text_row(client_history_x1 + 20, _history_y1 + 4, 36, "ДЕНЬ " + string(variable_struct_exists(_visit_record, "visit_day") ? _visit_record.visit_day : 0) + " - " + (variable_struct_exists(_visit_record, "visit_type_name_ru") ? string(_visit_record.visit_type_name_ru) : "Приём"), _hist_w, UI_FS_ROW);
                 draw_set_color(_text_soft);
                 ui_text_row(client_history_x1 + 20, _history_y1 + 38, 34, variable_struct_exists(_visit_record, "outcome_name_ru") ? string(_visit_record.outcome_name_ru) : "Приём завершён", _hist_w, UI_FS_ROW);
             }
@@ -405,11 +405,11 @@ function hud_draw_clients_database(_hud) {
                 draw_set_color(_text_dark);
                 ui_text_row(_list_x1 + 20, _follow_y1 + 4, 32, string_upper(string(_follow_owner.full_name)), _fcell_w, UI_FS_ROW);
                 draw_set_color(_accent_blue);
-                ui_text_row(_list_x1 + 20, _follow_y1 + 34, 30, string(_follow_pet.name) + " • " + string(_follow_pet.breed), _fcell_w, UI_FS_ROW);
+                ui_text_row(_list_x1 + 20, _follow_y1 + 34, 30, string(_follow_pet.name) + " - " + string(_follow_pet.breed), _fcell_w, UI_FS_ROW);
                 draw_set_color(_text_soft);
 
                 if (is_struct(_scheduled)) {
-                    ui_text_row(_list_x1 + 20, _follow_y1 + 62, 30, "ДЕНЬ " + string(_scheduled.scheduled_day) + " • " + hud_minute_to_clock(_scheduled.scheduled_minute), _fcell_w, UI_FS_SMALL);
+                    ui_text_row(_list_x1 + 20, _follow_y1 + 62, 30, "ДЕНЬ " + string(_scheduled.scheduled_day) + " - " + hud_minute_to_clock(_scheduled.scheduled_minute), _fcell_w, UI_FS_SMALL);
                 }
             }
         }

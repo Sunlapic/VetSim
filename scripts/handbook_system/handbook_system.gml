@@ -626,13 +626,13 @@ function hud_draw_handbook_panel(_hud) {
 
         if (array_length(_symptoms) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_transformed(_dx, _dy, "— нет данных", UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_dx, _dy, "- нет данных", UI_FS_ROW, UI_FS_ROW, 0);
             _dy += 40;
         }
         else {
             for (var _si = 0; _si < array_length(_symptoms); _si++) {
                 draw_set_color(_text_soft);
-                var _sym_line = "• " + string(_symptoms[_si].name);
+                var _sym_line = "- " + string(_symptoms[_si].name);
                 var _sym_s = ui_fit_scale(_sym_line, _detail_w, UI_FS_ROW);
                 draw_text_transformed(_dx, _dy, _sym_line, _sym_s, _sym_s, 0);
                 _dy += 40;
@@ -649,12 +649,12 @@ function hud_draw_handbook_panel(_hud) {
 
         if (array_length(_diagnostics) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_transformed(_dx, _dy, "— нет данных", UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_dx, _dy, "- нет данных", UI_FS_ROW, UI_FS_ROW, 0);
             _dy += 40;
         }
         else {
             for (var _di = 0; _di < array_length(_diagnostics); _di++) {
-                var _diag_line = "• " + string(_diagnostics[_di].name);
+                var _diag_line = "- " + string(_diagnostics[_di].name);
 
                 if (_diagnostics[_di].required_to_confirm) {
                     _diag_line += "  (подтверждает диагноз)";
@@ -677,12 +677,12 @@ function hud_draw_handbook_panel(_hud) {
 
         if (array_length(_treatments) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_transformed(_dx, _dy, "— нет данных", UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_dx, _dy, "- нет данных", UI_FS_ROW, UI_FS_ROW, 0);
             _dy += 40;
         }
         else {
             for (var _ti = 0; _ti < array_length(_treatments); _ti++) {
-                var _treat_line = "• " + string(_treatments[_ti].name);
+                var _treat_line = "- " + string(_treatments[_ti].name);
 
                 if (_treatments[_ti].required) {
                     _treat_line += "  (обязательно)";

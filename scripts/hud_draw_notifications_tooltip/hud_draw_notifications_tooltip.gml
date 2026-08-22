@@ -213,9 +213,9 @@ function hud_draw_hover_tooltip(_hud) {
 
     if (variable_instance_exists(_target, "is_candidate") && _target.is_candidate) {
         switch (_target.role) {
-            case "doctor": _subtitle = "КАНДИДАТ • ВРАЧ"; break;
-            case "assistant": _subtitle = "КАНДИДАТ • АССИСТЕНТ"; break;
-            case "admin": _subtitle = "КАНДИДАТ • АДМИНИСТРАТОР"; break;
+            case "doctor": _subtitle = "КАНДИДАТ - ВРАЧ"; break;
+            case "assistant": _subtitle = "КАНДИДАТ - АССИСТЕНТ"; break;
+            case "admin": _subtitle = "КАНДИДАТ - АДМИНИСТРАТОР"; break;
             default: _subtitle = "КАНДИДАТ";
         }
     }

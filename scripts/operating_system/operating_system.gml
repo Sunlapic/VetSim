@@ -1544,7 +1544,7 @@ function operating_begin_surgery(_ctrl) {
 
     operating_notify(
         "ОПЕРАЦИЯ НАЧАТА",
-        _ctrl.or_action_name + " — бригада приступила.",
+        _ctrl.or_action_name + " - бригада приступила.",
         room_speed * 3
     );
 }
@@ -2130,7 +2130,7 @@ function operating_controller_step(_ctrl) {
 
         operating_notify(
             "ОПЕРАЦИЯ ЗАВЕРШЕНА",
-            _ctrl.or_action_name + " — пациента везут в стационар.",
+            _ctrl.or_action_name + " - пациента везут в стационар.",
             room_speed * 3
         );
 
@@ -2314,7 +2314,7 @@ function operating_debug_force_surgery() {
     if (_ctrl.or_phase != "empty") {
         operating_notify(
             "DEBUG",
-            "Операционная занята — сначала P (промотать фазу).",
+            "Операционная занята - сначала P (промотать фазу).",
             room_speed * 3
         );
         return false;
@@ -2393,7 +2393,7 @@ function operating_debug_skip_phase(_ctrl) {
 
     switch (_ctrl.or_phase) {
         case "empty":
-            operating_notify("DEBUG", "Операционная пуста. O — тест-операция.", room_speed * 2);
+            operating_notify("DEBUG", "Операционная пуста. O - тест-операция.", room_speed * 2);
         break;
 
         case "escort":
@@ -2524,7 +2524,7 @@ function operating_debug_draw(_ctrl) {
     // Пакет №165: подсказка по отладочным клавишам.
     array_push(
         _lines,
-        "DEBUG: O — тест-операция на ближайшем пациенте, P — промотать фазу"
+        "DEBUG: O - тест-операция на ближайшем пациенте, P - промотать фазу"
     );
 
     // ── Стулья ──

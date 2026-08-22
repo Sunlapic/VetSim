@@ -63,7 +63,7 @@ function hud_draw_day_summary(_hud) {
             { label : "Репутация клиники:", value : _reputation_text, color : _gold }
         ];
 
-        var _title = "ИТОГИ ДНЯ №"
+        var _title = "ИТОГИ ДНЯ "
             + string(global.daily_stats.day_num)
             + "  ("
             + _week_names[global.daily_stats.week_day]

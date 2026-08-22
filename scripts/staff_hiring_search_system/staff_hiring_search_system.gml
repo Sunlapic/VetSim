@@ -281,7 +281,7 @@ function staff_hiring_search_draw_role_button(
     draw_text(
         (_mark_x1 + _mark_x2) * 0.5,
         (_mark_y1 + _mark_y2) * 0.5,
-        _enabled ? "ДА" : "—"
+        _enabled ? "ДА" : "-"
     );
 }
 
@@ -464,7 +464,7 @@ function staff_hiring_search_draw_page(
             _status_y1 + 108,
             "Текущий кандидат уже выбран: "
                 + string_upper(string(_current.char_name))
-                + " — "
+                + " - "
                 + _current_role
                 + ". Новые настройки применятся к следующему.",
             18,

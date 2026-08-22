@@ -170,7 +170,7 @@ function tablet_get_visible_symptom_text(_inst) {
         }
 
         if (i > 0) _result += "\n";
-        _result += "● " + _sym_name;
+        _result += "- " + _sym_name;
     }
 
     return _result;
@@ -1341,7 +1341,7 @@ if (target_id.role == "owner") {
     draw_text_transformed(_rx, _rs + 30 * _ui_scale, "ПИТОМЕЦ:", 0.8 * _ui_scale, 0.8 * _ui_scale, 0);
 
     draw_set_color(c_blue);
-    draw_text_transformed(_rx, _rs + 55 * _ui_scale, "► " + _pet_name, 0.9 * _ui_scale, 0.9 * _ui_scale, 0);
+    draw_text_transformed(_rx, _rs + 55 * _ui_scale, "> " + _pet_name, 0.9 * _ui_scale, 0.9 * _ui_scale, 0);
 
     draw_set_color(c_dkgray);
     draw_text_transformed(_rx, _rs + 80 * _ui_scale, _pet_breed, 0.7 * _ui_scale, 0.7 * _ui_scale, 0);

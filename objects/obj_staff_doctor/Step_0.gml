@@ -590,7 +590,7 @@ switch (doctor_state) {
                     var _diag_skill = doctor_get_skill_for_disease(_hid);
                     if (_diag_skill < 0) _diag_skill = 0;
 
-                    show_debug_message("[XP v2] → skill=" + string(_diag_skill) + " amount=" + string(_xp_specialty));
+                    show_debug_message("[XP v2] -> skill=" + string(_diag_skill) + " amount=" + string(_xp_specialty));
 
                     doctor_add_skill_xp(id, _diag_skill, _xp_specialty, true);
                     if (_diag_skill == 0) {

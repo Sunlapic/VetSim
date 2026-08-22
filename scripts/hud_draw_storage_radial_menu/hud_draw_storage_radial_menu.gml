@@ -72,7 +72,7 @@ function hud_draw_storage_radial_menu(_hud) {
 
             if (!_hands_compatible && _shown == 0) {
                 array_push(_all_items, {
-                    label : "— руки заняты —",
+                    label : "- руки заняты -",
                     action : "none",
                     enabled : false,
                     quantity : 0,
@@ -102,7 +102,7 @@ function hud_draw_storage_radial_menu(_hud) {
         }
         else {
             array_push(_all_items, {
-                label : "— нечего класть —",
+                label : "- нечего класть -",
                 action : "none",
                 enabled : false,
                 quantity : 0,

@@ -293,7 +293,7 @@ function hud_draw_string_list(
     // Пакет №174: строки списка крупнее, масштаб ограничен и по ширине,
     // и по высоте строки — соседние строки не слипаются.
     for (var _index = 0; _index < _draw_count; _index++) {
-        var _line = "• " + string(_lines[_index]);
+        var _line = "- " + string(_lines[_index]);
         var _scale = ui_fit_scale_box(_line, _max_width, _line_height - 4, UI_FS_ROW);
 
         draw_set_color(_text_color);

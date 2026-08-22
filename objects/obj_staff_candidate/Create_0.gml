@@ -98,7 +98,7 @@ resolve_hire = function() {
                 with (_hire_hud) {
                     show_notice(
                         "НЕТ СЛОТОВ",
-                        "Прокачайте «Слот найма» в КЛИНИКА → РАЗВИТИЕ.",
+                        "Прокачайте Слот найма в КЛИНИКА - РАЗВИТИЕ.",
                         max(1, game_get_speed(gamespeed_fps)) * 3
                     );
                 }
