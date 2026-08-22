@@ -4,6 +4,10 @@
 /// Пакет №110: в «Месте работы» — роли операционной (Хирург / Анестезиолог / Ассистент).
 /// Пакет №159: специализация = самый прокачанный навык врача; кнопка места работы ×2.
 /// Пакет №160: подпись «Место работы» выше, чтобы кнопка не закрывала низ букв.
+/// Пакет №184: имя, роль, возраст и характер крупнее (каждая строка — своя
+/// полоса с автоподгонкой масштаба), характер вынесен под фото на всю ширину,
+/// подпись «Место работы» стоит в собственной полосе над кнопкой и больше
+/// не подрезается ею снизу.
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -76,6 +80,53 @@ function tablet_staff_draw_panel(_x1, _y1, _x2, _y2) {
 
     draw_set_alpha(1);
     draw_set_color(c_white);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// 1.1 КРУПНЫЙ ТЕКСТ В ПОЛОСЕ (пакет №184)
+// Карточка планшета живёт в своих мелких единицах, поэтому общий
+// ui_fit_scale здесь не подходит: у него нижний порог UI_FS_MIN 0.72,
+// а тут рабочие масштабы меньше единицы. Своя подгонка без порога:
+// текст рисуется максимально крупно, но точно не вылезает за колонку
+// и не выходит за высоту своей полосы.
+// ═══════════════════════════════════════════════════════════════
+
+function tablet_staff_fit_scale(_text, _max_w, _base) {
+    var _str = string(_text);
+
+    if (_str == "") return _base;
+    if (_max_w <= 0) return _base;
+
+    var _w = string_width(_str) * _base;
+
+    if (_w <= _max_w) return _base;
+
+    return max(_base * 0.42, _base * (_max_w / _w));
+}
+
+/// Одна строка данных: своя полоса высотой _row_h, текст по центру полосы.
+/// Возвращает низ полосы — следующая строка начинается ровно с него.
+function tablet_staff_text_row(_x, _row_y, _row_h, _text, _max_w, _base) {
+    var _str = string(_text);
+
+    if (_str != "") {
+        var _scale = tablet_staff_fit_scale(_str, _max_w, _base);
+
+        draw_set_halign(fa_left);
+        draw_set_valign(fa_middle);
+        draw_text_transformed(
+            _x,
+            _row_y + _row_h * 0.5,
+            _str,
+            _scale,
+            _scale,
+            0
+        );
+        draw_set_valign(fa_top);
+    }
+
+    return _row_y + _row_h;
 }
 
 
@@ -420,62 +471,80 @@ function tablet_draw_staff_card(
 
     _target.specialty_title = _specialty;
 
+    // ───────────────────────────────────────────────────────────
+    // Пакет №184: данные крупнее и разложены по полосам.
+    //
+    // Справа от фотографии колонка узкая (примерно 84 юнита), поэтому
+    // там живут только короткие строки: имя, роль (у врача сразу с его
+    // профилем) и возраст. Длинная строка характера переехала ПОД фото,
+    // на всю ширину панели: места вдвое больше, значит и шрифт крупнее.
+    //
+    // Масштаб каждой строки подбирается по её ширине, так что даже самое
+    // длинное имя или «Стрессоустойчивый» не вылезут за панель.
+    // ───────────────────────────────────────────────────────────
+
+    var _col_y = _info_y1 + 12 * _ui_scale;
+
     draw_set_color(_blue);
-    draw_text_ext_transformed(
+    _col_y = tablet_staff_text_row(
         _data_x,
-        _info_y1 + 12 * _ui_scale,
+        _col_y,
+        30 * _ui_scale,
         string_upper(_name),
-        14 * _ui_scale,
         _data_w,
-        0.58 * _font_ui,
-        0.64 * _font_ui,
-        0
+        0.95 * _font_ui
+    );
+
+    // Роль, а у врача сразу и его профиль: «ВРАЧ - ХИРУРГИЯ».
+    var _role_line = _role_name;
+
+    if (
+        (_role == "doctor" || _target.object_index == obj_player)
+        && _specialty != ""
+    ) {
+        _role_line += " - " + string_upper(_specialty);
+    }
+
+    draw_set_color(_text_soft);
+    _col_y = tablet_staff_text_row(
+        _data_x,
+        _col_y,
+        24 * _ui_scale,
+        _role_line,
+        _data_w,
+        0.85 * _font_ui
     );
 
     draw_set_color(_text);
-    draw_text_transformed(_data_x, _info_y1 + 42 * _ui_scale, "Возраст: " + _age, 0.46 * _font_ui, 0.51 * _font_ui, 0);
-
-    draw_set_color(_text_soft);
-    draw_text_ext_transformed(
+    _col_y = tablet_staff_text_row(
         _data_x,
-        _info_y1 + 62 * _ui_scale,
-        "Роль: " + _role_name,
-        12 * _ui_scale,
+        _col_y,
+        22 * _ui_scale,
+        "Возраст: " + _age,
         _data_w,
-        0.44 * _font_ui,
-        0.49 * _font_ui,
-        0
+        0.80 * _font_ui
     );
 
-    // Пакет №77: специализация есть только у врачей.
-    // У администраторов и ассистентов строку полностью пропускаем.
-    var _trait_y = _info_y1 + 107 * _ui_scale;
 
-    if (_role == "doctor" || _target.object_index == obj_player) {
-        draw_text_ext_transformed(
-            _data_x,
-            _info_y1 + 83 * _ui_scale,
-            (_specialty != "" ? "Специализация: " + _specialty : ""),
-            12 * _ui_scale,
-            _data_w,
-            0.41 * _font_ui,
-            0.46 * _font_ui,
-            0
-        );
-    } else {
-        // Освободившееся место занимает строка характера.
-        _trait_y = _info_y1 + 83 * _ui_scale;
-    }
+    // ═══════════════════════════════════════════════════════════
+    // 3.3.1 ХАРАКТЕР — ВО ВСЮ ШИРИНУ ПАНЕЛИ
+    // Колонка справа от фото узкая, длинное слово вроде
+    // «Стрессоустойчивый» там ужималось почти вдвое. Под фотографией
+    // ширины ровно вдвое больше, поэтому строка читается крупно.
+    // ═══════════════════════════════════════════════════════════
 
-    draw_text_ext_transformed(
-        _data_x,
-        _trait_y,
+    var _energy_x1 = _info_x1 + _padding;
+    var _energy_x2 = _info_x2 - _padding;
+    var _wide_w = _energy_x2 - _energy_x1;
+
+    draw_set_color(_text_soft);
+    tablet_staff_text_row(
+        _energy_x1,
+        _info_y1 + 104 * _ui_scale,
+        18 * _ui_scale,
         "Характер: " + _trait,
-        12 * _ui_scale,
-        _data_w,
-        0.41 * _font_ui,
-        0.46 * _font_ui,
-        0
+        _wide_w,
+        0.72 * _font_ui
     );
 
 
@@ -491,25 +560,25 @@ function tablet_draw_staff_card(
         : 100;
     var _energy_ratio = clamp(_energy_current / _energy_max, 0, 1);
 
-    var _energy_y = _info_y1 + 112 * _ui_scale;
-    var _energy_x1 = _info_x1 + _padding;
-    var _energy_x2 = _info_x2 - _padding;
+    // Энергия всегда стоит на одном месте, независимо от того,
+    // была ли строка специализации.
+    var _energy_y = _info_y1 + 124 * _ui_scale;
     var _energy_color = _green;
 
     if (_energy_ratio <= 0.10) _energy_color = _red;
     else if (_energy_ratio <= 0.30) _energy_color = _gold;
 
     draw_set_color(_text_soft);
-    draw_text_transformed(
+    tablet_staff_text_row(
         _energy_x1,
         _energy_y,
+        14 * _ui_scale,
         "ЭНЕРГИЯ " + string(floor(_energy_current)) + "/" + string(round(_energy_max)),
-        0.42 * _font_ui,
-        0.47 * _font_ui,
-        0
+        _wide_w,
+        0.60 * _font_ui
     );
 
-    var _energy_bar_y = _energy_y + 16 * _ui_scale;
+    var _energy_bar_y = _energy_y + 15 * _ui_scale;
 
     draw_set_color(make_color_rgb(220, 216, 207));
     draw_roundrect_ext(_energy_x1, _energy_bar_y, _energy_x2, _energy_bar_y + 7 * _ui_scale, 7, 7, false);
@@ -555,8 +624,14 @@ function tablet_draw_staff_card(
             _tablet.staff_workplace_menu_target = noone;
         }
 
-        // Пакет №159: кнопка на всю ширину, высота и шрифт ×2.
-        var _workplace_y1 = _info_y1 + 160 * _ui_scale;
+        // Пакет №184: подпись «Место работы» больше не прячется под кнопкой.
+        // Она рисуется от НИЗА своей полосы (valign по центру полосы),
+        // а кнопка начинается только после этой полосы — хвосты букв
+        // «р» и «б» всегда остаются на виду.
+        var _workplace_caption_y = _info_y1 + 150 * _ui_scale;
+        var _workplace_caption_h = 16 * _ui_scale;
+
+        var _workplace_y1 = _workplace_caption_y + _workplace_caption_h;
         var _workplace_y2 = _info_y1 + 196 * _ui_scale;
         var _workplace_x1 = _energy_x1;
         var _workplace_x2 = _energy_x2;
@@ -570,13 +645,13 @@ function tablet_draw_staff_card(
         );
 
         draw_set_color(_text);
-        draw_text_transformed(
+        tablet_staff_text_row(
             _energy_x1,
-            _info_y1 + 146 * _ui_scale,
+            _workplace_caption_y,
+            _workplace_caption_h,
             "Место работы:",
-            0.72 * _font_ui,
-            0.82 * _font_ui,
-            0
+            _wide_w,
+            0.62 * _font_ui
         );
 
         draw_set_color(_workplace_hover
@@ -608,6 +683,14 @@ function tablet_draw_staff_card(
             _workplace_label += " *";
         }
 
+        // Текст кнопки: крупно, но с автоподгонкой — длинное
+        // «ОПЕРАЦИОННАЯ: АНЕСТЕЗИОЛОГ» само ужмётся по ширине кнопки.
+        var _workplace_scale = tablet_staff_fit_scale(
+            _workplace_label,
+            (_workplace_x2 - _workplace_x1) - 10 * _ui_scale,
+            0.78 * _font_ui
+        );
+
         draw_set_halign(fa_center);
         draw_set_valign(fa_middle);
         draw_set_color(_blue);
@@ -615,8 +698,8 @@ function tablet_draw_staff_card(
             (_workplace_x1 + _workplace_x2) * 0.5,
             (_workplace_y1 + _workplace_y2) * 0.5,
             _workplace_label,
-            0.68 * _font_ui,
-            0.78 * _font_ui,
+            _workplace_scale,
+            _workplace_scale,
             0
         );
         draw_set_halign(fa_left);
@@ -647,23 +730,26 @@ function tablet_draw_staff_card(
         }
     }
     else if (_target.object_index != obj_player) {
+        // Пакет №184: зарплата и лояльность — двумя строками во всю
+        // ширину панели и крупно. В одну строку они не помещались
+        // и рисовались вдвое мельче остального текста.
         draw_set_color(_text);
-        draw_text_transformed(
+        tablet_staff_text_row(
             _energy_x1,
-            _info_y1 + 165 * _ui_scale,
+            _info_y1 + 152 * _ui_scale,
+            20 * _ui_scale,
             "Зарплата: $ " + string(_salary),
-            0.40 * _font_ui,
-            0.45 * _font_ui,
-            0
+            _wide_w,
+            0.72 * _font_ui
         );
 
-        draw_text_transformed(
-            _energy_x1 + 88 * _ui_scale,
-            _info_y1 + 165 * _ui_scale,
+        tablet_staff_text_row(
+            _energy_x1,
+            _info_y1 + 172 * _ui_scale,
+            20 * _ui_scale,
             "Лояльность: " + string(_loyalty) + "/100",
-            0.40 * _font_ui,
-            0.45 * _font_ui,
-            0
+            _wide_w,
+            0.72 * _font_ui
         );
     }
 
