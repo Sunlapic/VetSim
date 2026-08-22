@@ -362,8 +362,10 @@ function hud_staff_manage_draw_roster(
     draw_set_color(_text_dark);
     ui_text_fit_left(_x1 + 16, _y1 + 10, "ПЕРСОНАЛ КЛИНИКИ", (_x2 - _x1) - 40, UI_FS_TITLE);
 
+    // Пакет №192: справа зарезервирована полоса под бегунок прокрутки.
+    var _scrollbar_w = 16;
     var _rows_x1 = _x1 + 12;
-    var _rows_x2 = _x2 - 12;
+    var _rows_x2 = _x2 - 16 - _scrollbar_w;
     var _rows_y1 = _y1 + 58;
     var _rows_y2 = _y2 - 28;
     var _inside_list = point_in_rectangle(
@@ -616,6 +618,74 @@ function hud_staff_manage_draw_roster(
         _shown_count += 1;
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // Пакет №192: БЕГУНОК ПРОКРУТКИ СПИСКА ШТАТА
+    // Показывает, где мы в списке, и его можно тащить пальцем.
+    // ═══════════════════════════════════════════════════════════
+
+    var _visible_count = max(1, _shown_count);
+    var _max_scroll_index = max(0, _entry_count - _visible_count);
+
+    if (_max_scroll_index > 0) {
+        var _track_x1 = _rows_x2 + 8;
+        var _track_x2 = _track_x1 + _scrollbar_w;
+        var _track_y1 = _rows_y1;
+        var _track_y2 = _rows_y2;
+        var _track_h = max(1, _track_y2 - _track_y1);
+
+        draw_set_color(make_color_rgb(232, 220, 198));
+        draw_roundrect_ext(_track_x1, _track_y1, _track_x2, _track_y2, 7, 7, false);
+        draw_set_color(_line);
+        draw_roundrect_ext(_track_x1, _track_y1, _track_x2, _track_y2, 7, 7, true);
+
+        var _bar_h = max(52, _track_h * (_visible_count / max(1, _entry_count)));
+        var _bar_ratio = clamp(_hud.staff_manage_scroll_index, 0, _max_scroll_index)
+            / _max_scroll_index;
+        var _bar_y1 = _track_y1 + (_track_h - _bar_h) * _bar_ratio;
+        var _bar_y2 = _bar_y1 + _bar_h;
+
+        var _bar_hover = point_in_rectangle(
+            _mouse_x,
+            _mouse_y,
+            _track_x1,
+            _track_y1,
+            _track_x2,
+            _track_y2
+        );
+
+        draw_set_color(_bar_hover
+            ? make_color_rgb(120, 86, 58)
+            : make_color_rgb(150, 107, 73));
+        draw_roundrect_ext(_track_x1 + 2, _bar_y1, _track_x2 - 2, _bar_y2, 6, 6, false);
+
+        // Перетаскивание бегунка и клик по треку.
+        if (!variable_instance_exists(_hud, "staff_manage_bar_drag")) {
+            _hud.staff_manage_bar_drag = false;
+        }
+
+        if (_pointer_pressed && _bar_hover && !_hud.staff_manage_fire_confirm) {
+            _hud.staff_manage_bar_drag = true;
+        }
+
+        if (!_pointer_down) {
+            _hud.staff_manage_bar_drag = false;
+        }
+
+        if (_hud.staff_manage_bar_drag) {
+            var _grab_ratio = clamp(
+                (_mouse_y - _track_y1 - _bar_h * 0.5) / max(1, _track_h - _bar_h),
+                0,
+                1
+            );
+
+            _hud.staff_manage_scroll_index = round(_grab_ratio * _max_scroll_index);
+
+            // Тянем бегунок — значит это не выбор строки.
+            _hud.staff_manage_touch_active = false;
+            _hud.staff_manage_touch_moved = true;
+        }
+    }
+
     draw_set_halign(fa_center);
     draw_set_valign(fa_middle);
     draw_set_color(_text_soft);
@@ -628,6 +698,14 @@ function hud_staff_manage_draw_roster(
             + "/"
             + string(_entry_count);
     }
+
+    // Ограничиваем прокрутку так, чтобы последняя запись доходила до низа,
+    // но список не уезжал в пустоту.
+    _hud.staff_manage_scroll_index = clamp(
+        _hud.staff_manage_scroll_index,
+        0,
+        max(0, _entry_count - 1)
+    );
 
     ui_text_fit_center(
         (_x1 + _x2) * 0.5,

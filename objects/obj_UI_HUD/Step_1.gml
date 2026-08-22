@@ -638,45 +638,16 @@ if (hiring_panel_open && instance_exists(global.selected_candidate)) {
 
 // ─────────────────────────────────────────────
 // ПРОКРУТКА И ВЫБОР СТРОК ПЕРСОНАЛА
+//
+// Пакет №192: старый блок отсюда убран. Он остался от прежней панели и
+// считал строку списка по 58 пикселей при ширине 340, тогда как панель
+// ПЕРСОНАЛ рисует строки по 132 пикселя. Из-за этого клик по списку
+// сначала выделял чужого сотрудника, и только потом отпускание кнопки
+// выбирало правильного. Списком штата целиком занимается
+// hud_staff_manage_draw_roster: и прокрутка колесом, и перетягивание
+// пальцем, и бегунок, и выбор строки.
 // ─────────────────────────────────────────────
 staff_row_hover = -1;
-
-if (staff_panel_open) {
-    var _list_x1 = staff_panel_x1 + 32;
-    var _list_y1 = staff_panel_y1 + 70;
-    var _list_x2 = _list_x1 + 340;
-    var _list_y2 = staff_panel_y2 - 32;
-
-    var _row_h = 58;
-    var _row_top = _list_y1 + 28;
-    var _visible_rows = max(1, floor((_list_y2 - _row_top) / _row_h));
-    var _max_scroll = max(0, array_length(staff_entries) - _visible_rows);
-
-    staff_scroll = clamp(staff_scroll, 0, _max_scroll);
-
-    if (point_in_rectangle(_mx, _my, _list_x1, _list_y1, _list_x2, _list_y2)) {
-        if (mouse_wheel_down()) staff_scroll = min(_max_scroll, staff_scroll + 1);
-        if (mouse_wheel_up())   staff_scroll = max(0, staff_scroll - 1);
-    }
-
-    for (var _j = 0; _j < _visible_rows; _j++) {
-        var _idx = staff_scroll + _j;
-        if (_idx >= array_length(staff_entries)) break;
-
-        var _ry1 = _row_top + _j * _row_h;
-        var _ry2 = _ry1 + (_row_h - 6);
-        var _rx1 = _list_x1 + 8;
-        var _rx2 = _list_x2 - 8;
-
-        if (point_in_rectangle(_mx, _my, _rx1, _ry1, _rx2, _ry2)) {
-            staff_row_hover = _idx;
-
-            if (mouse_check_button_pressed(mb_left)) {
-                selected_staff_id = staff_entries[_idx];
-            }
-        }
-    }
-}
 
 // ─────────────────────────────────────────────
 // ПРОКРУТКА И ВЫБОР СТРОК КЛИЕНТОВ
