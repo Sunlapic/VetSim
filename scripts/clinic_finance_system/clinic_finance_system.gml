@@ -642,8 +642,8 @@ function finance_draw_tab_button(
         (_x1 + _x2) * 0.5,
         (_y1 + _y2) * 0.5,
         _text,
-        0.52 * _scale,
-        0.58 * _scale,
+        0.72 * _scale,
+        0.78 * _scale,
         0
     );
 }
@@ -750,8 +750,9 @@ function finance_owner_card_draw_invoice(
     var _items = _invoice.items;
     var _item_count = array_length(_items);
     var _padding = 10 * _ui_scale;
-    var _row_h = 29 * _ui_scale;
-    var _header_h = 30 * _ui_scale;
+    // Пакет №177: строки чека выше под крупный шрифт.
+    var _row_h = 38 * _ui_scale;
+    var _header_h = 38 * _ui_scale;
     var _footer_h = 49 * _ui_scale;
     var _rows_y1 = _y1 + _header_h;
     var _rows_y2 = _y2 - _footer_h;
@@ -834,8 +835,8 @@ function finance_owner_card_draw_invoice(
         _x1 + _padding,
         _y1 + _header_h * 0.5,
         "ВЫПОЛНЕННЫЕ УСЛУГИ",
-        0.60 * _ui_scale,
-        0.66 * _ui_scale,
+        0.84 * _ui_scale,
+        0.90 * _ui_scale,
         0
     );
 
@@ -845,8 +846,8 @@ function finance_owner_card_draw_invoice(
         _x2 - _padding,
         _y1 + _header_h * 0.5,
         "КОЛ-ВО   ЦЕНА",
-        0.48 * _ui_scale,
-        0.54 * _ui_scale,
+        0.68 * _ui_scale,
+        0.74 * _ui_scale,
         0
     );
 
@@ -857,8 +858,8 @@ function finance_owner_card_draw_invoice(
             (_x1 + _x2) * 0.5,
             (_rows_y1 + _rows_y2) * 0.5,
             "Услуги ещё не выполнены",
-            0.58 * _ui_scale,
-            0.64 * _ui_scale,
+            0.80 * _ui_scale,
+            0.86 * _ui_scale,
             0
         );
     }
@@ -897,10 +898,10 @@ function finance_owner_card_draw_invoice(
                 _x1 + _padding * 1.6,
                 _draw_y + 7 * _ui_scale,
                 _item.name,
-                12 * _ui_scale,
+                16 * _ui_scale,
                 300 * _ui_scale,
-                0.50 * _ui_scale,
-                0.56 * _ui_scale,
+                0.70 * _ui_scale,
+                0.76 * _ui_scale,
                 0
             );
 
@@ -910,8 +911,8 @@ function finance_owner_card_draw_invoice(
                 _x2 - 95 * _ui_scale,
                 _draw_y + _row_h * 0.5,
                 string(_item.quantity),
-                0.50 * _ui_scale,
-                0.56 * _ui_scale,
+                0.70 * _ui_scale,
+                0.76 * _ui_scale,
                 0
             );
 
@@ -921,8 +922,8 @@ function finance_owner_card_draw_invoice(
                 _x2 - _padding * 1.6,
                 _draw_y + _row_h * 0.5,
                 "$ " + string(_item.total),
-                0.54 * _ui_scale,
-                0.60 * _ui_scale,
+                0.76 * _ui_scale,
+                0.82 * _ui_scale,
                 0
             );
 
@@ -947,8 +948,8 @@ function finance_owner_card_draw_invoice(
         _x1 + _padding,
         _y2 - 25 * _ui_scale,
         _paid ? "ОПЛАЧЕНО" : "К ОПЛАТЕ",
-        0.66 * _ui_scale,
-        0.72 * _ui_scale,
+        0.92 * _ui_scale,
+        0.98 * _ui_scale,
         0
     );
 
@@ -960,8 +961,8 @@ function finance_owner_card_draw_invoice(
         _x2 - _padding,
         _y2 - 25 * _ui_scale,
         "$ " + string(_invoice.total),
-        0.82 * _ui_scale,
-        0.88 * _ui_scale,
+        1.14 * _ui_scale,
+        1.20 * _ui_scale,
         0
     );
 
@@ -1282,10 +1283,15 @@ function finance_ui_draw_button(
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 7, 7, false);
     draw_set_color(_line);
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 7, 7, true);
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
+    // Пакет №177: крупный текст кнопки с автоподгонкой.
     draw_set_color(make_color_rgb(50, 38, 28));
-    draw_text((_x1 + _x2) * 0.5, (_y1 + _y2) * 0.5, _text);
+    ui_text_fit_center(
+        (_x1 + _x2) * 0.5,
+        (_y1 + _y2) * 0.5,
+        _text,
+        (_x2 - _x1) - 16,
+        UI_FS_BUTTON
+    );
 }
 
 function finance_ui_pointer_pressed() {
@@ -1333,22 +1339,22 @@ function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
         var _cx2 = _cx1 + _card_w;
 
         draw_set_color(make_color_rgb(248, 240, 224));
-        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + 260, 10, 10, false);
+        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + 282, 10, 10, false);
         draw_set_color(make_color_rgb(180, 160, 140));
-        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + 260, 10, 10, true);
+        draw_roundrect_ext(_cx1, _y1, _cx2, _y1 + 282, 10, 10, true);
         draw_set_halign(fa_center);
         draw_set_valign(fa_top);
         draw_set_color(make_color_rgb(84, 68, 54));
-        draw_text((_cx1 + _cx2) * 0.5, _y1 + 14, _labels[_index]);
+        ui_text_fit_center((_cx1 + _cx2) * 0.5, _y1 + 34, _labels[_index], _card_w - 24, UI_FS_HEADER);
         draw_set_color((_index == 2)
             ? make_color_rgb(148, 74, 64)
             : make_color_rgb(62, 112, 74));
         draw_text_transformed(
             (_cx1 + _cx2) * 0.5,
-            _y1 + 48,
+            _y1 + 96,
             "$ " + string(round(_values[_index])),
-            1.25,
-            1.25,
+            2.60,
+            2.60,
             0
         );
         // Дополнительные строки внутри карточек доход/расход
@@ -1359,9 +1365,9 @@ function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
             draw_set_halign(fa_left);
             draw_set_color(make_color_rgb(84, 68, 54));
             // Пакет №176: крупнее, шаг строк увеличен с 25 до 38.
-            draw_text_transformed(_cx1 + 12, _y1 + 138, "- Прием: $ " + string(_adm), UI_FS_ROW, UI_FS_ROW, 0);
-            draw_text_transformed(_cx1 + 12, _y1 + 176, "- Стационар: $ " + string(_stat), UI_FS_ROW, UI_FS_ROW, 0);
-            draw_text_transformed(_cx1 + 12, _y1 + 214, "- Операционная: $ " + string(_op), UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_cx1 + 16, _y1 + 164, "Приём: $ " + string(_adm), UI_FS_VALUE, UI_FS_VALUE, 0);
+            draw_text_transformed(_cx1 + 16, _y1 + 196, "Стационар: $ " + string(_stat), UI_FS_VALUE, UI_FS_VALUE, 0);
+            draw_text_transformed(_cx1 + 16, _y1 + 228, "Операционная: $ " + string(_op), UI_FS_VALUE, UI_FS_VALUE, 0);
         }
         if (_index == 2) {
             var _projected_salary = 0;
@@ -1371,8 +1377,8 @@ function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
             var _pur = max(0, round(_spent - _salary));
             draw_set_halign(fa_left);
             draw_set_color(make_color_rgb(148, 74, 64));
-            draw_text_transformed(_cx1 + 12, _y1 + 138, "- Зарплаты: $ " + string(round(_projected_salary)), UI_FS_ROW, UI_FS_ROW, 0);
-            draw_text_transformed(_cx1 + 12, _y1 + 176, "- Закупка: $ " + string(round(_pur)), UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_cx1 + 16, _y1 + 164, "Зарплаты: $ " + string(round(_projected_salary)), UI_FS_VALUE, UI_FS_VALUE, 0);
+            draw_text_transformed(_cx1 + 16, _y1 + 196, "Закупка: $ " + string(round(_pur)), UI_FS_VALUE, UI_FS_VALUE, 0);
         }
     }
 
@@ -1564,8 +1570,8 @@ function finance_ui_draw_service_prices(
     _mouse_y
 ) {
     var _entries = finance_get_service_entries();
-    var _row_h = 68;
-    var _font = UI_FS_VALUE;
+    var _row_h = 86;
+    var _font = 1.70;
     var _visible_rows = max(1, floor((_y2 - _y1 - 34) / _row_h));
 
     finance_ui_prepare_scroll(
@@ -1583,9 +1589,9 @@ function finance_ui_draw_service_prices(
     draw_set_halign(fa_left);
     draw_set_valign(fa_middle);
     draw_set_color(make_color_rgb(84, 68, 54));
-    draw_text_transformed(_x1 + 14, _y1 + 20, "УСЛУГА", UI_FS_HEADER, UI_FS_HEADER, 0);
+    draw_text_transformed(_x1 + 14, _y1 + 20, "УСЛУГА", 1.80, 1.80, 0);
     draw_set_halign(fa_right);
-    draw_text_transformed(_x2 - 30, _y1 + 20, "ЦЕНА ДЛЯ КЛИЕНТА", UI_FS_HEADER, UI_FS_HEADER, 0);
+    draw_text_transformed(_x2 - 30, _y1 + 20, "ЦЕНА ДЛЯ КЛИЕНТА", 1.80, 1.80, 0);
 
     var _draw_y = _y1 + 34;
     var _last = min(
@@ -1631,21 +1637,21 @@ function finance_ui_draw_service_prices(
         draw_set_halign(fa_left);
         draw_set_color(make_color_rgb(50, 38, 28));
         draw_text_transformed(
-            _x1 + 16, _draw_y + 21,
+            _x1 + 18, _draw_y + 16,
             _entry.name,
             _font, _font, 0
         );
         draw_set_color(make_color_rgb(104, 135, 160));
         draw_text_transformed(
-            _x1 + 16, _draw_y + 43,
+            _x1 + 18, _draw_y + 52,
             _entry.group,
-            UI_FS_SMALL, UI_FS_SMALL, 0
+            UI_FS_ROW, UI_FS_ROW, 0
         );
 
         draw_set_halign(fa_right);
         draw_set_color(make_color_rgb(148, 74, 64));
         draw_text_transformed(
-            _price_right, _draw_y + 29,
+            _price_right, _draw_y + 34,
             "$ " + string(_price),
             _font, _font, 0
         );
@@ -1689,8 +1695,8 @@ function finance_ui_draw_medicine_prices(
     _mouse_y
 ) {
     var _item_ids = finance_get_item_ids();
-    var _row_h = 70;
-    var _font = UI_FS_VALUE;
+    var _row_h = 88;
+    var _font = 1.70;
     var _visible_rows = max(1, floor((_y2 - _y1 - 34) / _row_h));
 
     finance_ui_prepare_scroll(
@@ -1708,9 +1714,9 @@ function finance_ui_draw_medicine_prices(
     draw_set_halign(fa_left);
     draw_set_valign(fa_middle);
     draw_set_color(make_color_rgb(84, 68, 54));
-    draw_text_transformed(_x1 + 14, _y1 + 20, "ПРЕПАРАТ", UI_FS_HEADER, UI_FS_HEADER, 0);
+    draw_text_transformed(_x1 + 14, _y1 + 20, "ПРЕПАРАТ", 1.80, 1.80, 0);
     draw_set_halign(fa_right);
-    draw_text_transformed(_x2 - 30, _y1 + 20, "ЗАКУПКА / ПРОДАЖА", UI_FS_HEADER, UI_FS_HEADER, 0);
+    draw_text_transformed(_x2 - 30, _y1 + 20, "ЗАКУПКА / ПРОДАЖА", 1.80, 1.80, 0);
 
     var _draw_y = _y1 + 34;
     var _last = min(
@@ -1759,7 +1765,7 @@ function finance_ui_draw_medicine_prices(
         draw_set_valign(fa_middle);
         draw_set_color(make_color_rgb(50, 38, 28));
         draw_text_transformed(
-            _x1 + 16, _draw_y + 29,
+            _x1 + 18, _draw_y + 32,
             item_get_name(_item_id),
             _font, _font, 0
         );
@@ -1767,13 +1773,13 @@ function finance_ui_draw_medicine_prices(
         draw_set_halign(fa_right);
         draw_set_color(make_color_rgb(148, 74, 64));
         draw_text_transformed(
-            _purchase_right, _draw_y + 30,
+            _purchase_right, _draw_y + 34,
             "закупка $ " + string(_purchase),
-            UI_FS_ROW, UI_FS_ROW, 0
+            UI_FS_VALUE, UI_FS_VALUE, 0
         );
         draw_set_color(make_color_rgb(148, 74, 64));
         draw_text_transformed(
-            _sale_right, _draw_y + 30,
+            _sale_right, _draw_y + 34,
             "$ " + string(_sale),
             _font, _font, 0
         );
@@ -1845,18 +1851,19 @@ function hud_draw_finance_price_panel(_hud) {
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
     draw_set_color(make_color_rgb(74, 49, 31));
-    draw_text_transformed(_x1 + 24, _y1 + 23, "ФИНАНСЫ И ПРАЙС-ЛИСТ", 1.15, 1.15, 0);
+    draw_text_transformed(_x1 + 24, _y1 + 22, "ФИНАНСЫ И ПРАЙС-ЛИСТ", UI_FS_TITLE, UI_FS_TITLE, 0);
 
     var _tabs = [
         { id : "overview", text : "ОБЗОР" },
         { id : "services", text : "УСЛУГИ" },
         { id : "medicines", text : "ПРЕПАРАТЫ" }
     ];
-    var _tab_x = _x1 + 300;
-    var _tab_y1 = _y1 + 18;
-    var _tab_y2 = _tab_y1 + 38;
-    var _tab_w = 150;
-    var _tab_gap = 8;
+    // Пакет №177: вкладки крупнее, места хватает.
+    var _tab_x = _x1 + 430;
+    var _tab_y1 = _y1 + 16;
+    var _tab_y2 = _tab_y1 + 60;
+    var _tab_w = 210;
+    var _tab_gap = 10;
     var _pressed = finance_ui_pointer_pressed();
 
     for (var _tab_index = 0; _tab_index < array_length(_tabs); _tab_index++) {
@@ -1883,9 +1890,9 @@ function hud_draw_finance_price_panel(_hud) {
     }
 
     var _close_x2 = _x2 - 20;
-    var _close_x1 = _close_x2 - 34;
-    var _close_y1 = _y1 + 18;
-    var _close_y2 = _close_y1 + 34;
+    var _close_x1 = _close_x2 - 56;
+    var _close_y1 = _y1 + 16;
+    var _close_y2 = _close_y1 + 56;
     var _close_hover = point_in_rectangle(
         _mouse_x,
         _mouse_y,
