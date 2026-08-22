@@ -253,6 +253,15 @@ function schedule_next_candidate(_after_resolution) {
 function spawn_candidate() {
     if (instance_exists(global.current_candidate)) return noone;
 
+    // Пакет №190: поиск остановлен (в ПЕРСОНАЛ -> ПОИСК сняты все
+    // профессии) — кандидаты в клинику не приходят вообще.
+    if (staff_hiring_search_is_paused()) {
+        // Проверять каждую минуту незачем — переносим на завтра.
+        global.next_candidate_day = global.game_day + 1;
+        global.next_candidate_minute = irandom_range(9 * 60, 16 * 60);
+        return noone;
+    }
+
     if (!instance_exists(obj_candidate_spot)) {
         show_debug_message("[HIRING] Нет obj_candidate_spot в комнате.");
         schedule_next_candidate(false);
