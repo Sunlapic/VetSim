@@ -1,5 +1,6 @@
 /// clinic_tree_panel.gml
 /// @description Пакет №173. Панель «КЛИНИКА - РАЗВИТИЕ» в виде дерева.
+/// Пакет №202: покупка только по отпусканию пальца и с подтверждением.
 /// Пакет №200: при прокрутке карточки больше не вылезают за окно на HUD —
 /// рисуется только то, что помещается целиком.
 ///
@@ -555,6 +556,14 @@ function clinic_tree_draw(_hud) {
         if (!variable_instance_exists(id, "tree_touch_last_y")) tree_touch_last_y = 0;
         if (!variable_instance_exists(id, "tree_content_h")) tree_content_h = 0;
 
+        // Пакет №202: касание больше не покупает сразу.
+        // tree_touch_start_y  — где палец коснулся экрана;
+        // tree_touch_moved    — палец уехал дальше 8 пикселей, это прокрутка;
+        // tree_confirm_node   — узел, для которого открыт вопрос «покупаем?».
+        if (!variable_instance_exists(id, "tree_touch_start_y")) tree_touch_start_y = 0;
+        if (!variable_instance_exists(id, "tree_touch_moved")) tree_touch_moved = false;
+        if (!variable_instance_exists(id, "tree_confirm_node")) tree_confirm_node = undefined;
+
         var _mx = device_mouse_x_to_gui(0);
         var _my = device_mouse_y_to_gui(0);
 
@@ -584,12 +593,15 @@ function clinic_tree_draw(_hud) {
         var _released = mouse_check_button_released(mb_left)
             || device_mouse_check_button_released(0, mb_left);
 
-        if (_pressed && _in_panel) {
+        // Пока открыт вопрос о покупке, список не прокручивается.
+        var _confirm_open = !is_undefined(tree_confirm_node);
+
+        if (_pressed && _in_panel && !_confirm_open) {
             tree_touch_active = true;
             tree_touch_last_y = _my;
+            tree_touch_start_y = _my;
+            tree_touch_moved = false;
         }
-
-        var _dragged = false;
 
         if (tree_touch_active) {
             if (_down) {
@@ -600,11 +612,21 @@ function clinic_tree_draw(_hud) {
                     tree_touch_last_y = _my;
                 }
 
-                if (abs(_delta) > 3) _dragged = true;
+                // 8 пикселей — порог: меньше считается нажатием, больше уже
+                // прокруткой. Палец при обычном тапе всегда чуть смещается.
+                if (abs(_my - tree_touch_start_y) > 8) tree_touch_moved = true;
             }
-
-            if (_released) tree_touch_active = false;
         }
+
+        // Тап = отпустили палец там же, где нажали, и не прокручивали.
+        var _tap = (
+            tree_touch_active
+            && _released
+            && !tree_touch_moved
+            && !_confirm_open
+        );
+
+        if (_released) tree_touch_active = false;
 
         // Пакет №200: небольшой запас, чтобы последняя карточка точно
         // доезжала до конца и не «пропадала» из-за округлений.
@@ -698,7 +720,7 @@ function clinic_tree_draw(_hud) {
 
                 tree_draw_node(_cnode, _cx1, _cy1, _cx2, _cy2, _chover);
 
-                if (_chover && _pressed) _click_node = _cnode;
+                if (_chover && _tap) _click_node = _cnode;
             }
         }
 
@@ -774,7 +796,7 @@ function clinic_tree_draw(_hud) {
 
                     tree_draw_node(_bnode, _bx1, _by1, _bx2, _by2, _bhover);
 
-                    if (_bhover && _pressed) _click_node = _bnode;
+                    if (_bhover && _tap) _click_node = _bnode;
                 }
 
                 _by = _by2 + _node_gap;
@@ -814,13 +836,15 @@ function clinic_tree_draw(_hud) {
             draw_roundrect_ext(_sb_x1, _thumb_y, _sb_x2, _thumb_y + _thumb_h, 6, 6, true);
         }
 
-        // ── Покупка ──
-        if (!is_undefined(_click_node) && !_dragged && tablet_click_lock <= 0) {
+        // ── Нажатие на узел ──
+        if (!is_undefined(_click_node) && tablet_click_lock <= 0) {
             var _state = tree_node_state(_click_node);
 
             if (_state == "open") {
+                // Пакет №202: сразу не покупаем — спрашиваем подтверждение,
+                // как при увольнении сотрудника.
                 tablet_click_lock = 6;
-                tree_node_buy(_click_node);
+                tree_confirm_node = _click_node;
             }
             else if (_state == "lock") {
                 tablet_click_lock = 6;
@@ -831,6 +855,123 @@ function clinic_tree_draw(_hud) {
                         : "Сначала откройте предыдущий узел ветки.";
 
                     show_notice("ЕЩЁ РАНО", _msg, max(1, game_get_speed(gamespeed_fps)) * 2);
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════
+        // Пакет №202: ОКНО ПОДТВЕРЖДЕНИЯ ПОКУПКИ
+        // ═══════════════════════════════════════════════════════
+
+        if (!is_undefined(tree_confirm_node)) {
+            var _node_c = tree_confirm_node;
+            var _state_c = tree_node_state(_node_c);
+
+            // Узел уже куплен другим способом или подорожал — закрываем.
+            if (_state_c != "open") {
+                tree_confirm_node = undefined;
+            }
+            else {
+                var _gui_w = display_get_gui_width();
+                var _gui_h = display_get_gui_height();
+                var _cw = 700;
+                var _ch = 300;
+                var _cx1 = (_gui_w - _cw) * 0.5;
+                var _cy1 = (_gui_h - _ch) * 0.5;
+                var _cx2 = _cx1 + _cw;
+                var _cy2 = _cy1 + _ch;
+
+                draw_set_alpha(0.40);
+                draw_set_color(c_black);
+                draw_rectangle(0, 0, _gui_w, _gui_h, false);
+                draw_set_alpha(1);
+
+                draw_set_color(tree_color_paper());
+                draw_roundrect_ext(_cx1, _cy1, _cx2, _cy2, 14, 14, false);
+                draw_set_color(tree_color_wood_dark());
+                draw_roundrect_ext(_cx1, _cy1, _cx2, _cy2, 14, 14, true);
+                draw_set_color(tree_color_wood_light());
+                draw_roundrect_ext(_cx1 + 3, _cy1 + 3, _cx2 - 3, _cy2 - 3, 12, 12, true);
+
+                draw_set_halign(fa_center);
+                draw_set_valign(fa_top);
+                draw_set_color(tree_color_text());
+                ui_text_fit_center(
+                    (_cx1 + _cx2) * 0.5,
+                    _cy1 + 48,
+                    "КУПИТЬ УЛУЧШЕНИЕ?",
+                    _cw - 60,
+                    UI_FS_TITLE
+                );
+
+                draw_set_color(tree_color_text_soft());
+                ui_text_fit_center(
+                    (_cx1 + _cx2) * 0.5,
+                    _cy1 + 104,
+                    tree_node_title(_node_c),
+                    _cw - 60,
+                    UI_FS_HEADER
+                );
+
+                draw_set_color(tree_color_green());
+                ui_text_fit_center(
+                    (_cx1 + _cx2) * 0.5,
+                    _cy1 + 152,
+                    tree_node_cost_text(_node_c, _state_c),
+                    _cw - 60,
+                    UI_FS_VALUE
+                );
+
+                var _byes_x1 = _cx1 + 30;
+                var _byes_x2 = (_cx1 + _cx2) * 0.5 - 8;
+                var _bno_x1 = (_cx1 + _cx2) * 0.5 + 8;
+                var _bno_x2 = _cx2 - 30;
+                var _by1 = _cy2 - 96;
+                var _by2 = _cy2 - 28;
+
+                var _yes_hover = point_in_rectangle(_mx, _my, _byes_x1, _by1, _byes_x2, _by2);
+                var _no_hover = point_in_rectangle(_mx, _my, _bno_x1, _by1, _bno_x2, _by2);
+
+                hud_draw_button(
+                    _byes_x1,
+                    _by1,
+                    _byes_x2,
+                    _by2,
+                    "КУПИТЬ",
+                    false,
+                    _yes_hover,
+                    tree_color_green_bg(),
+                    make_color_rgb(232, 245, 228),
+                    make_color_rgb(205, 226, 200),
+                    tree_color_line(),
+                    tree_color_green_dark()
+                );
+
+                hud_draw_button(
+                    _bno_x1,
+                    _by1,
+                    _bno_x2,
+                    _by2,
+                    "ОТМЕНА",
+                    false,
+                    _no_hover,
+                    tree_color_paper_2(),
+                    make_color_rgb(248, 238, 220),
+                    make_color_rgb(228, 210, 186),
+                    tree_color_line(),
+                    tree_color_text()
+                );
+
+                if (_released && tablet_click_lock <= 0) {
+                    if (_yes_hover) {
+                        tablet_click_lock = 6;
+                        tree_node_buy(_node_c);
+                        tree_confirm_node = undefined;
+                    }
+                    else if (_no_hover) {
+                        tablet_click_lock = 6;
+                        tree_confirm_node = undefined;
+                    }
                 }
             }
         }
