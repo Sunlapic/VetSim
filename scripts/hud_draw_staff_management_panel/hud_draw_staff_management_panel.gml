@@ -357,16 +357,58 @@ function hud_staff_manage_draw_roster(
     draw_set_color(_line);
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 10, 10, true);
 
+    // ═══════════════════════════════════════════════════════════
+    // Пакет №195: шапка списка со счётчиком сотрудников.
+    //   ПЕРСОНАЛ КЛИНИКИ                              4 / 6
+    //   ВРАЧИ 2   АССИСТЕНТЫ 1   АДМИНИСТРАТОРЫ 1
+    // Главный игрок в счёт не идёт: слоты найма считаются без него,
+    // как и в дереве развития.
+    // ═══════════════════════════════════════════════════════════
+
+    var _doctor_count = instance_number(obj_staff_doctor);
+    var _admin_count = instance_number(obj_staff_admin);
+    var _assistant_count = instance_number(obj_staff_assistant);
+    var _hired_count = _doctor_count + _admin_count + _assistant_count;
+    var _hire_slots = clinic_get_hire_slots();
+    var _slots_full = (_hired_count >= _hire_slots);
+
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
     draw_set_color(_text_dark);
-    ui_text_fit_left(_x1 + 16, _y1 + 10, "ПЕРСОНАЛ КЛИНИКИ", (_x2 - _x1) - 40, UI_FS_TITLE);
+    ui_text_fit_left(_x1 + 16, _y1 + 10, "ПЕРСОНАЛ КЛИНИКИ", (_x2 - _x1) - 200, UI_FS_TITLE);
+
+    // Счётчик занятых слотов — справа в той же строке.
+    draw_set_color(_slots_full
+        ? make_color_rgb(148, 74, 64)
+        : make_color_rgb(62, 112, 74));
+    ui_text_fit_right(
+        _x2 - 16,
+        _y1 + 26,
+        string(_hired_count) + " / " + string(_hire_slots),
+        160,
+        UI_FS_TITLE
+    );
+
+    // Разбивка по профессиям.
+    draw_set_color(_text_soft);
+    ui_text_fit_left(
+        _x1 + 16,
+        _y1 + 44,
+        "ВРАЧИ " + string(_doctor_count)
+            + "    АССИСТЕНТЫ " + string(_assistant_count)
+            + "    АДМИНИСТРАТОРЫ " + string(_admin_count),
+        (_x2 - _x1) - 32,
+        UI_FS_ROW
+    );
+
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
 
     // Пакет №192: справа зарезервирована полоса под бегунок прокрутки.
     var _scrollbar_w = 16;
     var _rows_x1 = _x1 + 12;
     var _rows_x2 = _x2 - 16 - _scrollbar_w;
-    var _rows_y1 = _y1 + 58;
+    var _rows_y1 = _y1 + 84;
     var _rows_y2 = _y2 - 28;
     var _inside_list = point_in_rectangle(
         _mouse_x,
