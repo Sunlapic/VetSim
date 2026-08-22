@@ -653,13 +653,54 @@ switch (doctor_state) {
             // 6. Формируем процедуры
             // ─────────────────────────────────────────────
             var _moved_to_procedure_queue = false;
+            var _sent_to_surgery = false;
+
             if (instance_exists(_pet_done) && variable_instance_exists(_pet_done, "current_case") && is_struct(_pet_done.current_case)) {
                 if (!variable_instance_exists(_pet_done.current_case, "pending_procedure_actions")) {
                     _pet_done.current_case.pending_procedure_actions = [];
                 }
                 var _next_assignments = case_build_next_procedure_assignments(_pet_done.current_case);
-                _pet_done.current_case.pending_procedure_actions = _next_assignments;
-                if (array_length(_next_assignments) > 0) {
+
+                // ═══════════════════════════════════════════════════
+                // Пакет №215: ОПЕРАЦИЯ — НЕ РАБОТА АССИСТЕНТА
+                //
+                // Раньше хирургическое назначение попадало в общий список
+                // процедур. Ассистент вёл пациента к процедурному столу, там
+                // вызывал направление в операционную, и пациент оставался
+                // висеть на столе: очередь процедур уже держала его, а
+                // стационар забрать не мог.
+                //
+                // Теперь врач прямо на приёме отправляет пациента в
+                // стационар (схема «терапевт увозит пациента»), а в список
+                // процедур попадает только то, что действительно делает
+                // ассистент.
+                // ═══════════════════════════════════════════════════
+                var _surgery_pending = "";
+                var _procedure_only = [];
+
+                for (var _na = 0; _na < array_length(_next_assignments); _na++) {
+                    var _na_id = _next_assignments[_na];
+
+                    if (
+                        _surgery_pending == ""
+                        && operating_action_is_surgery(_na_id)
+                    ) {
+                        _surgery_pending = _na_id;
+                        continue;
+                    }
+
+                    array_push(_procedure_only, _na_id);
+                }
+
+                _next_assignments = _procedure_only;
+                _pet_done.current_case.pending_procedure_actions = _procedure_only;
+
+                if (_surgery_pending != "") {
+                    // Направляем сразу: владелец рядом, врач может проводить.
+                    _sent_to_surgery = operating_request(_pet_done, _surgery_pending);
+                }
+
+                if (!_sent_to_surgery && array_length(_next_assignments) > 0) {
                     var _wait_index = reception_find_free_wait_spot();
                     if (_wait_index != -1) {
                         global.wait_spots[_wait_index].occupied_by = _owner_done;
@@ -713,7 +754,9 @@ switch (doctor_state) {
             }
 
             // 7. Питомец снова следует за владельцем
-            if (instance_exists(_pet_done)) {
+            // Пакет №215: если пациента забрал стационар, трогать его нельзя —
+            // иначе он побежит за владельцем домой прямо с операции.
+            if (!_sent_to_surgery && instance_exists(_pet_done)) {
                 with (_pet_done) {
                     path_end();
                     is_walking = false;
@@ -726,7 +769,11 @@ switch (doctor_state) {
             }
 
             // 8. Если процедур нет — на оплату
-            if (!_moved_to_procedure_queue && instance_exists(_owner_done)) {
+            if (
+                !_sent_to_surgery
+                && !_moved_to_procedure_queue
+                && instance_exists(_owner_done)
+            ) {
                 with (_owner_done) {
                     queue_purpose = "payment";
                     payment_pending = true;
