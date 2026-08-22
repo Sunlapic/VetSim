@@ -395,7 +395,7 @@ function hud_draw_handbook_panel(_hud) {
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
     draw_set_color(_wood_dark);
-    draw_text_transformed(_x1 + 24, _y1 + 18, "СПРАВОЧНИК БОЛЕЗНЕЙ", 1.45, 1.45, 0);
+    draw_text_transformed(_x1 + 24, _y1 + 16, "СПРАВОЧНИК БОЛЕЗНЕЙ", UI_FS_TITLE, UI_FS_TITLE, 0);
 
     draw_set_halign(fa_right);
     draw_set_color(_text_soft);
@@ -404,8 +404,8 @@ function hud_draw_handbook_panel(_hud) {
         _y1 + 26,
         "ОТКРЫТО " + string(handbook_get_unlocked_count())
             + " / " + string(array_length(_ids)),
-        0.95,
-        0.95,
+        UI_FS_ROW,
+        UI_FS_ROW,
         0
     );
 
@@ -504,12 +504,19 @@ function hud_draw_handbook_panel(_hud) {
         draw_set_color(_unlocked
             ? _text_dark
             : make_color_rgb(132, 122, 110));
+        var _row_scale = ui_fit_scale_box(
+            _label,
+            (_list_x2 - _list_x1) - 40,
+            (_row_y2 - _row_y1) - 6,
+            UI_FS_ROW
+        );
+
         draw_text_transformed(
-            _list_x1 + 12,
+            _list_x1 + 14,
             (_row_y1 + _row_y2) * 0.5,
             _label,
-            1.0,
-            1.0,
+            _row_scale,
+            _row_scale,
             0
         );
 
@@ -530,8 +537,8 @@ function hud_draw_handbook_panel(_hud) {
             (_detail_x1 + _detail_x2) * 0.5,
             (_detail_y1 + _detail_y2) * 0.5,
             "Выберите болезнь слева",
-            1.2,
-            1.2,
+            UI_FS_HEADER,
+            UI_FS_HEADER,
             0
         );
     }
@@ -543,8 +550,8 @@ function hud_draw_handbook_panel(_hud) {
             (_detail_x1 + _detail_x2) * 0.5,
             (_detail_y1 + _detail_y2) * 0.5 - 70,
             "???",
-            2.4,
-            2.4,
+            3.6,
+            3.6,
             0
         );
 
@@ -553,10 +560,10 @@ function hud_draw_handbook_panel(_hud) {
             (_detail_x1 + _detail_x2) * 0.5,
             (_detail_y1 + _detail_y2) * 0.5 - 20,
             "Эта болезнь ещё не открыта.\n\nПроведите идеальный приём: подтвердите диагноз, назначьте все обязательные процедуры и не допустите ни одной ошибки.",
-            26,
-            (_detail_x2 - _detail_x1) - 80,
-            0.9,
-            0.9,
+            30 / UI_FS_ROW,
+            ((_detail_x2 - _detail_x1) - 80) / UI_FS_ROW,
+            UI_FS_ROW,
+            UI_FS_ROW,
             0
         );
     }
@@ -572,11 +579,11 @@ function hud_draw_handbook_panel(_hud) {
             _dx,
             _dy,
             handbook_get_disease_name(_sel),
-            1.3,
-            1.3,
+            UI_FS_TITLE,
+            UI_FS_TITLE,
             0
         );
-        _dy += 38;
+        _dy += 54;
 
         var _difficulty = handbook_get_disease_difficulty(_sel);
         var _diff_color = make_color_rgb(62, 112, 74);
@@ -593,50 +600,57 @@ function hud_draw_handbook_panel(_hud) {
             _dx,
             _dy,
             "СЛОЖНОСТЬ: " + string(_difficulty) + "/10",
-            0.8,
-            0.8,
+            UI_FS_ROW,
+            UI_FS_ROW,
             0
         );
-        _dy += 30;
+        _dy += 46;
 
         var _desc = handbook_get_disease_description(_sel);
 
         draw_set_color(_text_dark);
-        draw_text_ext_transformed(_dx, _dy, _desc, 26, _detail_w, 0.9, 0.9, 0);
-        _dy += string_height_ext(_desc, 26, _detail_w) * 0.9 + 18;
+        draw_text_ext_transformed(
+            _dx, _dy, _desc,
+            30 / UI_FS_ROW,
+            _detail_w / UI_FS_ROW,
+            UI_FS_ROW, UI_FS_ROW, 0
+        );
+        _dy += string_height_ext(_desc, 30 / UI_FS_ROW, _detail_w / UI_FS_ROW) * UI_FS_ROW + 22;
 
         // Симптомы
         draw_set_color(_green);
-        draw_text_transformed(_dx, _dy, "СИМПТОМЫ:", 0.95, 0.95, 0);
-        _dy += 30;
+        draw_text_transformed(_dx, _dy, "СИМПТОМЫ:", UI_FS_HEADER, UI_FS_HEADER, 0);
+        _dy += 48;
 
         var _symptoms = handbook_get_disease_symptoms(_sel);
 
         if (array_length(_symptoms) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_transformed(_dx, _dy, "— нет данных", 0.9, 0.9, 0);
-            _dy += 26;
+            draw_text_transformed(_dx, _dy, "— нет данных", UI_FS_ROW, UI_FS_ROW, 0);
+            _dy += 40;
         }
         else {
             for (var _si = 0; _si < array_length(_symptoms); _si++) {
                 draw_set_color(_text_soft);
-                draw_text_transformed(_dx, _dy, "• " + string(_symptoms[_si].name), 0.9, 0.9, 0);
-                _dy += 26;
+                var _sym_line = "• " + string(_symptoms[_si].name);
+                var _sym_s = ui_fit_scale(_sym_line, _detail_w, UI_FS_ROW);
+                draw_text_transformed(_dx, _dy, _sym_line, _sym_s, _sym_s, 0);
+                _dy += 40;
             }
         }
         _dy += 8;
 
         // Обследования
         draw_set_color(_blue);
-        draw_text_transformed(_dx, _dy, "ОБСЛЕДОВАНИЯ:", 0.95, 0.95, 0);
-        _dy += 30;
+        draw_text_transformed(_dx, _dy, "ОБСЛЕДОВАНИЯ:", UI_FS_HEADER, UI_FS_HEADER, 0);
+        _dy += 48;
 
         var _diagnostics = handbook_get_disease_diagnostics(_sel);
 
         if (array_length(_diagnostics) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_transformed(_dx, _dy, "— нет данных", 0.9, 0.9, 0);
-            _dy += 26;
+            draw_text_transformed(_dx, _dy, "— нет данных", UI_FS_ROW, UI_FS_ROW, 0);
+            _dy += 40;
         }
         else {
             for (var _di = 0; _di < array_length(_diagnostics); _di++) {
@@ -647,23 +661,24 @@ function hud_draw_handbook_panel(_hud) {
                 }
 
                 draw_set_color(_text_soft);
-                draw_text_transformed(_dx, _dy, _diag_line, 0.9, 0.9, 0);
-                _dy += 26;
+                var _diag_s = ui_fit_scale(_diag_line, _detail_w, UI_FS_ROW);
+                draw_text_transformed(_dx, _dy, _diag_line, _diag_s, _diag_s, 0);
+                _dy += 40;
             }
         }
         _dy += 8;
 
         // Лечение
         draw_set_color(_red);
-        draw_text_transformed(_dx, _dy, "ЛЕЧЕНИЕ:", 0.95, 0.95, 0);
-        _dy += 30;
+        draw_text_transformed(_dx, _dy, "ЛЕЧЕНИЕ:", UI_FS_HEADER, UI_FS_HEADER, 0);
+        _dy += 48;
 
         var _treatments = handbook_get_disease_treatments(_sel);
 
         if (array_length(_treatments) <= 0) {
             draw_set_color(_text_soft);
-            draw_text_transformed(_dx, _dy, "— нет данных", 0.9, 0.9, 0);
-            _dy += 26;
+            draw_text_transformed(_dx, _dy, "— нет данных", UI_FS_ROW, UI_FS_ROW, 0);
+            _dy += 40;
         }
         else {
             for (var _ti = 0; _ti < array_length(_treatments); _ti++) {
@@ -677,8 +692,9 @@ function hud_draw_handbook_panel(_hud) {
                 }
 
                 draw_set_color(_text_soft);
-                draw_text_transformed(_dx, _dy, _treat_line, 0.9, 0.9, 0);
-                _dy += 26;
+                var _treat_s = ui_fit_scale(_treat_line, _detail_w, UI_FS_ROW);
+                draw_text_transformed(_dx, _dy, _treat_line, _treat_s, _treat_s, 0);
+                _dy += 40;
             }
         }
     }

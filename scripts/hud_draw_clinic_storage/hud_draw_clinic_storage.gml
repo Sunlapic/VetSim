@@ -556,9 +556,9 @@ function hud_draw_clinic_storage(_hud) {
             var _buy_button_h = (string_height("КУПИТЬ") + 10) * _font_scale;
 
             draw_set_color(_text_dark);
-            draw_text_transformed(_name_x, _list_top_y, "ПРЕПАРАТ", 1.1, 1.1, 0);
-            draw_text_transformed(_quantity_x, _list_top_y, "ОСТАТОК", 1.1, 1.1, 0);
-            draw_text_transformed(_price_x, _list_top_y, "ЦЕНА", 1.1, 1.1, 0);
+            draw_text_transformed(_name_x, _list_top_y, "ПРЕПАРАТ", UI_FS_HEADER, UI_FS_HEADER, 0);
+            draw_text_transformed(_quantity_x, _list_top_y, "ОСТАТОК", UI_FS_HEADER, UI_FS_HEADER, 0);
+            draw_text_transformed(_price_x, _list_top_y, "ЦЕНА", UI_FS_HEADER, UI_FS_HEADER, 0);
             draw_set_color(_paper_2);
             draw_line(_right_x1 + 10, _list_top_y + 20, _right_x2 - 10, _list_top_y + 20);
 

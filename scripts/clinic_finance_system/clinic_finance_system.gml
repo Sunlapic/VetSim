@@ -1358,9 +1358,10 @@ function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
             var _op = max(0, round(_earned - _adm - _stat));
             draw_set_halign(fa_left);
             draw_set_color(make_color_rgb(84, 68, 54));
-            draw_text_transformed(_cx1 + 10, _y1 + 140, "- Прием: $ " + string(_adm), 1.0, 1.0, 0);
-            draw_text_transformed(_cx1 + 10, _y1 + 165, "- Стационар: $ " + string(_stat), 1.0, 1.0, 0);
-            draw_text_transformed(_cx1 + 10, _y1 + 190, "- Операционная: $ " + string(_op), 1.0, 1.0, 0);
+            // Пакет №176: крупнее, шаг строк увеличен с 25 до 38.
+            draw_text_transformed(_cx1 + 12, _y1 + 138, "- Прием: $ " + string(_adm), UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_cx1 + 12, _y1 + 176, "- Стационар: $ " + string(_stat), UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_cx1 + 12, _y1 + 214, "- Операционная: $ " + string(_op), UI_FS_ROW, UI_FS_ROW, 0);
         }
         if (_index == 2) {
             var _projected_salary = 0;
@@ -1370,8 +1371,8 @@ function finance_ui_draw_overview(_hud, _x1, _y1, _x2, _y2) {
             var _pur = max(0, round(_spent - _salary));
             draw_set_halign(fa_left);
             draw_set_color(make_color_rgb(148, 74, 64));
-            draw_text_transformed(_cx1 + 10, _y1 + 140, "- Зарплаты: $ " + string(round(_projected_salary)), 1.0, 1.0, 0);
-            draw_text_transformed(_cx1 + 10, _y1 + 165, "- Закупка: $ " + string(round(_pur)), 1.0, 1.0, 0);
+            draw_text_transformed(_cx1 + 12, _y1 + 138, "- Зарплаты: $ " + string(round(_projected_salary)), UI_FS_ROW, UI_FS_ROW, 0);
+            draw_text_transformed(_cx1 + 12, _y1 + 176, "- Закупка: $ " + string(round(_pur)), UI_FS_ROW, UI_FS_ROW, 0);
         }
     }
 
@@ -1563,8 +1564,8 @@ function finance_ui_draw_service_prices(
     _mouse_y
 ) {
     var _entries = finance_get_service_entries();
-    var _row_h = 58;
-    var _font = 1.3;
+    var _row_h = 68;
+    var _font = UI_FS_VALUE;
     var _visible_rows = max(1, floor((_y2 - _y1 - 34) / _row_h));
 
     finance_ui_prepare_scroll(
@@ -1582,9 +1583,9 @@ function finance_ui_draw_service_prices(
     draw_set_halign(fa_left);
     draw_set_valign(fa_middle);
     draw_set_color(make_color_rgb(84, 68, 54));
-    draw_text_transformed(_x1 + 14, _y1 + 17, "УСЛУГА", 1.1, 1.1, 0);
+    draw_text_transformed(_x1 + 14, _y1 + 20, "УСЛУГА", UI_FS_HEADER, UI_FS_HEADER, 0);
     draw_set_halign(fa_right);
-    draw_text_transformed(_x2 - 30, _y1 + 17, "ЦЕНА ДЛЯ КЛИЕНТА", 1.1, 1.1, 0);
+    draw_text_transformed(_x2 - 30, _y1 + 20, "ЦЕНА ДЛЯ КЛИЕНТА", UI_FS_HEADER, UI_FS_HEADER, 0);
 
     var _draw_y = _y1 + 34;
     var _last = min(
@@ -1638,7 +1639,7 @@ function finance_ui_draw_service_prices(
         draw_text_transformed(
             _x1 + 16, _draw_y + 43,
             _entry.group,
-            0.9, 0.9, 0
+            UI_FS_SMALL, UI_FS_SMALL, 0
         );
 
         draw_set_halign(fa_right);
@@ -1688,8 +1689,8 @@ function finance_ui_draw_medicine_prices(
     _mouse_y
 ) {
     var _item_ids = finance_get_item_ids();
-    var _row_h = 60;
-    var _font = 1.3;
+    var _row_h = 70;
+    var _font = UI_FS_VALUE;
     var _visible_rows = max(1, floor((_y2 - _y1 - 34) / _row_h));
 
     finance_ui_prepare_scroll(
@@ -1707,9 +1708,9 @@ function finance_ui_draw_medicine_prices(
     draw_set_halign(fa_left);
     draw_set_valign(fa_middle);
     draw_set_color(make_color_rgb(84, 68, 54));
-    draw_text_transformed(_x1 + 14, _y1 + 17, "ПРЕПАРАТ", 1.1, 1.1, 0);
+    draw_text_transformed(_x1 + 14, _y1 + 20, "ПРЕПАРАТ", UI_FS_HEADER, UI_FS_HEADER, 0);
     draw_set_halign(fa_right);
-    draw_text_transformed(_x2 - 30, _y1 + 17, "ЗАКУПКА / ПРОДАЖА", 1.1, 1.1, 0);
+    draw_text_transformed(_x2 - 30, _y1 + 20, "ЗАКУПКА / ПРОДАЖА", UI_FS_HEADER, UI_FS_HEADER, 0);
 
     var _draw_y = _y1 + 34;
     var _last = min(
@@ -1768,7 +1769,7 @@ function finance_ui_draw_medicine_prices(
         draw_text_transformed(
             _purchase_right, _draw_y + 30,
             "закупка $ " + string(_purchase),
-            1.1, 1.1, 0
+            UI_FS_ROW, UI_FS_ROW, 0
         );
         draw_set_color(make_color_rgb(148, 74, 64));
         draw_text_transformed(

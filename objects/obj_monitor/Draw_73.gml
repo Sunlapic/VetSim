@@ -75,7 +75,7 @@ for (var j = 0; j < array_length(_entries); j++) {
     draw_text_transformed(_draw_x + 12, _text_y, _item.patient_name, _text_scale, _text_scale, 0);
     draw_set_halign(fa_right);
     draw_set_color(c_aqua);
-    draw_text_transformed(_draw_x + monitor_w - 20, _text_y, _item.destination, 0.66, 0.66, 0);
+    draw_text_transformed(_draw_x + monitor_w - 20, _text_y, _item.destination, 1.0, 1.0, 0);
 }
 
 // 5. Пустой экран
@@ -84,7 +84,7 @@ if (array_length(_entries) == 0) {
     draw_set_halign(fa_center);
     draw_set_valign(fa_middle);
     draw_text_transformed(_draw_x + monitor_w * 0.5, _draw_y + monitor_h * 0.5 + 10,
-                          "Ожидание приема...", 0.8, 0.8, 0);
+                          "Ожидание приема...", 1.15, 1.15, 0);
 }
 
 // Сброс
