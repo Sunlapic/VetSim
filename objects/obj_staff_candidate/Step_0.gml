@@ -87,16 +87,7 @@ switch (candidate_state) {
                 }
             }
 
-            if (instance_exists(obj_UI_HUD)) {
-                var _hud = instance_find(obj_UI_HUD, 0);
-
-                _hud.show_notice(
-                    "КАНДИДАТ УШЁЛ",
-                    _candidate_name
-                        + " не дождался решения и покинул клинику.",
-                    max(1, game_get_speed(gamespeed_fps)) * 3
-                );
-            }
+            // Пакет №212: уведомление «кандидат ушёл» убрано.
 
             resolve_reject();
         }

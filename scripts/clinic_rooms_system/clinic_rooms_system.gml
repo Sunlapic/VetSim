@@ -31,10 +31,19 @@ function clinic_rooms_init() {
 // проверке игры. Перед релизом поставить false — механика покупки готова.
 #macro CLINIC_OPERATING_FREE_WHILE_TESTING true
 
+// Пакет №212: в стационаре стало 8 коек. Первые две открыты сразу,
+// остальные покупаются по одной и дорожают.
+#macro CLINIC_BED_FIRST 101
+#macro CLINIC_BED_LAST 108
+
 function clinic_bed_price(_slot_id) {
     switch (round(_slot_id)) {
         case 103: return 1600;
         case 104: return 2000;
+        case 105: return 2600;
+        case 106: return 3200;
+        case 107: return 4000;
+        case 108: return 5000;
     }
 
     return 0;
@@ -47,7 +56,7 @@ function clinic_bed_is_open(_slot_id) {
 
     // Первые две койки — часть палаты.
     if (_slot == 101 || _slot == 102) return true;
-    if (_slot < 101 || _slot > 104) return true;
+    if (_slot < CLINIC_BED_FIRST || _slot > CLINIC_BED_LAST) return true;
 
     var _key = "bed_" + string(_slot);
 
@@ -80,8 +89,13 @@ function clinic_room_is_open(_slot_id) {
 
     if (_slot_num == 201 || _slot_num == 202) return clinic_operating_is_open();
 
-    // Пакет №173: койки стационара 101–104 покупаются по одной.
-    if (_slot_num >= 101 && _slot_num <= 104) return clinic_bed_is_open(_slot_num);
+    // Пакет №212: койки стационара 101–108 покупаются по одной.
+    if (
+        _slot_num >= CLINIC_BED_FIRST
+        && _slot_num <= CLINIC_BED_LAST
+    ) {
+        return clinic_bed_is_open(_slot_num);
+    }
 
     // Шкаф палаты и прочее общее оборудование стационара (слот 100).
     if (_slot_num >= 100) return true;
@@ -110,7 +124,12 @@ function clinic_room_price(_slot_id) {
 
     var _slot_num = round(_slot_id);
 
-    if (_slot_num >= 101 && _slot_num <= 104) return clinic_bed_price(_slot_num);
+    if (
+        _slot_num >= CLINIC_BED_FIRST
+        && _slot_num <= CLINIC_BED_LAST
+    ) {
+        return clinic_bed_price(_slot_num);
+    }
 
     switch (_slot_num) {
         case 2: return 1500;
@@ -125,7 +144,10 @@ function clinic_room_name(_slot_id) {
 
     var _slot_num = round(_slot_id);
 
-    if (_slot_num >= 101 && _slot_num <= 104) {
+    if (
+        _slot_num >= CLINIC_BED_FIRST
+        && _slot_num <= CLINIC_BED_LAST
+    ) {
         return "Койка " + string(_slot_num - 100);
     }
 
@@ -214,7 +236,7 @@ function clinic_room_purchase(_slot_id) {
     if (_is_operating) {
         variable_struct_set(global.clinic_rooms_open, "operating", true);
     }
-    else if (_slot >= 101 && _slot <= 104) {
+    else if (_slot >= CLINIC_BED_FIRST && _slot <= CLINIC_BED_LAST) {
         variable_struct_set(global.clinic_rooms_open, "bed_" + string(_slot), true);
 
         // Освобождаем купленную койку: теперь её найдёт inpatient_find_free_ward.

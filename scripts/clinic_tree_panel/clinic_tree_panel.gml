@@ -250,7 +250,12 @@ function tree_sections() {
                 tree_node_bed(101),
                 tree_node_bed(102),
                 tree_node_bed(103),
-                tree_node_bed(104)
+                tree_node_bed(104),
+                // Пакет №212: ещё четыре койки стационара.
+                tree_node_bed(105),
+                tree_node_bed(106),
+                tree_node_bed(107),
+                tree_node_bed(108)
             ]
         },
         {
