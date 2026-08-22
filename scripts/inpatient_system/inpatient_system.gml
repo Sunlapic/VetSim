@@ -394,14 +394,30 @@ function inpatient_walk_to(_actor, _target_x, _target_y) {
         }
 
         if (_path_built) {
-            path_set_kind(my_path, 1);
-            path_start(my_path, p_move_speed, path_action_stop, true);
-            is_walking = true;
-            image_speed = 1;
+            // Пакет №216: путь нулевой длины — цель в той же клетке, где мы
+            // уже стоим. Раньше в этом случае всё равно запускалась ходьба:
+            // персонаж стоял и перебирал ногами.
+            if (path_get_length(my_path) < 4) {
+                path_end();
+                speed = 0;
+                is_walking = false;
+                image_speed = 0;
+            }
+            else {
+                path_set_kind(my_path, 1);
+                path_start(my_path, p_move_speed, path_action_stop, true);
+                is_walking = true;
+                image_speed = 1;
+            }
         } else {
-            move_towards_point(_target_x, _target_y, p_move_speed);
-            is_walking = true;
-            image_speed = 1;
+            // Пакет №216: напролом больше не идём. Раньше здесь включался
+            // move_towards_point, и сотрудник упирался в мебель, продолжая
+            // «шагать» на месте.
+            path_end();
+            speed = 0;
+            is_walking = false;
+            image_speed = 0;
+            _path_built = false;
         }
     }
 

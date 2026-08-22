@@ -221,6 +221,82 @@ if (
 
 
 // ═══════════════════════════════════════════════════════════════
+// 4.9 ПАКЕТ №216: «ХОДЬБА НА МЕСТЕ»
+//
+// Сотрудник может остаться с включённой анимацией шага, стоя на месте:
+// путь построен длиной в ноль, или его толкает мебель, или цель оказалась
+// в закрытой клетке. Выглядит как «перебирает ногами и никуда не идёт».
+//
+// Сторож ниже (раздел 5) ловит только зависшие ССЫЛКИ, а этот случай —
+// про движение. Проверяем просто: если персонаж «идёт», но за полторы
+// секунды не сдвинулся ни на пиксель — движение останавливаем и просим
+// систему построить маршрут заново.
+// ═══════════════════════════════════════════════════════════════
+
+if (object_index != obj_player) {
+    if (!variable_instance_exists(id, "walk_idle_last_x")) {
+        walk_idle_last_x = x;
+        walk_idle_last_y = y;
+        walk_idle_frames = 0;
+        walk_idle_resets = 0;
+    }
+
+    var _walk_fps = max(1, game_get_speed(gamespeed_fps));
+    var _walk_moved = point_distance(x, y, walk_idle_last_x, walk_idle_last_y) > 0.5;
+
+    walk_idle_last_x = x;
+    walk_idle_last_y = y;
+
+    var _walk_active = (
+        (variable_instance_exists(id, "is_walking") && is_walking)
+        || path_index != -1
+        || speed > 0
+    );
+
+    if (!_walk_active || _walk_moved) {
+        walk_idle_frames = 0;
+
+        if (_walk_moved) walk_idle_resets = 0;
+    }
+    else {
+        walk_idle_frames += 1;
+
+        if (walk_idle_frames > _walk_fps * 1.5) {
+            walk_idle_frames = 0;
+            walk_idle_resets += 1;
+
+            path_end();
+            speed = 0;
+            hspeed = 0;
+            vspeed = 0;
+            is_walking = false;
+            image_speed = 0;
+
+            // Просим операционную (и другие системы) построить путь заново.
+            if (variable_instance_exists(id, "or_walk_repath")) {
+                or_walk_repath = 0;
+            }
+
+            if (variable_instance_exists(id, "or_seat_stuck_timer")) {
+                or_seat_stuck_timer = 0;
+            }
+
+            // Три попытки подряд — значит дороги действительно нет.
+            // Стоим спокойно: анимация шага выключена, ноги не мелькают.
+            if (walk_idle_resets >= 3) {
+                walk_idle_resets = 0;
+
+                if (variable_instance_exists(id, "or_seat_unreachable")) {
+                    or_seat_unreachable = true;
+                    or_seat_retry_timer = _walk_fps * 8;
+                }
+            }
+        }
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // 5. ЗАЩИТА ВРАЧА И АССИСТЕНТА ОТ ЗАВИСАНИЙ
 // Не применяется к игроку и администратору.
 // ═══════════════════════════════════════════════════════════════
