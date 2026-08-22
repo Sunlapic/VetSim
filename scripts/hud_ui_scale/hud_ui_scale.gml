@@ -316,3 +316,50 @@ function ui_draw_close_button(_x1, _y1, _x2, _y2, _hover) {
         UI_TAB_FS
     );
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// 6. ЕДИНЫЙ РАЗМЕР ОКОН (пакет №181)
+//
+// Все пять панелей нижнего меню — КЛИНИКА, КЛИЕНТЫ, ПЕРСОНАЛ, ФИНАНСЫ,
+// СПРАВОЧНИК — занимают одну и ту же область: всё место между верхней
+// и нижней панелями HUD, с одинаковыми полями.
+// ═══════════════════════════════════════════════════════════════
+
+#macro UI_PANEL_MARGIN_X 24
+#macro UI_PANEL_MARGIN_Y 12
+
+function ui_panel_rect() {
+    var _gw = display_get_gui_width();
+    var _gh = display_get_gui_height();
+
+    var _top = 14;
+    var _bottom = _gh - 14;
+
+    if (instance_exists(obj_UI_HUD)) {
+        var _hud = instance_find(obj_UI_HUD, 0);
+
+        if (instance_exists(_hud)) {
+            if (
+                variable_instance_exists(_hud, "topbar_y2")
+                && _hud.topbar_y2 > 0
+            ) {
+                _top = _hud.topbar_y2 + UI_PANEL_MARGIN_Y;
+            }
+
+            if (
+                variable_instance_exists(_hud, "bottombar_y1")
+                && _hud.bottombar_y1 > _top + 200
+            ) {
+                _bottom = _hud.bottombar_y1 - UI_PANEL_MARGIN_Y;
+            }
+        }
+    }
+
+    return {
+        x1 : UI_PANEL_MARGIN_X,
+        y1 : _top,
+        x2 : _gw - UI_PANEL_MARGIN_X,
+        y2 : _bottom
+    };
+}

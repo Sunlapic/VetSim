@@ -1028,13 +1028,16 @@ function hud_draw_staff_management_panel(_hud) {
         + _card_w
         + _column_gap
         + _actions_w;
-    var _panel_w = _content_w + _outer_pad * 2;
-    var _panel_h = _card_h + _outer_pad * 2 + _tab_area_h;
-    var _panel_x1 = (_gui_w - _panel_w) * 0.5;
-    var _panel_y1 = _top_limit
-        + (_available_h - _panel_h) * 0.5;
-    var _panel_x2 = _panel_x1 + _panel_w;
-    var _panel_y2 = _panel_y1 + _panel_h;
+    // Пакет №181: рамка окна — общая для всех пяти панелей нижнего меню.
+    // Содержимое (список + карточка + действия) центрируется внутри неё.
+    var _panel_rect = ui_panel_rect();
+    var _panel_x1 = _panel_rect.x1;
+    var _panel_y1 = _panel_rect.y1;
+    var _panel_x2 = _panel_rect.x2;
+    var _panel_y2 = _panel_rect.y2;
+    var _panel_w = _panel_x2 - _panel_x1;
+    var _panel_h = _panel_y2 - _panel_y1;
+    var _content_offset_x = max(0, (_panel_w - _outer_pad * 2 - _content_w) * 0.5);
 
     hud_staff_manage_draw_outer_panel(
         _panel_x1,
@@ -1058,7 +1061,7 @@ function hud_draw_staff_management_panel(_hud) {
         _mouse_y
     );
 
-    var _content_x1 = _panel_x1 + _outer_pad;
+    var _content_x1 = _panel_x1 + _outer_pad + _content_offset_x;
     var _content_y1 = _panel_y1 + _outer_pad + _tab_area_h;
     var _content_y2 = _content_y1 + _card_h;
 

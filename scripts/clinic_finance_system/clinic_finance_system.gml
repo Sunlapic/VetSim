@@ -1839,12 +1839,15 @@ function hud_draw_finance_price_panel(_hud) {
         variable_instance_exists(_hud, "bottombar_y1")
         && _hud.bottombar_y1 > _top + 300
     ) ? _hud.bottombar_y1 - 10 : _gui_h - 14;
-    var _panel_w = min(1120, _gui_w - 28);
-    var _panel_h = min(720, _bottom - _top);
-    var _x1 = (_gui_w - _panel_w) * 0.5;
-    var _y1 = _top + (_bottom - _top - _panel_h) * 0.5;
-    var _x2 = _x1 + _panel_w;
-    var _y2 = _y1 + _panel_h;
+    // Пакет №181: окно ФИНАНСОВ такого же размера, как остальные четыре
+    // панели нижнего меню. Было 1120 x 720 — вкладки не помещались.
+    var _panel_rect = ui_panel_rect();
+    var _x1 = _panel_rect.x1;
+    var _y1 = _panel_rect.y1;
+    var _x2 = _panel_rect.x2;
+    var _y2 = _panel_rect.y2;
+    var _panel_w = _x2 - _x1;
+    var _panel_h = _y2 - _y1;
 
     finance_ui_draw_outer_panel(_x1, _y1, _x2, _y2);
 

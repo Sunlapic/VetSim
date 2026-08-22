@@ -401,11 +401,13 @@ bottombar_y1 = _gh - hud_margin - bottombar_h;
 bottombar_x2 = _gw - hud_margin;
 bottombar_y2 = _gh - hud_margin;
 
-// Главная рабочая зона
-main_panel_x1 = 24;
-main_panel_y1 = topbar_y2 + 12;
-main_panel_x2 = _gw - 24;
-main_panel_y2 = bottombar_y1 - 12;
+// Главная рабочая зона.
+// Пакет №181: единый прямоугольник для всех пяти панелей нижнего меню.
+var _std_panel = ui_panel_rect();
+main_panel_x1 = _std_panel.x1;
+main_panel_y1 = _std_panel.y1;
+main_panel_x2 = _std_panel.x2;
+main_panel_y2 = _std_panel.y2;
 
 // ─────────────────────────────────────────────
 // ПАНЕЛИ
