@@ -485,34 +485,42 @@ client_clear_y2 = client_clear_y1 + 24;
 // ─────────────────────────────────────────────
 // КНОПКИ НИЖНЕЙ ПАНЕЛИ
 // ─────────────────────────────────────────────
-var _menu_total_w = bottom_btn_w * 5 + bottom_btn_gap * 4;
-var _menu_x = bottombar_x1 + ((bottombar_x2 - bottombar_x1) - _menu_total_w) * 0.5;
-var _menu_y = bottombar_y1 + ((bottombar_y2 - bottombar_y1) - bottom_btn_h) * 0.5;
+// Пакет №199: пять кнопок занимают ВСЮ нижнюю панель. Ширина считается
+// от панели, а не берётся фиксированной (было 180), высота — почти во всю
+// полосу. На телефоне по такой кнопке промахнуться трудно.
+var _menu_side_pad = 16;
+var _menu_gap = 14;
+var _menu_area_w = (bottombar_x2 - bottombar_x1) - _menu_side_pad * 2;
+var _menu_btn_w = (_menu_area_w - _menu_gap * 4) / 5;
+var _menu_btn_h = max(52, (bottombar_y2 - bottombar_y1) - 14);
+var _menu_x = bottombar_x1 + _menu_side_pad;
+var _menu_y = bottombar_y1 + ((bottombar_y2 - bottombar_y1) - _menu_btn_h) * 0.5;
 
+// Кнопки идут одна за другой, каждая своей ширины — без дырок по краям.
 clinic_x1 = _menu_x;
 clinic_y1 = _menu_y;
-clinic_x2 = clinic_x1 + bottom_btn_w;
-clinic_y2 = clinic_y1 + bottom_btn_h;
+clinic_x2 = clinic_x1 + _menu_btn_w;
+clinic_y2 = clinic_y1 + _menu_btn_h;
 
-clients_x1 = clinic_x2 + bottom_btn_gap;
+clients_x1 = clinic_x2 + _menu_gap;
 clients_y1 = _menu_y;
-clients_x2 = clients_x1 + bottom_btn_w;
-clients_y2 = clients_y1 + bottom_btn_h;
+clients_x2 = clients_x1 + _menu_btn_w;
+clients_y2 = clients_y1 + _menu_btn_h;
 
-staff_x1 = clients_x2 + bottom_btn_gap;
+staff_x1 = clients_x2 + _menu_gap;
 staff_y1 = _menu_y;
-staff_x2 = staff_x1 + bottom_btn_w;
-staff_y2 = staff_y1 + bottom_btn_h;
+staff_x2 = staff_x1 + _menu_btn_w;
+staff_y2 = staff_y1 + _menu_btn_h;
 
-finance_x1 = staff_x2 + bottom_btn_gap;
+finance_x1 = staff_x2 + _menu_gap;
 finance_y1 = _menu_y;
-finance_x2 = finance_x1 + bottom_btn_w;
-finance_y2 = finance_y1 + bottom_btn_h;
+finance_x2 = finance_x1 + _menu_btn_w;
+finance_y2 = finance_y1 + _menu_btn_h;
 
-handbook_x1 = finance_x2 + bottom_btn_gap;
+handbook_x1 = finance_x2 + _menu_gap;
 handbook_y1 = _menu_y;
-handbook_x2 = handbook_x1 + bottom_btn_w;
-handbook_y2 = handbook_y1 + bottom_btn_h;
+handbook_x2 = handbook_x1 + _menu_btn_w;
+handbook_y2 = handbook_y1 + _menu_btn_h;
 
 // ─────────────────────────────────────────────
 // ВЕРХНИЕ КНОПКИ ВРЕМЕНИ
