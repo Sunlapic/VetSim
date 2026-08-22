@@ -114,7 +114,9 @@ function hud_draw_main_bars(_hud) {
         var _label_scale = 1.9;
         var _value_scale = 3.2;
         var _time_scale = 3.4;
-        var _date_scale = 1.0;
+        // Пакет №208: дата над временем такого же размера, как подписи
+        // «РЕПУТАЦИЯ», «ДЕНЬГИ», «ШТАТ» — было почти вдвое мельче (1.0).
+        var _date_scale = _label_scale;
         var _shift_down = 6;
         var _value_gap = -12;   // пакет №156: зазор подпись<->цифра (отрицательный = вплотную)
 
