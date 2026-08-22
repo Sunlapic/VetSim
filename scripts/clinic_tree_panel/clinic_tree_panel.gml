@@ -566,14 +566,8 @@ function clinic_tree_draw(_hud) {
         var _panel_w = _panel_x2 - _panel_x1;
         var _panel_h = _panel_y2 - _panel_y1;
 
-        // ── Сколько колонок влезет ──
+        // Пакет №201: число столбцов считается ниже, вместе с раскладкой веток.
         var _col_gap = 16;
-        var _cols = clamp(
-            floor((_panel_w + _col_gap) / (TREE_NODE_MIN_W + _col_gap)),
-            1,
-            3
-        );
-        var _col_w = (_panel_w - _col_gap * (_cols - 1)) / _cols;
 
         // ── Ввод: колесо и перетаскивание ──
         var _in_panel = point_in_rectangle(_mx, _my, _panel_x1, _panel_y1, _panel_x2, _panel_y2);
@@ -617,93 +611,186 @@ function clinic_tree_draw(_hud) {
         var _max_scroll = max(0, tree_content_h - _panel_h + 12);
         tree_scroll = clamp(tree_scroll, 0, _max_scroll);
 
-        // ── Раскладка: секции идут сверху вниз, узлы внутри — по колонкам ──
+        // ═══════════════════════════════════════════════════════
+        // Пакет №201: РАСКЛАДКА СТОЛБИКАМИ
+        //
+        //   ┌ ОБЩЕЕ ДЛЯ КЛИНИКИ ───────────────────────────────┐
+        //   │ [найм] [библиотека] [зал] [аптека]               │
+        //   └──────────────────────────────────────────────────┘
+        //   РЕГИСТРАТУРА │ ПРИЁМ      │ СТАЦИОНАР │ ОПЕРАЦИОННАЯ
+        //   [узел]       │ [стол 2]   │ [койка 1] │ [операционная]
+        //                │ [стол 3]   │ [койка 2] │
+        //                            │ [койка 3] │
+        //
+        // Общая секция всегда сверху во всю ширину, остальные ветки —
+        // четырьмя столбиками рядом. На узком экране столбиков меньше:
+        // 4 → 2 → 1, и секции раскладываются по самым коротким столбцам.
+        // ═══════════════════════════════════════════════════════
+
         var _sections = tree_sections();
-        var _y = _panel_y1 - tree_scroll;
         var _click_node = undefined;
         var _header_h = 56;
         var _section_gap = 26;
+        var _node_gap = 14;
 
-        for (var _s = 0; _s < array_length(_sections); _s++) {
+        var _branch_cols = (_panel_w >= 1240) ? 4 : ((_panel_w >= 660) ? 2 : 1);
+        var _branch_w = (_panel_w - _col_gap * (_branch_cols - 1)) / _branch_cols;
+
+        var _y = _panel_y1 - tree_scroll;
+
+        // ── 1. Общая секция: заголовок и узлы в ряд ──
+        var _common = _sections[0];
+
+        if (_y >= _panel_y1 && _y + _header_h <= _panel_y2) {
+            draw_set_color(tree_color_wood_dark());
+            draw_roundrect_ext(_panel_x1, _y, _panel_x2, _y + _header_h, 12, 12, false);
+            draw_set_color(tree_color_wood_light());
+            draw_roundrect_ext(_panel_x1 + 2, _y + 2, _panel_x2 - 2, _y + _header_h - 2, 10, 10, true);
+
+            var _ch_scale = tree_fit_scale(_common.title, _panel_w - 40, TREE_FS_HEADER);
+
+            draw_set_halign(fa_center);
+            draw_set_valign(fa_middle);
+            draw_set_color(make_color_rgb(255, 233, 194));
+            draw_text_transformed(
+                (_panel_x1 + _panel_x2) * 0.5,
+                _y + _header_h * 0.5,
+                _common.title,
+                _ch_scale,
+                _ch_scale,
+                0
+            );
+            draw_set_halign(fa_left);
+            draw_set_valign(fa_top);
+        }
+
+        _y += _header_h + 14;
+
+        var _common_nodes = _common.nodes;
+        var _common_count = array_length(_common_nodes);
+        var _common_cols = max(1, min(_branch_cols, _common_count));
+        var _common_w = (_panel_w - _col_gap * (_common_cols - 1)) / _common_cols;
+        var _common_row_y = _y;
+        var _common_row_h = 0;
+
+        for (var _cn = 0; _cn < _common_count; _cn++) {
+            var _cnode = _common_nodes[_cn];
+            var _ccol = _cn mod _common_cols;
+
+            if (_ccol == 0 && _cn > 0) {
+                _common_row_y += _common_row_h + _node_gap;
+                _common_row_h = 0;
+            }
+
+            var _cx1 = _panel_x1 + _ccol * (_common_w + _col_gap);
+            var _cx2 = _cx1 + _common_w;
+            var _cnh = tree_node_height(_cnode);
+            var _cy1 = _common_row_y;
+            var _cy2 = _cy1 + _cnh;
+
+            if (_cnh > _common_row_h) _common_row_h = _cnh;
+
+            if (
+                (_cy1 >= _panel_y1 && _cy2 <= _panel_y2)
+                || (_cnh >= _panel_h)
+            ) {
+                var _chover = point_in_rectangle(_mx, _my, _cx1, _cy1, _cx2, _cy2);
+
+                tree_draw_node(_cnode, _cx1, _cy1, _cx2, _cy2, _chover);
+
+                if (_chover && _pressed) _click_node = _cnode;
+            }
+        }
+
+        _y = _common_row_y + _common_row_h + _section_gap;
+
+        // ── 2. Ветки столбиками ──
+        // Каждая ветка целиком ложится в один столбец; при 4 столбцах и
+        // четырёх ветках получается ровно по одной на столбец.
+        var _col_y = array_create(_branch_cols, _y);
+
+        for (var _s = 1; _s < array_length(_sections); _s++) {
             var _section = _sections[_s];
 
-            // Пакет №200: рисуем только то, что помещается в окно ЦЕЛИКОМ.
-            // Раньше проверялось «задевает ли элемент область» — и верхняя
-            // (или нижняя) часть карточки вылезала за панель прямо на
-            // верхний и нижний HUD.
-            if (_y >= _panel_y1 && _y + _header_h <= _panel_y2) {
-                draw_set_color(tree_color_wood_dark());
-                draw_roundrect_ext(_panel_x1, _y, _panel_x2, _y + _header_h, 12, 12, false);
-                draw_set_color(tree_color_wood_light());
-                draw_roundrect_ext(_panel_x1 + 2, _y + 2, _panel_x2 - 2, _y + _header_h - 2, 10, 10, true);
+            // Столбец с наименьшей текущей высотой.
+            var _target_col = 0;
 
-                var _h_scale = tree_fit_scale(_section.title, _panel_w - 40, TREE_FS_HEADER);
+            for (var _c = 1; _c < _branch_cols; _c++) {
+                if (_col_y[_c] < _col_y[_target_col]) _target_col = _c;
+            }
+
+            var _bx1 = _panel_x1 + _target_col * (_branch_w + _col_gap);
+            var _bx2 = _bx1 + _branch_w;
+            var _by = _col_y[_target_col];
+
+            // Заголовок ветки — шапка столбца.
+            if (_by >= _panel_y1 && _by + _header_h <= _panel_y2) {
+                draw_set_color(tree_color_wood_dark());
+                draw_roundrect_ext(_bx1, _by, _bx2, _by + _header_h, 12, 12, false);
+                draw_set_color(tree_color_wood_light());
+                draw_roundrect_ext(_bx1 + 2, _by + 2, _bx2 - 2, _by + _header_h - 2, 10, 10, true);
+
+                var _bh_scale = tree_fit_scale(_section.title, _branch_w - 30, TREE_FS_HEADER);
 
                 draw_set_halign(fa_center);
                 draw_set_valign(fa_middle);
                 draw_set_color(make_color_rgb(255, 233, 194));
                 draw_text_transformed(
-                    (_panel_x1 + _panel_x2) * 0.5,
-                    _y + _header_h * 0.5,
+                    (_bx1 + _bx2) * 0.5,
+                    _by + _header_h * 0.5,
                     _section.title,
-                    _h_scale,
-                    _h_scale,
+                    _bh_scale,
+                    _bh_scale,
                     0
                 );
                 draw_set_halign(fa_left);
                 draw_set_valign(fa_top);
             }
 
-            _y += _header_h + 14;
+            _by += _header_h + 14;
 
-            // Узлы секции по колонкам.
-            var _nodes = _section.nodes;
-            var _row_y = _y;
-            var _row_max_h = 0;
+            // Узлы ветки — друг под другом, соединённые стволом.
+            var _bnodes = _section.nodes;
 
-            for (var _n = 0; _n < array_length(_nodes); _n++) {
-                var _node = _nodes[_n];
-                var _col = _n mod _cols;
+            for (var _bn = 0; _bn < array_length(_bnodes); _bn++) {
+                var _bnode = _bnodes[_bn];
+                var _bnh = tree_node_height(_bnode);
+                var _by1 = _by;
+                var _by2 = _by1 + _bnh;
 
-                if (_col == 0 && _n > 0) {
-                    _row_y += _row_max_h + 14;
-                    _row_max_h = 0;
-                }
-
-                var _nx1 = _panel_x1 + _col * (_col_w + _col_gap);
-                var _nx2 = _nx1 + _col_w;
-                var _nh = tree_node_height(_node);
-                var _ny1 = _row_y;
-                var _ny2 = _ny1 + _nh;
-
-                if (_nh > _row_max_h) _row_max_h = _nh;
-
-                // Соединитель к предыдущему узлу этой же колонки.
                 if (
-                    _n >= _cols
-                    && (_ny1 - 14) >= _panel_y1
-                    && _ny1 <= _panel_y2
+                    _bn > 0
+                    && (_by1 - _node_gap) >= _panel_y1
+                    && _by1 <= _panel_y2
                 ) {
-                    tree_draw_stem((_nx1 + _nx2) * 0.5, _ny1 - 14, _ny1, true);
+                    tree_draw_stem((_bx1 + _bx2) * 0.5, _by1 - _node_gap, _by1, true);
                 }
 
-                // Узел показывается, только если влезает в окно полностью.
-                // Исключение — узел выше самого окна: иначе он не появился бы
-                // вообще (на очень низком экране).
-                var _node_fits = (_ny1 >= _panel_y1 && _ny2 <= _panel_y2)
-                    || (_nh >= _panel_h);
+                if (
+                    (_by1 >= _panel_y1 && _by2 <= _panel_y2)
+                    || (_bnh >= _panel_h)
+                ) {
+                    var _bhover = point_in_rectangle(_mx, _my, _bx1, _by1, _bx2, _by2);
 
-                if (_node_fits) {
-                    var _hover = point_in_rectangle(_mx, _my, _nx1, _ny1, _nx2, _ny2);
+                    tree_draw_node(_bnode, _bx1, _by1, _bx2, _by2, _bhover);
 
-                    tree_draw_node(_node, _nx1, _ny1, _nx2, _ny2, _hover);
-
-                    if (_hover && _pressed) _click_node = _node;
+                    if (_bhover && _pressed) _click_node = _bnode;
                 }
+
+                _by = _by2 + _node_gap;
             }
 
-            _y = _row_y + _row_max_h + _section_gap;
+            _col_y[_target_col] = _by + _section_gap;
         }
+
+        // Самый длинный столбец задаёт высоту содержимого.
+        var _lowest = _y;
+
+        for (var _c2 = 0; _c2 < _branch_cols; _c2++) {
+            if (_col_y[_c2] > _lowest) _lowest = _col_y[_c2];
+        }
+
+        _y = _lowest;
 
         // Фактическая высота содержимого — для следующего кадра.
         tree_content_h = (_y + tree_scroll) - _panel_y1;
