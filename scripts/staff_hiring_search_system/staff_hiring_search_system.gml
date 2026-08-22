@@ -1,5 +1,6 @@
 /// staff_hiring_search_system.gml
 /// @description Фильтр профессий будущих кандидатов и страница поиска сотрудников.
+/// Пакет №191: время прихода следующего кандидата скрыто от игрока.
 /// Пакет №190: поиск можно ОСТАНОВИТЬ полностью — тогда кандидаты не приходят
 /// вообще. Страница переделана: крупный шрифт, карточки профессий, большой
 /// переключатель и понятная строка состояния.
@@ -564,26 +565,14 @@ function staff_hiring_search_draw_page(
         _status_y += 38;
     }
     else {
-        var _next_day = variable_global_exists("next_candidate_day")
-            ? global.next_candidate_day
-            : global.game_day;
-        var _next_minute = variable_global_exists("next_candidate_minute")
-            ? global.next_candidate_minute
-            : 0;
-        var _next_hour = floor(_next_minute / 60);
-        var _next_minute_part = _next_minute mod 60;
-        var _next_time = (_next_hour < 10 ? "0" : "")
-            + string(_next_hour)
-            + ":"
-            + (_next_minute_part < 10 ? "0" : "")
-            + string(_next_minute_part);
-
-        draw_set_color(_text_dark);
+        // Пакет №191: точное время прихода следующего кандидата игроку
+        // не показывается — это должно оставаться сюрпризом.
+        draw_set_color(_text_soft);
         ui_text_row(
             _status_x,
             _status_y,
             36,
-            "СЛЕДУЮЩИЙ КАНДИДАТ: ДЕНЬ " + string(_next_day) + ", " + _next_time,
+            "Объявление вывешено. Кандидат придёт, когда найдётся.",
             _status_w,
             UI_FS_ROW
         );
