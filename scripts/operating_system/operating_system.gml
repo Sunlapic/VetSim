@@ -219,6 +219,58 @@ function operating_find_seat(_role) {
 // inpatient_ensure_walk строит путь только когда сотрудник полностью
 // остановлен — из-за этого персонал мог «замереть» и не пойти на стул.
 // Здесь маршрут перестраивается при смене цели и раз в секунду.
+/// Пакет №207: ближайшая точка рядом с целью, до которой РЕАЛЬНО есть путь.
+/// Возвращает { px, py, ok }.
+function operating_reachable_point_near(_actor, _target_x, _target_y) {
+    var _result = { px : _target_x, py : _target_y, ok : false };
+
+    if (!instance_exists(_actor)) return _result;
+    if (!variable_instance_exists(_actor, "my_path")) return _result;
+
+    if (mp_grid_path(
+        global.ai_grid,
+        _actor.my_path,
+        _actor.x,
+        _actor.y,
+        _target_x,
+        _target_y,
+        true
+    )) {
+        _result.ok = true;
+        return _result;
+    }
+
+    var _rings = [20, 32, 48, 64, 88];
+    var _dirs = [
+        [0, 1], [0, -1], [1, 0], [-1, 0],
+        [1, 1], [1, -1], [-1, 1], [-1, -1]
+    ];
+
+    for (var _r = 0; _r < array_length(_rings); _r++) {
+        for (var _d = 0; _d < array_length(_dirs); _d++) {
+            var _cx = _target_x + _dirs[_d][0] * _rings[_r];
+            var _cy = _target_y + _dirs[_d][1] * _rings[_r];
+
+            if (mp_grid_path(
+                global.ai_grid,
+                _actor.my_path,
+                _actor.x,
+                _actor.y,
+                _cx,
+                _cy,
+                true
+            )) {
+                _result.px = _cx;
+                _result.py = _cy;
+                _result.ok = true;
+                return _result;
+            }
+        }
+    }
+
+    return _result;
+}
+
 function operating_walk_actor_to(_actor, _target_x, _target_y) {
     if (!instance_exists(_actor)) return false;
 
@@ -245,7 +297,17 @@ function operating_walk_actor_to(_actor, _target_x, _target_y) {
         _actor.or_walk_goal_y = _target_y;
         _actor.or_walk_repath = max(1, game_get_speed(gamespeed_fps));
 
-        inpatient_walk_to(_actor, _target_x, _target_y);
+        // Пакет №207: сначала ищем клетку, до которой есть настоящий путь.
+        // Если дороги нет вообще — стоим на месте, а не упираемся в мебель
+        // с включённой анимацией шага.
+        var _reach = operating_reachable_point_near(_actor, _target_x, _target_y);
+
+        if (!_reach.ok) {
+            inpatient_stop_actor(_actor);
+            return false;
+        }
+
+        inpatient_walk_to(_actor, _reach.px, _reach.py);
     }
 
     return true;
@@ -817,6 +879,18 @@ function operating_seat_actor(_ctrl, _actor, _seat) {
         }
 
         var _retry = operating_seat_reachable_target(_actor, _seat);
+
+        if (!_retry.ok) {
+            // Пакет №207: дороги к стулу нет — спокойно стоим и пробуем
+            // снова через несколько секунд.
+            inpatient_stop_actor(_actor);
+
+            _actor.or_seat_unreachable = true;
+            _actor.or_seat_retry_timer = _fps * 5;
+
+            return false;
+        }
+
         _actor.or_walk_goal_x = _retry.px;
         _actor.or_walk_goal_y = _retry.py;
         _actor.or_walk_repath = _fps;
@@ -841,6 +915,20 @@ function operating_seat_actor(_ctrl, _actor, _seat) {
 
     if (!_path_active || _actor.or_walk_repath <= 0) {
         var _target = operating_seat_reachable_target(_actor, _seat);
+
+        // Пакет №207: если достижимой точки НЕТ, идти нельзя.
+        // Раньше сюда всё равно уходил вызов ходьбы, а он при
+        // непостроенном пути включает move_towards_point «напролом».
+        // Врач упирался в мебель и перебирал ногами на месте.
+        if (!_target.ok) {
+            inpatient_stop_actor(_actor);
+
+            _actor.or_seat_unreachable = true;
+            _actor.or_seat_retry_timer = _fps * 5;
+            _actor.or_seat_stuck_timer = 0;
+
+            return false;
+        }
 
         _actor.or_walk_goal_x = _target.px;
         _actor.or_walk_goal_y = _target.py;

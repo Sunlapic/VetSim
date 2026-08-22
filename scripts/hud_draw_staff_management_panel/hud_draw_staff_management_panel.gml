@@ -435,15 +435,35 @@ function hud_staff_manage_draw_roster(
         _hud.staff_manage_touch_moved = false;
     }
 
+    // Пакет №207: прокрутка стала пиксельной.
+    // Раньше список прыгал по целым записям: палец двигался плавно, а
+    // строки перескакивали через 36 пикселей. Теперь список едет ровно
+    // за пальцем, а после отпускания ещё немного катится по инерции.
+    if (!variable_instance_exists(_hud, "staff_manage_scroll_px")) {
+        _hud.staff_manage_scroll_px = 0;
+        _hud.staff_manage_scroll_speed = 0;
+    }
+
     var _pointer_pressed = hud_staff_manage_pointer_pressed();
     var _pointer_down = hud_staff_manage_pointer_down();
     var _pointer_released = hud_staff_manage_pointer_released();
     var _tap_released = false;
 
-    // Колесо перемещает список по одной целой записи.
+    // Полная высота содержимого — чтобы знать предел прокрутки.
+    var _content_h = 0;
+
+    for (var _mi = 0; _mi < _entry_count; _mi++) {
+        _content_h += (_entries[_mi].kind == "header") ? _header_h : _row_h;
+        _content_h += _row_gap;
+    }
+
+    var _view_h = _rows_y2 - _rows_y1;
+    var _max_scroll_px = max(0, _content_h - _view_h);
+
+    // Колесо мыши — половина строки за щелчок, плавно.
     if (_inside_list && !_hud.staff_manage_fire_confirm) {
-        if (mouse_wheel_down()) _hud.staff_manage_scroll_index += 1;
-        if (mouse_wheel_up()) _hud.staff_manage_scroll_index -= 1;
+        if (mouse_wheel_down()) _hud.staff_manage_scroll_px += _row_h * 0.6;
+        if (mouse_wheel_up()) _hud.staff_manage_scroll_px -= _row_h * 0.6;
     }
 
     // На телефоне список перетягивается одним пальцем.
@@ -472,17 +492,10 @@ function hud_staff_manage_draw_roster(
             }
 
             if (_hud.staff_manage_touch_moved) {
-                _hud.staff_manage_touch_accum += _touch_delta_y;
+                // Список едет ровно на столько, на сколько уехал палец.
+                _hud.staff_manage_scroll_px -= _touch_delta_y;
+                _hud.staff_manage_scroll_speed = -_touch_delta_y;
 
-                while (_hud.staff_manage_touch_accum <= -36) {
-                    _hud.staff_manage_scroll_index += 1;
-                    _hud.staff_manage_touch_accum += 36;
-                }
-
-                while (_hud.staff_manage_touch_accum >= 36) {
-                    _hud.staff_manage_scroll_index -= 1;
-                    _hud.staff_manage_touch_accum -= 36;
-                }
             }
 
             _hud.staff_manage_touch_last_y = _mouse_y;
@@ -508,17 +521,35 @@ function hud_staff_manage_draw_roster(
         _hud.staff_manage_touch_accum = 0;
     }
 
-    _hud.staff_manage_scroll_index = clamp(
-        _hud.staff_manage_scroll_index,
+    // Инерция: после отпускания список ещё немного катится и тормозит.
+    if (!_hud.staff_manage_touch_active) {
+        if (abs(_hud.staff_manage_scroll_speed) > 0.4) {
+            _hud.staff_manage_scroll_px += _hud.staff_manage_scroll_speed;
+            _hud.staff_manage_scroll_speed *= 0.88;
+        }
+        else {
+            _hud.staff_manage_scroll_speed = 0;
+        }
+    }
+
+    _hud.staff_manage_scroll_px = clamp(
+        _hud.staff_manage_scroll_px,
         0,
-        max(0, _entry_count - 1)
+        _max_scroll_px
     );
 
-    var _draw_y = _rows_y1;
+    if (
+        _hud.staff_manage_scroll_px <= 0
+        || _hud.staff_manage_scroll_px >= _max_scroll_px
+    ) {
+        _hud.staff_manage_scroll_speed = 0;
+    }
+
+    var _draw_y = _rows_y1 - _hud.staff_manage_scroll_px;
     var _shown_count = 0;
 
     for (
-        var _entry_index = _hud.staff_manage_scroll_index;
+        var _entry_index = 0;
         _entry_index < _entry_count;
         _entry_index++
     ) {
@@ -530,7 +561,14 @@ function hud_staff_manage_draw_roster(
 
         // Рисуем только полностью помещающиеся элементы — без GPU-scissor.
         // Это исключает обрезание первой строки и правого края при GUI-scale.
+        // Пакет №207: список едет по пикселям, поэтому пропускаем и то,
+        // что уехало выше окна.
         if (_entry_y2 > _rows_y2) break;
+
+        if (_draw_y < _rows_y1) {
+            _draw_y = _entry_y2 + _row_gap;
+            continue;
+        }
 
         if (_entry.kind == "header") {
             draw_set_color(make_color_rgb(232, 220, 198));
@@ -666,9 +704,8 @@ function hud_staff_manage_draw_roster(
     // ═══════════════════════════════════════════════════════════
 
     var _visible_count = max(1, _shown_count);
-    var _max_scroll_index = max(0, _entry_count - _visible_count);
 
-    if (_max_scroll_index > 0) {
+    if (_max_scroll_px > 0) {
         var _track_x1 = _rows_x2 + 8;
         var _track_x2 = _track_x1 + _scrollbar_w;
         var _track_y1 = _rows_y1;
@@ -680,9 +717,9 @@ function hud_staff_manage_draw_roster(
         draw_set_color(_line);
         draw_roundrect_ext(_track_x1, _track_y1, _track_x2, _track_y2, 7, 7, true);
 
-        var _bar_h = max(52, _track_h * (_visible_count / max(1, _entry_count)));
-        var _bar_ratio = clamp(_hud.staff_manage_scroll_index, 0, _max_scroll_index)
-            / _max_scroll_index;
+        var _bar_h = max(52, _track_h * (_view_h / max(1, _content_h)));
+        var _bar_ratio = clamp(_hud.staff_manage_scroll_px, 0, _max_scroll_px)
+            / _max_scroll_px;
         var _bar_y1 = _track_y1 + (_track_h - _bar_h) * _bar_ratio;
         var _bar_y2 = _bar_y1 + _bar_h;
 
@@ -720,7 +757,8 @@ function hud_staff_manage_draw_roster(
                 1
             );
 
-            _hud.staff_manage_scroll_index = round(_grab_ratio * _max_scroll_index);
+            _hud.staff_manage_scroll_px = _grab_ratio * _max_scroll_px;
+            _hud.staff_manage_scroll_speed = 0;
 
             // Тянем бегунок — значит это не выбор строки.
             _hud.staff_manage_touch_active = false;
@@ -734,20 +772,13 @@ function hud_staff_manage_draw_roster(
 
     var _scroll_hint = "КОЛЕСО / ПЕРЕТЯГИВАНИЕ";
 
-    if (_entry_count > 0) {
+    if (_max_scroll_px > 0) {
         _scroll_hint += "  "
-            + string(_hud.staff_manage_scroll_index + 1)
-            + "/"
-            + string(_entry_count);
+            + string(round(
+                clamp(_hud.staff_manage_scroll_px / _max_scroll_px, 0, 1) * 100
+            ))
+            + "%";
     }
-
-    // Ограничиваем прокрутку так, чтобы последняя запись доходила до низа,
-    // но список не уезжал в пустоту.
-    _hud.staff_manage_scroll_index = clamp(
-        _hud.staff_manage_scroll_index,
-        0,
-        max(0, _entry_count - 1)
-    );
 
     ui_text_fit_center(
         (_x1 + _x2) * 0.5,
