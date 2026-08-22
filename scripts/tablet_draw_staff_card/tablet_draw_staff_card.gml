@@ -4,6 +4,8 @@
 /// Пакет №110: в «Месте работы» — роли операционной (Хирург / Анестезиолог / Ассистент).
 /// Пакет №159: специализация = самый прокачанный навык врача; кнопка места работы ×2.
 /// Пакет №160: подпись «Место работы» выше, чтобы кнопка не закрывала низ букв.
+/// Пакет №185: подпись «Место работы:» убрана из-над кнопки и переехала внутрь
+/// неё («МЕСТО: СТАЦИОНАР»), кнопка выше; весь текст карточки ещё крупнее.
 /// Пакет №184: имя, роль, возраст и характер крупнее (каждая строка — своя
 /// полоса с автоподгонкой масштаба), характер вынесен под фото на всю ширину,
 /// подпись «Место работы» стоит в собственной полосе над кнопкой и больше
@@ -489,10 +491,10 @@ function tablet_draw_staff_card(
     _col_y = tablet_staff_text_row(
         _data_x,
         _col_y,
-        30 * _ui_scale,
+        32 * _ui_scale,
         string_upper(_name),
         _data_w,
-        0.95 * _font_ui
+        1.05 * _font_ui
     );
 
     // Роль, а у врача сразу и его профиль: «ВРАЧ - ХИРУРГИЯ».
@@ -509,20 +511,20 @@ function tablet_draw_staff_card(
     _col_y = tablet_staff_text_row(
         _data_x,
         _col_y,
-        24 * _ui_scale,
+        26 * _ui_scale,
         _role_line,
         _data_w,
-        0.85 * _font_ui
+        0.95 * _font_ui
     );
 
     draw_set_color(_text);
     _col_y = tablet_staff_text_row(
         _data_x,
         _col_y,
-        22 * _ui_scale,
+        24 * _ui_scale,
         "Возраст: " + _age,
         _data_w,
-        0.80 * _font_ui
+        0.88 * _font_ui
     );
 
 
@@ -541,10 +543,10 @@ function tablet_draw_staff_card(
     tablet_staff_text_row(
         _energy_x1,
         _info_y1 + 104 * _ui_scale,
-        18 * _ui_scale,
+        22 * _ui_scale,
         "Характер: " + _trait,
         _wide_w,
-        0.72 * _font_ui
+        0.85 * _font_ui
     );
 
 
@@ -562,7 +564,7 @@ function tablet_draw_staff_card(
 
     // Энергия всегда стоит на одном месте, независимо от того,
     // была ли строка специализации.
-    var _energy_y = _info_y1 + 124 * _ui_scale;
+    var _energy_y = _info_y1 + 128 * _ui_scale;
     var _energy_color = _green;
 
     if (_energy_ratio <= 0.10) _energy_color = _red;
@@ -572,13 +574,13 @@ function tablet_draw_staff_card(
     tablet_staff_text_row(
         _energy_x1,
         _energy_y,
-        14 * _ui_scale,
+        16 * _ui_scale,
         "ЭНЕРГИЯ " + string(floor(_energy_current)) + "/" + string(round(_energy_max)),
         _wide_w,
-        0.60 * _font_ui
+        0.66 * _font_ui
     );
 
-    var _energy_bar_y = _energy_y + 15 * _ui_scale;
+    var _energy_bar_y = _energy_y + 17 * _ui_scale;
 
     draw_set_color(make_color_rgb(220, 216, 207));
     draw_roundrect_ext(_energy_x1, _energy_bar_y, _energy_x2, _energy_bar_y + 7 * _ui_scale, 7, 7, false);
@@ -624,14 +626,11 @@ function tablet_draw_staff_card(
             _tablet.staff_workplace_menu_target = noone;
         }
 
-        // Пакет №184: подпись «Место работы» больше не прячется под кнопкой.
-        // Она рисуется от НИЗА своей полосы (valign по центру полосы),
-        // а кнопка начинается только после этой полосы — хвосты букв
-        // «р» и «б» всегда остаются на виду.
-        var _workplace_caption_y = _info_y1 + 150 * _ui_scale;
-        var _workplace_caption_h = 16 * _ui_scale;
-
-        var _workplace_y1 = _workplace_caption_y + _workplace_caption_h;
+        // Пакет №185: отдельной подписи «Место работы:» над кнопкой больше
+        // НЕТ — именно она подрезалась кнопкой снизу. Подпись переехала
+        // внутрь самой кнопки: «МЕСТО: СТАЦИОНАР». Подрезать теперь нечего,
+        // а освободившееся место ушло в высоту кнопки и размер шрифта.
+        var _workplace_y1 = _info_y1 + 156 * _ui_scale;
         var _workplace_y2 = _info_y1 + 196 * _ui_scale;
         var _workplace_x1 = _energy_x1;
         var _workplace_x2 = _energy_x2;
@@ -642,16 +641,6 @@ function tablet_draw_staff_card(
             _workplace_y1,
             _workplace_x2,
             _workplace_y2
-        );
-
-        draw_set_color(_text);
-        tablet_staff_text_row(
-            _energy_x1,
-            _workplace_caption_y,
-            _workplace_caption_h,
-            "Место работы:",
-            _wide_w,
-            0.62 * _font_ui
         );
 
         draw_set_color(_workplace_hover
@@ -677,7 +666,7 @@ function tablet_draw_staff_card(
             true
         );
 
-        var _workplace_label = staff_workplace_label_for(_target);
+        var _workplace_label = "МЕСТО: " + staff_workplace_label_for(_target);
 
         if (_target.workplace_pending != "") {
             _workplace_label += " *";
@@ -688,7 +677,7 @@ function tablet_draw_staff_card(
         var _workplace_scale = tablet_staff_fit_scale(
             _workplace_label,
             (_workplace_x2 - _workplace_x1) - 10 * _ui_scale,
-            0.78 * _font_ui
+            0.85 * _font_ui
         );
 
         draw_set_halign(fa_center);
@@ -736,20 +725,20 @@ function tablet_draw_staff_card(
         draw_set_color(_text);
         tablet_staff_text_row(
             _energy_x1,
-            _info_y1 + 152 * _ui_scale,
-            20 * _ui_scale,
+            _info_y1 + 154 * _ui_scale,
+            21 * _ui_scale,
             "Зарплата: $ " + string(_salary),
             _wide_w,
-            0.72 * _font_ui
+            0.80 * _font_ui
         );
 
         tablet_staff_text_row(
             _energy_x1,
-            _info_y1 + 172 * _ui_scale,
-            20 * _ui_scale,
+            _info_y1 + 175 * _ui_scale,
+            21 * _ui_scale,
             "Лояльность: " + string(_loyalty) + "/100",
             _wide_w,
-            0.72 * _font_ui
+            0.80 * _font_ui
         );
     }
 
