@@ -1,5 +1,14 @@
-/// tablet_draw_staff_skills(_target, _x, _y, _width, _ui_scale, _tablet)
-/// @description Компактные группы навыков, прогресс текущего уровня и кликабельные пояснения.
+/// tablet_draw_staff_skills(_target, _x, _y, _width, _ui_scale, _tablet, _max_height)
+/// @description Таблица навыков сотрудника: название, уровень и шкала прогресса.
+/// Пакет №197: размер строки считается от свободного места.
+/// Пакет №198: шрифт не мельчает под количество строк, включается прокрутка.
+/// Пакет №217: из строк убраны столбцы СКОРОСТЬ и КАЧЕСТВО и цифры опыта
+/// внутри шкалы. Точные значения (уровень, опыт, качество и скорость на
+/// текущем уровне) показывает подсказка внизу карточки. Шрифт всех строк
+/// одинаковый: единый масштаб выбирается по самому длинному названию.
+/// Карточка кандидата рисуется СВОИМ скриптом tablet_draw_candidate_skills
+/// и использует общую строку tablet_draw_compact_skill_row со старой
+/// разметкой (флаг metrics.show_stats), поэтому её вид не меняется.
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -65,16 +74,17 @@ function tablet_get_staff_skill_help(_help_id) {
 
 
 // ═══════════════════════════════════════════════════════════════
-// 1. СТРОКА НАВЫКА
-// ═══════════════════════════════════════════════════════════════
-
-// ═══════════════════════════════════════════════════════════════
-// 0. РАЗМЕРЫ ТАБЛИЦЫ НАВЫКОВ (пакет №197)
+// 1. РАЗМЕРЫ ТАБЛИЦЫ НАВЫКОВ
 //
-// Раньше строка навыка была жёстко 10.5 юнита, а шрифт 0.52 — на телефоне
-// это самый мелкий текст в игре. Теперь размер считается от свободного
-// места: сколько высоты есть, настолько крупными и будут строки.
-// Больше строк (у главного игрока их 15) — чуть мельче, но всё влезает.
+// Пакет №197: размер строки считается от свободного места — сколько
+// высоты есть, настолько крупными и будут строки.
+// Пакет №198: нижняя граница поднята, при нехватке места включается
+// прокрутка, шрифт не мельчает.
+// Пакет №217: в метриках появились два поля:
+//   show_stats — старая разметка строки со столбцами СКОРОСТЬ и
+//     КАЧЕСТВО (осталась только для карточки кандидата);
+//   name_fit — единый масштаб названия для всех строк таблицы
+//     сотрудника (выбирается по самому длинному названию).
 // ═══════════════════════════════════════════════════════════════
 
 function tablet_skill_metrics(_ui_scale, _row_count, _group_count, _max_height, _min_row = 17) {
@@ -90,8 +100,6 @@ function tablet_skill_metrics(_ui_scale, _row_count, _group_count, _max_height, 
     var _fixed = 26 + _groups * 11;
     var _row_h = (_avail - _fixed) / (_rows + _groups);
 
-    // Пакет №198: нижняя граница поднята — шрифт больше не мельчает под
-    // количество строк. Если строки не влезают, включается прокрутка.
     _row_h = clamp(_row_h, _min_row, 21);
 
     var _font = clamp(_row_h * 0.052, _min_row * 0.052, 1.05);
@@ -101,7 +109,9 @@ function tablet_skill_metrics(_ui_scale, _row_count, _group_count, _max_height, 
         header_h : _row_h + 4,
         font : _font,
         font_small : _font * 0.85,
-        font_title : _font * 1.12
+        font_title : _font * 1.12,
+        show_stats : true,
+        name_fit : 1
     };
 }
 
@@ -123,6 +133,16 @@ function tablet_skill_metrics_fit(_ui_scale, _row_count, _group_count, _max_heig
 }
 
 
+// ═══════════════════════════════════════════════════════════════
+// 2. СТРОКА НАВЫКА
+//
+// Пакет №217: у сотрудника строка состоит из трёх элементов —
+// название, уровень в бейдже и чистая шкала прогресса. Столбцов
+// СКОРОСТЬ и КАЧЕСТВО больше нет, цифры опыта из шкалы убраны.
+// Старая разметка (со столбцами) осталась только для карточки
+// кандидата — она включается флагом metrics.show_stats.
+// ═══════════════════════════════════════════════════════════════
+
 function tablet_draw_compact_skill_row(
     _x,
     _y,
@@ -136,12 +156,6 @@ function tablet_draw_compact_skill_row(
     var _level = clamp(round(_row.level), 1, 10);
     var _current_xp = max(0, _row.xp);
     var _needed_xp = max(1, _row.need);
-
-    // Колонки заданы долями ширины — при любом шрифте ничего не наезжает.
-    var _level_x = _x + _width * 0.32;
-    var _bar_x = _x + _width * 0.37;
-    var _bar_w = _width * 0.27;
-    var _bar_h = min(_metrics.row_h * 0.72, 13) * _ui_scale;
 
     var _fill_ratio = (_level >= 10)
         ? 1
@@ -162,40 +176,174 @@ function tablet_draw_compact_skill_row(
     // Все элементы строки используют один вертикальный центр.
     var _row_h = _metrics.row_h * _ui_scale;
     var _row_center_y = _y + _row_h * 0.5;
-    var _bar_y1 = _row_center_y - _bar_h * 0.5;
-    var _bar_y2 = _row_center_y + _bar_h * 0.5;
 
     draw_set_halign(fa_left);
     draw_set_valign(fa_middle);
 
-    // Название навыка: крупно, но с автоподгонкой под ширину колонки,
-    // чтобы «ОТОЛАРИНГОЛОГИЯ» не залезала на уровень.
-    var _name_scale = tablet_staff_fit_scale(
-        _row.name,
-        (_level_x - _x) - 6 * _ui_scale,
-        _metrics.font * _ui_scale
-    );
+    // ── СТАРАЯ РАЗМЕТКА: карточка кандидата ──
+    if (variable_struct_exists(_metrics, "show_stats") && _metrics.show_stats) {
+        var _level_x = _x + _width * 0.32;
+        var _bar_x = _x + _width * 0.37;
+        var _bar_w = _width * 0.27;
+        var _bar_h = min(_metrics.row_h * 0.72, 13) * _ui_scale;
 
+        var _bar_y1 = _row_center_y - _bar_h * 0.5;
+        var _bar_y2 = _row_center_y + _bar_h * 0.5;
+
+        var _name_scale = tablet_staff_fit_scale(
+            _row.name,
+            (_level_x - _x) - 6 * _ui_scale,
+            _metrics.font * _ui_scale
+        );
+
+        draw_set_color(make_color_rgb(50, 38, 28));
+        draw_text_transformed(
+            _x,
+            _row_center_y,
+            _row.name,
+            _name_scale,
+            _name_scale,
+            0
+        );
+
+        draw_set_color(make_color_rgb(84, 68, 54));
+        draw_text_transformed(
+            _level_x,
+            _row_center_y,
+            string(_level),
+            _metrics.font * _ui_scale,
+            _metrics.font * _ui_scale,
+            0
+        );
+
+        draw_set_color(make_color_rgb(220, 216, 207));
+        draw_roundrect_ext(
+            _bar_x,
+            _bar_y1,
+            _bar_x + _bar_w,
+            _bar_y2,
+            6,
+            6,
+            false
+        );
+
+        if (_fill_ratio > 0) {
+            draw_set_color(_fill_color);
+            draw_roundrect_ext(
+                _bar_x,
+                _bar_y1,
+                _bar_x + _bar_w * _fill_ratio,
+                _bar_y2,
+                6,
+                6,
+                false
+            );
+        }
+
+        draw_set_color(make_color_rgb(58, 39, 24));
+        draw_roundrect_ext(
+            _bar_x,
+            _bar_y1,
+            _bar_x + _bar_w,
+            _bar_y2,
+            6,
+            6,
+            true
+        );
+
+        draw_set_halign(fa_center);
+        draw_set_valign(fa_middle);
+        draw_set_color(make_color_rgb(50, 38, 28));
+        draw_text_transformed(
+            _bar_x + _bar_w * 0.5,
+            _row_center_y,
+            (_level >= 10)
+                ? "МАКС"
+                : string(floor(_current_xp)) + "/" + string(round(_needed_xp)),
+            _metrics.font_small * _ui_scale,
+            _metrics.font_small * _ui_scale,
+            0
+        );
+
+        var _speed_text = variable_struct_exists(_row, "speed")
+            ? string(_row.speed)
+            : "-";
+        var _quality_text = variable_struct_exists(_row, "quality")
+            ? string(_row.quality)
+            : "-";
+
+        draw_set_halign(fa_center);
+        draw_set_color(make_color_rgb(84, 68, 54));
+        draw_text_transformed(
+            _x + _width * 0.72,
+            _row_center_y,
+            _speed_text,
+            _metrics.font * _ui_scale,
+            _metrics.font * _ui_scale,
+            0
+        );
+
+        draw_text_transformed(
+            _x + _width * 0.90,
+            _row_center_y,
+            _quality_text,
+            _metrics.font * _ui_scale,
+            _metrics.font * _ui_scale,
+            0
+        );
+
+        draw_set_halign(fa_left);
+        draw_set_valign(fa_top);
+        return;
+    }
+
+    // ── НОВАЯ РАЗМЕТКА (пакет №217): НАЗВАНИЕ, УРОВЕНЬ, ШКАЛА ──
+    //
+    // Колонки заданы долями ширины, элементы не наезжают друг на друга:
+    //   название  [0.00 .. 0.55]
+    //   уровень   по центру 0.60
+    //   шкала     [0.66 .. 0.98]
+
+    var _name_fit = variable_struct_exists(_metrics, "name_fit")
+        ? _metrics.name_fit
+        : 1;
+    var _font_px = _metrics.font * _ui_scale * _name_fit;
+
+    var _level_cx = _x + _width * 0.60;
+
+    var _bar_x = _x + _width * 0.66;
+    var _bar_w = _width * 0.32;
+    var _bar_h = min(_metrics.row_h * 0.72, 13) * _ui_scale;
+
+    var _bar_y1 = _row_center_y - _bar_h * 0.5;
+    var _bar_y2 = _row_center_y + _bar_h * 0.5;
+
+    // Название: у всех строк один и тот же масштаб (пакет №217).
     draw_set_color(make_color_rgb(50, 38, 28));
     draw_text_transformed(
         _x,
         _row_center_y,
         _row.name,
-        _name_scale,
-        _name_scale,
+        _font_px,
+        _font_px,
         0
     );
 
-    draw_set_color(make_color_rgb(84, 68, 54));
+    // Уровень: тот же размер шрифта, что и у названия, по центру своей колонки.
+    draw_set_halign(fa_center);
+    draw_set_color(make_color_rgb(50, 38, 28));
     draw_text_transformed(
-        _level_x,
+        _level_cx,
         _row_center_y,
         string(_level),
-        _metrics.font * _ui_scale,
-        _metrics.font * _ui_scale,
+        _font_px,
+        _font_px,
         0
     );
+    draw_set_halign(fa_left);
 
+
+    // Шкала прогресса без текста: заполнение видно сразу по цвету.
     draw_set_color(make_color_rgb(220, 216, 207));
     draw_roundrect_ext(
         _bar_x,
@@ -231,189 +379,283 @@ function tablet_draw_compact_skill_row(
         true
     );
 
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
-    draw_set_color(make_color_rgb(50, 38, 28));
-    draw_text_transformed(
-        _bar_x + _bar_w * 0.5,
-        _row_center_y,
-        (_level >= 10)
-            ? "МАКС"
-            : string(floor(_current_xp)) + "/" + string(round(_needed_xp)),
-        _metrics.font_small * _ui_scale,
-        _metrics.font_small * _ui_scale,
-        0
-    );
-
-    var _speed_text = variable_struct_exists(_row, "speed")
-        ? string(_row.speed)
-        : "-";
-    var _quality_text = variable_struct_exists(_row, "quality")
-        ? string(_row.quality)
-        : "-";
-
-    draw_set_halign(fa_center);
-    draw_set_color(make_color_rgb(84, 68, 54));
-    draw_text_transformed(
-        _x + _width * 0.72,
-        _row_center_y,
-        _speed_text,
-        _metrics.font * _ui_scale,
-        _metrics.font * _ui_scale,
-        0
-    );
-
-    draw_text_transformed(
-        _x + _width * 0.90,
-        _row_center_y,
-        _quality_text,
-        _metrics.font * _ui_scale,
-        _metrics.font * _ui_scale,
-        0
-    );
-
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
 }
 
 
 // ═══════════════════════════════════════════════════════════════
-// 2. ГРУППА НАВЫКОВ
+// 3. ТОЧНЫЕ ЦИФРЫ НАВЫКА ДЛЯ ПОДСКАЗКИ (пакет №217)
+//
+// Столбцы СКОРОСТЬ и КАЧЕСТВО ушли из таблицы, поэтому подсказка внизу
+// карточки теперь сама находит выбранный навык у сотрудника и называет
+// точные значения на его текущем уровне.
 // ═══════════════════════════════════════════════════════════════
 
-function tablet_draw_compact_skill_group(
-    _x,
-    _y,
-    _width,
-    _ui_scale,
-    _title,
-    _rows,
-    _fill_color,
-    _line_color,
-    _tablet,
-    _metrics = undefined
-) {
-    if (!is_array(_rows) || array_length(_rows) <= 0) return _y;
-    if (!is_struct(_metrics)) _metrics = tablet_skill_metrics_default(_ui_scale);
+/// Уровень, опыт и порог выбранного навыка у конкретного сотрудника.
+/// Возвращает структуру { level, xp, need } или undefined.
+function tablet_staff_skill_stats_data(_help_id, _target) {
+    if (!instance_exists(_target)) return undefined;
 
-    var _header_h = _metrics.header_h * _ui_scale;
-    var _row_h = _metrics.row_h * _ui_scale;
-    var _bottom_padding = 3 * _ui_scale;
-    var _height = _header_h + array_length(_rows) * _row_h + _bottom_padding;
+    var _id = string(_help_id);
+    if (_id == "") return undefined;
 
-    draw_set_color(_fill_color);
-    draw_roundrect_ext(
-        _x,
-        _y,
-        _x + _width,
-        _y + _height,
-        8,
-        8,
-        false
-    );
+    var _is_player = (_target.object_index == obj_player);
+    var _role = variable_instance_exists(_target, "role")
+        ? string(_target.role)
+        : "";
 
-    draw_set_color(_line_color);
-    draw_roundrect_ext(
-        _x,
-        _y,
-        _x + _width,
-        _y + _height,
-        8,
-        8,
-        true
-    );
 
-    draw_set_color(_line_color);
-    draw_text_transformed(
-        _x + 6 * _ui_scale,
-        _y + 3 * _ui_scale,
-        _title,
-        _metrics.font_title * _ui_scale,
-        _metrics.font_title * _ui_scale,
-        0
-    );
+    // ── АДМИНИСТРАТИВНЫЕ: РЕГИСТРАЦИЯ, КАССА ──
 
-    for (var _row_index = 0; _row_index < array_length(_rows); _row_index++) {
-        var _row_y = _y + _header_h + _row_index * _row_h;
-        var _display_row_number = _row_index + 1;
-        var _is_even_row = (_display_row_number mod 2 == 0);
+    if (_id == "registration" || _id == "cash") {
+        var _admin_index = (_id == "registration") ? 0 : 1;
 
-        // Полосатая таблица: чётные строки темнее, нечётные светлее.
-        draw_set_alpha(_is_even_row ? 0.10 : 0.08);
-        draw_set_color(_is_even_row ? _line_color : c_white);
-        draw_roundrect_ext(
-            _x + 4 * _ui_scale,
-            _row_y,
-            _x + _width - 4 * _ui_scale,
-            _row_y + _row_h,
-            4,
-            4,
-            false
-        );
-        draw_set_alpha(1);
+        if (_is_player) {
+            player_extra_skills_init(_target);
 
-        var _mouse_x = device_mouse_x_to_gui(0);
-        var _mouse_y = device_mouse_y_to_gui(0);
-        var _hovered = point_in_rectangle(
-            _mouse_x,
-            _mouse_y,
-            _x + 4 * _ui_scale,
-            _row_y,
-            _x + _width - 4 * _ui_scale,
-            _row_y + _row_h
-        );
+            var _player_level = _target.player_admin_skill_levels[_admin_index];
 
-        var _help_id = variable_struct_exists(_rows[_row_index], "help_id")
-            ? string(_rows[_row_index].help_id)
-            : "";
-        var _selected = (
-            instance_exists(_tablet)
-            && variable_instance_exists(_tablet, "staff_skill_help_id")
-            && _tablet.staff_skill_help_id == _help_id
-        );
-
-        if (_hovered || _selected) {
-            draw_set_alpha(_selected ? 0.22 : 0.12);
-            draw_set_color(_line_color);
-            draw_roundrect_ext(
-                _x + 4 * _ui_scale,
-                _row_y,
-                _x + _width - 4 * _ui_scale,
-                _row_y + _row_h,
-                4,
-                4,
-                false
-            );
-            draw_set_alpha(1);
+            return {
+                level : _player_level,
+                xp : _target.player_admin_skill_xp[_admin_index],
+                need : (_player_level >= 10)
+                    ? 1
+                    : secondary_skill_xp_needed(_player_level)
+            };
         }
 
-        tablet_draw_compact_skill_row(
-            _x + 7 * _ui_scale,
-            _row_y,
-            _width - 14 * _ui_scale,
-            _ui_scale,
-            _rows[_row_index],
-            _metrics
-        );
+        if (_role == "admin") {
+            var _levels = variable_instance_exists(_target, "skill_level")
+                ? _target.skill_level
+                : [1, 1];
+            var _xps = variable_instance_exists(_target, "skill_xp")
+                ? _target.skill_xp
+                : [0, 0];
 
-        if (
-            _hovered
-            && _help_id != ""
-            && instance_exists(_tablet)
-            && _tablet.tablet_click_lock <= 0
-            && mouse_check_button_pressed(mb_left)
-        ) {
-            _tablet.tablet_click_lock = 5;
-            _tablet.staff_skill_help_id = _help_id;
+            var _admin_level = clamp(round(_levels[_admin_index]), 1, 10);
+            var _admin_need = secondary_skill_xp_needed(_admin_level);
+
+            if (
+                variable_instance_exists(_target, "skill_xp_needed")
+                && _admin_index < array_length(_target.skill_xp_needed)
+            ) {
+                _admin_need = max(1, _target.skill_xp_needed[_admin_index]);
+            }
+
+            return {
+                level : _admin_level,
+                xp : (_admin_index < array_length(_xps)) ? _xps[_admin_index] : 0,
+                need : (_admin_level >= 10) ? 1 : _admin_need
+            };
+        }
+
+        return undefined;
+    }
+
+
+    // ── АССИСТЕНТСКИЕ: ПРОЦЕДУРЫ, ПОПОЛНЕНИЕ, УБОРКА ──
+
+    if (_id == "procedures" || _id == "restock" || _id == "cleaning") {
+        var _assistant_index = 0;
+
+        if (_id == "restock") _assistant_index = 1;
+        if (_id == "cleaning") _assistant_index = 2;
+
+        if (_is_player) {
+            player_extra_skills_init(_target);
+
+            var _player_level = _target.player_assistant_skill_levels[_assistant_index];
+
+            return {
+                level : _player_level,
+                xp : _target.player_assistant_skill_xp[_assistant_index],
+                need : (_player_level >= 10)
+                    ? 1
+                    : secondary_skill_xp_needed(_player_level)
+            };
+        }
+
+        if (_role == "assistant") {
+            assistant_extra_skills_init(_target);
+
+            var _assistant_level = _target.assistant_skill_levels[_assistant_index];
+
+            return {
+                level : _assistant_level,
+                xp : _target.assistant_skill_xp[_assistant_index],
+                need : (_assistant_level >= 10)
+                    ? 1
+                    : secondary_skill_xp_needed(_assistant_level)
+            };
+        }
+
+        return undefined;
+    }
+
+
+    // ── ВРАЧЕБНЫЕ НАВЫКИ ──
+
+    if (_is_player || _role == "doctor") {
+        var _doctor_help_ids = [
+            "therapy",
+            "procedures",
+            "surgery",
+            "ophthalmology",
+            "otolaryngology",
+            "dermatology",
+            "infectious",
+            "anesthesia",
+            "laboratory",
+            "dentistry",
+            "inpatient"
+        ];
+
+        for (var _doctor_index = 0; _doctor_index < array_length(_doctor_help_ids); _doctor_index++) {
+            if (_doctor_help_ids[_doctor_index] != _id) continue;
+            // «Процедуры» у сотрудника живут в ассистентском блоке выше.
+            if (_doctor_index == 1) return undefined;
+
+            doctor_ensure_inpatient_skill(_target, false);
+
+            var _skill_levels = variable_instance_exists(_target, "skills")
+                ? _target.skills
+                : array_create(11, 1);
+            var _skill_xps = variable_instance_exists(_target, "skill_xp")
+                ? _target.skill_xp
+                : array_create(array_length(_skill_levels), 0);
+
+            if (_doctor_index >= array_length(_skill_levels)) return undefined;
+
+            var _doctor_level = clamp(round(_skill_levels[_doctor_index]), 1, 10);
+
+            return {
+                level : _doctor_level,
+                xp : (_doctor_index < array_length(_skill_xps))
+                    ? _skill_xps[_doctor_index]
+                    : 0,
+                need : (_doctor_level >= 10)
+                    ? 1
+                    : doctor_xp_needed(_doctor_level)
+            };
         }
     }
 
-    return _y + _height;
+
+    // ── ОБЩИЕ: СКОРОСТЬ ХОДЬБЫ, ВЫНОСЛИВОСТЬ ──
+
+    if (_id == "walk_speed") {
+        var _walk_level = variable_instance_exists(_target, "walk_skill_level")
+            ? clamp(round(_target.walk_skill_level), 1, 10)
+            : 1;
+        var _walk_need = variable_instance_exists(_target, "walk_skill_xp_needed")
+            ? max(1, _target.walk_skill_xp_needed)
+            : doctor_xp_needed(_walk_level);
+
+        return {
+            level : _walk_level,
+            xp : variable_instance_exists(_target, "walk_skill_xp")
+                ? _target.walk_skill_xp
+                : 0,
+            need : (_walk_level >= 10) ? 1 : _walk_need
+        };
+    }
+
+    if (_id == "stamina") {
+        var _stamina_level = variable_instance_exists(_target, "stamina_level")
+            ? clamp(round(_target.stamina_level), 1, 10)
+            : 1;
+        var _stamina_need = variable_instance_exists(_target, "stamina_xp_needed")
+            ? max(1, _target.stamina_xp_needed)
+            : doctor_xp_needed(_stamina_level);
+
+        return {
+            level : _stamina_level,
+            xp : variable_instance_exists(_target, "stamina_xp")
+                ? _target.stamina_xp
+                : 0,
+            need : (_stamina_level >= 10) ? 1 : _stamina_need
+        };
+    }
+
+    return undefined;
+}
+
+/// Готовая строка точных цифр для подсказки внизу карточки.
+/// Пример: «УРОВЕНЬ 4  ОПЫТ 35/80  КАЧЕСТВО 71%  СКОРОСТЬ 9.7С».
+function tablet_staff_skill_stats_line(_help_id, _target) {
+    var _data = tablet_staff_skill_stats_data(_help_id, _target);
+    if (!is_struct(_data)) return "";
+
+    var _id = string(_help_id);
+    var _level = clamp(round(_data.level), 1, 10);
+
+    var _line = (_level >= 10)
+        ? "УРОВЕНЬ 10  МАКСИМУМ"
+        : "УРОВЕНЬ " + string(_level)
+            + "  ОПЫТ " + string(floor(max(0, _data.xp)))
+            + "/" + string(round(max(1, _data.need)));
+
+    var _quality = -1;
+    var _speed_text = "";
+
+    switch (_id) {
+        case "therapy":
+            _quality = 100 - round(doctor_get_therapy_error_chance(_level) * 100);
+            _speed_text = string(
+                round(doctor_get_exam_duration_frames(_level) / room_speed * 10) / 10
+            ) + "С";
+            break;
+
+        case "surgery":
+        case "ophthalmology":
+        case "otolaryngology":
+        case "dermatology":
+        case "infectious":
+        case "anesthesia":
+        case "laboratory":
+        case "dentistry":
+        case "inpatient":
+            _quality = round(lerp(60, 100, (_level - 1) / 9));
+            _speed_text = string(round(lerp(12, 4, (_level - 1) / 9) * 10) / 10) + "С";
+            break;
+
+        case "registration":
+        case "cash":
+            _speed_text = string(round(lerp(10, 1, (_level - 1) / 9) * 10) / 10) + "С";
+            break;
+
+        case "procedures":
+            _speed_text = string(round(lerp(5, 2, (_level - 1) / 9) * 10) / 10) + "С";
+            break;
+
+        case "restock":
+            _speed_text = string(round(lerp(2.0, 0.7, (_level - 1) / 9) * 10) / 10) + "С";
+            break;
+
+        case "cleaning":
+            _speed_text = string(
+                round(cleaning_get_duration_frames(_level) / room_speed * 10) / 10
+            ) + "С";
+            break;
+
+        case "walk_speed":
+            _speed_text = string(100 + (_level - 1) * 10) + "%";
+            break;
+
+        case "stamina":
+            return _line + "  МАКС ЭНЕРГИЯ " + string(20 + _level * 10);
+    }
+
+    if (_quality >= 0) _line += "  КАЧЕСТВО " + string(_quality) + "%";
+    if (_speed_text != "") _line += "  СКОРОСТЬ " + _speed_text;
+
+    return _line;
 }
 
 
 // ═══════════════════════════════════════════════════════════════
-// 3. ОСНОВНАЯ ПАНЕЛЬ НАВЫКОВ
+// 4. ОСНОВНАЯ ПАНЕЛЬ НАВЫКОВ
 // ═══════════════════════════════════════════════════════════════
 
 function tablet_draw_staff_skills(
@@ -452,7 +694,7 @@ function tablet_draw_staff_skills(
 
 
     // ═══════════════════════════════════════════════════════════
-    // 3.1 ВРАЧЕБНЫЕ НАВЫКИ
+    // 4.1 ВРАЧЕБНЫЕ НАВЫКИ
     // ═══════════════════════════════════════════════════════════
 
     if (_role == "doctor" || _is_player) {
@@ -491,27 +733,11 @@ function tablet_draw_staff_skills(
                 ? 1
                 : doctor_xp_needed(_doctor_level);
 
-            var _doctor_quality = round(lerp(60, 100, (_doctor_level - 1) / 9));
-            var _doctor_speed = round(lerp(12, 4, (_doctor_level - 1) / 9) * 10) / 10;
-
-            if (_doctor_index == 0) {
-                _doctor_quality = 100 - round(
-                    doctor_get_therapy_error_chance(_doctor_level) * 100
-                );
-                _doctor_speed = round(
-                    doctor_get_exam_duration_frames(_doctor_level)
-                    / room_speed
-                    * 10
-                ) / 10;
-            }
-
             array_push(_doctor_rows, {
                 name : _doctor_names[_doctor_index],
                 level : _doctor_level,
                 xp : _doctor_current_xp,
                 need : _doctor_needed_xp,
-                speed : _is_player ? "-" : string(_doctor_speed) + "С",
-                quality : string(_doctor_quality) + "%",
                 help_id : (_doctor_index < array_length(_doctor_help_ids))
                     ? _doctor_help_ids[_doctor_index]
                     : ""
@@ -522,7 +748,7 @@ function tablet_draw_staff_skills(
 
 
     // ═══════════════════════════════════════════════════════════
-    // 3.2 АДМИНИСТРАТИВНЫЕ НАВЫКИ
+    // 4.2 АДМИНИСТРАТИВНЫЕ НАВЫКИ
     // ═══════════════════════════════════════════════════════════
 
     if (_is_player) {
@@ -531,10 +757,6 @@ function tablet_draw_staff_skills(
         for (var _player_admin_index = 0; _player_admin_index < 2; _player_admin_index++) {
             var _player_admin_level = _target.player_admin_skill_levels[_player_admin_index];
 
-            var _player_admin_seconds = round(
-                lerp(10, 1, (_player_admin_level - 1) / 9) * 10
-            ) / 10;
-
             array_push(_admin_rows, {
                 name : (_player_admin_index == 0) ? "РЕГИСТРАЦИЯ" : "КАССА",
                 level : _player_admin_level,
@@ -542,8 +764,6 @@ function tablet_draw_staff_skills(
                 need : (_player_admin_level >= 10)
                     ? 1
                     : secondary_skill_xp_needed(_player_admin_level),
-                speed : string(_player_admin_seconds) + "С",
-                quality : "-",
                 help_id : (_player_admin_index == 0) ? "registration" : "cash"
             });
         }
@@ -559,22 +779,6 @@ function tablet_draw_staff_skills(
 
         for (var _admin_index = 0; _admin_index < min(2, array_length(_admin_levels)); _admin_index++) {
             var _admin_level = clamp(round(_admin_levels[_admin_index]), 1, 10);
-            var _admin_meta = "";
-
-            switch (_admin_index) {
-                case 0:
-                case 1:
-                    _admin_meta = string(
-                        round(lerp(10, 1, (_admin_level - 1) / 9) * 10) / 10
-                    ) + "С";
-                break;
-
-                case 2:
-                    _admin_meta = string(
-                        round(lerp(1.4, 2.4, (_admin_level - 1) / 9) * 10) / 10
-                    );
-                break;
-            }
 
             var _admin_needed_xp = secondary_skill_xp_needed(_admin_level);
 
@@ -590,8 +794,6 @@ function tablet_draw_staff_skills(
                 level : _admin_level,
                 xp : (_admin_index < array_length(_admin_xp)) ? _admin_xp[_admin_index] : 0,
                 need : (_admin_level >= 10) ? 1 : _admin_needed_xp,
-                speed : _admin_meta,
-                quality : "-",
                 help_id : (_admin_index == 0) ? "registration" : "cash"
             });
         }
@@ -599,36 +801,25 @@ function tablet_draw_staff_skills(
 
 
     // ═══════════════════════════════════════════════════════════
-    // 3.3 АССИСТЕНТСКИЕ НАВЫКИ
+    // 4.3 АССИСТЕНТСКИЕ НАВЫКИ
     // ═══════════════════════════════════════════════════════════
 
     if (_is_player) {
         player_extra_skills_init(_target);
 
+        var _player_assistant_names = [
+            "ПРОЦЕДУРЫ",
+            "ПОПОЛНЕНИЕ",
+            "УБОРКА"
+        ];
+        var _player_assistant_help = [
+            "procedures",
+            "restock",
+            "cleaning"
+        ];
+
         for (var _player_assistant_index = 0; _player_assistant_index < 3; _player_assistant_index++) {
             var _player_assistant_level = _target.player_assistant_skill_levels[_player_assistant_index];
-
-            var _player_assistant_names = [
-                "ПРОЦЕДУРЫ",
-                "ПОПОЛНЕНИЕ",
-                "УБОРКА"
-            ];
-            var _player_assistant_help = [
-                "procedures",
-                "restock",
-                "cleaning"
-            ];
-            var _player_assistant_speed = "-";
-
-            if (_player_assistant_index == 2) {
-                _player_assistant_speed = string(
-                    round(
-                        cleaning_get_duration_frames(_player_assistant_level)
-                        / room_speed
-                        * 10
-                    ) / 10
-                ) + "С";
-            }
 
             array_push(_assistant_rows, {
                 name : _player_assistant_names[_player_assistant_index],
@@ -637,8 +828,6 @@ function tablet_draw_staff_skills(
                 need : (_player_assistant_level >= 10)
                     ? 1
                     : secondary_skill_xp_needed(_player_assistant_level),
-                speed : _player_assistant_speed,
-                quality : "-",
                 help_id : _player_assistant_help[_player_assistant_index]
             });
         }
@@ -646,41 +835,19 @@ function tablet_draw_staff_skills(
     else if (_role == "assistant") {
         assistant_extra_skills_init(_target);
 
+        var _assistant_names = [
+            "ПРОЦЕДУРЫ",
+            "ПОПОЛНЕНИЕ",
+            "УБОРКА"
+        ];
+        var _assistant_help_ids = [
+            "procedures",
+            "restock",
+            "cleaning"
+        ];
+
         for (var _assistant_index = 0; _assistant_index < 3; _assistant_index++) {
             var _assistant_level = _target.assistant_skill_levels[_assistant_index];
-
-            var _assistant_meta = "";
-
-            if (_assistant_index == 0) {
-                _assistant_meta = string(
-                    round(lerp(5, 2, (_assistant_level - 1) / 9) * 10) / 10
-                ) + "С";
-            }
-            else if (_assistant_index == 1) {
-                _assistant_meta = string(
-                    round(lerp(2.0, 0.7, (_assistant_level - 1) / 9) * 10) / 10
-                ) + "С";
-            }
-            else {
-                _assistant_meta = string(
-                    round(
-                        cleaning_get_duration_frames(_assistant_level)
-                        / room_speed
-                        * 10
-                    ) / 10
-                ) + "С";
-            }
-
-            var _assistant_names = [
-                "ПРОЦЕДУРЫ",
-                "ПОПОЛНЕНИЕ",
-                "УБОРКА"
-            ];
-            var _assistant_help_ids = [
-                "procedures",
-                "restock",
-                "cleaning"
-            ];
 
             array_push(_assistant_rows, {
                 name : _assistant_names[_assistant_index],
@@ -689,8 +856,6 @@ function tablet_draw_staff_skills(
                 need : (_assistant_level >= 10)
                     ? 1
                     : secondary_skill_xp_needed(_assistant_level),
-                speed : (_assistant_meta == "") ? "-" : _assistant_meta,
-                quality : "-",
                 help_id : _assistant_help_ids[_assistant_index]
             });
         }
@@ -698,7 +863,7 @@ function tablet_draw_staff_skills(
 
 
     // ═══════════════════════════════════════════════════════════
-    // 3.4 ОБЩИЕ НАВЫКИ
+    // 4.4 ОБЩИЕ НАВЫКИ
     // Есть у главного игрока и у всех нанятых сотрудников.
     // ═══════════════════════════════════════════════════════════
 
@@ -711,15 +876,12 @@ function tablet_draw_staff_skills(
     var _walk_need = variable_instance_exists(_target, "walk_skill_xp_needed")
         ? max(1, _target.walk_skill_xp_needed)
         : doctor_xp_needed(_walk_level);
-    var _walk_speed_percent = 100 + (_walk_level - 1) * 10;
 
     array_push(_common_rows, {
         name : "СКОРОСТЬ ХОДЬБЫ",
         level : _walk_level,
         xp : _walk_xp,
         need : (_walk_level >= 10) ? 1 : _walk_need,
-        speed : string(_walk_speed_percent) + "%",
-        quality : "-",
         help_id : "walk_speed"
     });
 
@@ -738,18 +900,16 @@ function tablet_draw_staff_skills(
         level : _stamina_level,
         xp : _stamina_xp,
         need : (_stamina_level >= 10) ? 1 : _stamina_need,
-        speed : "-",
-        quality : "-",
         help_id : "stamina"
     });
 
 
     // ═══════════════════════════════════════════════════════════
-    // 3.5 ОТРИСОВКА С ПРОКРУТКОЙ (пакет №198)
+    // 4.5 ОТРИСОВКА С ПРОКРУТКОЙ
     //
-    // Шрифт больше не ужимается под количество строк: он всегда крупный.
-    // Если строки не помещаются (у главного игрока их 15), список
-    // прокручивается — колесом, перетягиванием пальцем и бегунком справа.
+    // Шрифт всегда крупный. Если строки не помещаются (у главного
+    // игрока их 15), список прокручивается — колесом, перетягиванием
+    // пальцем и бегунком справа.
     // ═══════════════════════════════════════════════════════════
 
     // Плоский список: заголовки групп и строки навыков вперемешку,
@@ -833,6 +993,34 @@ function tablet_draw_staff_skills(
     // Крупный фиксированный размер. Если места много — станет ещё крупнее.
     var _metrics = tablet_skill_metrics(_ui_scale, _item_count, 1, _max_height);
 
+    // Пакет №217: новая разметка строки — без столбцов СКОРОСТЬ и КАЧЕСТВО.
+    _metrics.show_stats = false;
+
+    var _bar_reserve = 16 * _ui_scale;
+    var _list_w = _width - _bar_reserve;
+
+    // Пакет №217: единый масштаб названия для всех строк. Берём самый
+    // неудобный навык («ОТОЛАРИНГОЛОГИЯ») и подгоняем под него всю
+    // таблицу — тогда шрифт одинаков у каждой строки.
+    var _row_inner_w = _list_w - 16 * _ui_scale;
+    var _name_limit_w = _row_inner_w * 0.55 - 6 * _ui_scale;
+    var _name_base = _metrics.font * _ui_scale;
+    var _uniform_fit = 1;
+
+    for (var _fit_index = 0; _fit_index < _item_count; _fit_index++) {
+        if (_items[_fit_index].kind != "row") continue;
+
+        var _row_fit = tablet_staff_fit_scale(
+            _items[_fit_index].row.name,
+            _name_limit_w,
+            _name_base
+        ) / max(0.01, _name_base);
+
+        _uniform_fit = min(_uniform_fit, _row_fit);
+    }
+
+    _metrics.name_fit = clamp(_uniform_fit, 0.80, 1);
+
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);
     draw_set_color(make_color_rgb(74, 49, 31));
@@ -845,31 +1033,7 @@ function tablet_draw_staff_skills(
         0
     );
 
-    var _bar_reserve = 16 * _ui_scale;
-    var _list_w = _width - _bar_reserve;
-
-    // Подписи двух правых столбцов.
-    draw_set_halign(fa_center);
-    draw_set_color(make_color_rgb(84, 68, 54));
-    draw_text_transformed(
-        _x + _list_w * 0.72,
-        _y + 3 * _ui_scale,
-        "СКОРОСТЬ",
-        _metrics.font_small * _ui_scale,
-        _metrics.font_small * _ui_scale,
-        0
-    );
-    draw_text_transformed(
-        _x + _list_w * 0.90,
-        _y + 3 * _ui_scale,
-        "КАЧЕСТВО",
-        _metrics.font_small * _ui_scale,
-        _metrics.font_small * _ui_scale,
-        0
-    );
-    draw_set_halign(fa_left);
-
-    var _list_y1 = _y + 24 * _ui_scale;
+    var _list_y1 = _y + 22 * _ui_scale;
     var _list_y2 = (_max_height > 0)
         ? (_y + _max_height)
         : (_list_y1 + _item_count * _metrics.row_h * _ui_scale);
