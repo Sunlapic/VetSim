@@ -1768,13 +1768,39 @@ function tablet_draw_animal_card(
             instance_exists(_player)
             && _player.doctor_state == "idle"
         );
+
+        // Пакет №219: состояние здоровья пациента койки. При 100%
+        // назначать и выполнять лечение нельзя — пациент ждёт владельца.
+        var _ward_condition_now = 0;
+
+        if (
+            variable_instance_exists(_animal, "current_case")
+            && is_struct(_animal.current_case)
+            && variable_struct_exists(_animal.current_case, "condition")
+        ) {
+            _ward_condition_now = _animal.current_case.condition;
+        }
+        else if (variable_instance_exists(_animal, "condition")) {
+            _ward_condition_now = _animal.condition;
+        }
+
+        var _ward_full_health = (
+            _ward_condition_now >= 100
+            && !(
+                variable_instance_exists(_animal, "or_waiting_surgery")
+                && _animal.or_waiting_surgery
+            )
+        );
+
         var _can_player_assign = (
             _player_free_for_ward
+            && !_ward_full_health
             && _inpatient_ward.phase == "waiting_doctor"
             && !instance_exists(_inpatient_ward.ward_doctor)
         );
         var _can_player_treat = (
             _player_free_for_ward
+            && !_ward_full_health
             && _inpatient_ward.phase == "waiting_cycle"
             && inpatient_now_absolute_minute()
                 >= _inpatient_ward.next_treatment_minute
@@ -1795,6 +1821,9 @@ function tablet_draw_animal_card(
             _ward_action_label = "ВЫПОЛНИТЬ НАЗНАЧЕНИЯ";
             _ward_action_enabled = true;
             _ward_task = "treat";
+        }
+        else if (_ward_full_health) {
+            _ward_action_label = "ВЫЗДОРОВЕЛ: ЖДЁТ ВЛАДЕЛЬЦА";
         }
         else if (
             _inpatient_ward.phase == "waiting_cycle"

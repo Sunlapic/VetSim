@@ -1374,6 +1374,67 @@ function inpatient_assign_treatments(_ward, _doctor) {
 
 
 // ═══════════════════════════════════════════════════════════════
+// 7.1 АВТОНАЗНАЧЕНИЕ ПОСЛЕ ОПЕРАЦИИ (пакет №219)
+//
+// Послеоперационному пациенту не нужен новый осмотр у койки:
+// повторяемые назначения уже известны из случая. Палата сразу
+// получает план лечения, и цикл начинает ассистент стационара.
+// ═══════════════════════════════════════════════════════════════
+
+function inpatient_auto_assign_post_surgery(_ward) {
+    if (!instance_exists(_ward)) return false;
+    if (!instance_exists(_ward.patient)) return false;
+
+    var _pet = _ward.patient;
+
+    if (!variable_instance_exists(_pet, "current_case")) return false;
+    if (!is_struct(_pet.current_case)) return false;
+
+    var _actions = case_build_next_procedure_assignments(_pet.current_case);
+
+    if (array_length(_actions) <= 0) {
+        if (
+            variable_struct_exists(_pet.current_case, "pending_procedure_actions")
+            && is_array(_pet.current_case.pending_procedure_actions)
+        ) {
+            _actions = _pet.current_case.pending_procedure_actions;
+        }
+    }
+
+    // Пакет №170: хирургические действия из цикла палаты убираем —
+    // их выполнит операционная, а не ассистент у койки.
+    var _ward_actions = [];
+
+    for (var _filter_index = 0; _filter_index < array_length(_actions); _filter_index++) {
+        var _filter_entry = _actions[_filter_index];
+
+        var _filter_id = is_struct(_filter_entry)
+            ? (variable_struct_exists(_filter_entry, "action_id")
+                ? _filter_entry.action_id
+                : "")
+            : _filter_entry;
+
+        if (operating_action_is_surgery(_filter_id)) continue;
+
+        array_push(_ward_actions, _filter_entry);
+    }
+
+    _pet.current_case.pending_procedure_actions = _actions;
+
+    if (array_length(_ward_actions) <= 0) return false;
+
+    _ward.treatment_actions = _ward_actions;
+    _ward.prescriptions_assigned = true;
+    _ward.cycle_action_index = 0;
+    _ward.cycle_active = false;
+    _ward.next_treatment_minute = inpatient_now_absolute_minute();
+    _ward.phase = "waiting_cycle";
+
+    return true;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // 8. ПОВТОРНОЕ ВЫПОЛНЕНИЕ ОДНОГО НАЗНАЧЕНИЯ
 // Не использует дневной лимит; препараты списываются каждый раз.
 // Пакет №73 hotfix: препараты берутся из ОДНОГО общего шкафа палаты.
@@ -1799,6 +1860,14 @@ function inpatient_finish_pickup(_ward) {
     if (!instance_exists(_ward.patient)) return false;
     if (!instance_exists(_ward.returning_owner)) return false;
 
+    // Пакет №219: если игрок стоял у койки с назначениями/процедурами,
+    // а пациента в это время забрал владелец — игрока обязательно
+    // освобождаем. Раньше player_actor оставался висеть, и игрок
+    // навсегда застревал в состоянии работы у стола.
+    if (instance_exists(_ward.player_actor)) {
+        inpatient_player_release(_ward, "empty");
+    }
+
     var _pet = _ward.patient;
     var _owner = _ward.returning_owner;
 
@@ -1920,6 +1989,28 @@ function inpatient_player_request_task(_pet, _task) {
         if (_ward.phase != "waiting_doctor") return false;
         if (instance_exists(_ward.ward_doctor)) return false;
 
+        // Пакет №219: здоровому пациенту (100%) лечение не назначается —
+        // палата сама переводит его в «выздоровел» и зовёт владельца.
+        var _assign_condition = 0;
+
+        if (
+            variable_instance_exists(_pet, "current_case")
+            && is_struct(_pet.current_case)
+            && variable_struct_exists(_pet.current_case, "condition")
+        ) {
+            _assign_condition = _pet.current_case.condition;
+        }
+        else if (variable_instance_exists(_pet, "condition")) {
+            _assign_condition = _pet.condition;
+        }
+
+        if (
+            _assign_condition >= 100
+            && !inpatient_patient_waits_surgery(_ward)
+        ) {
+            return false;
+        }
+
         // В ручном режиме игрок также начинает с чистых кнопок назначения.
         inpatient_clear_outpatient_prescriptions(_pet);
     }
@@ -1966,7 +2057,47 @@ function inpatient_player_finish_assignments(_player, _pet) {
     var _actions = case_build_next_procedure_assignments(_pet.current_case);
 
     if (array_length(_actions) <= 0) {
-        return false;
+        // Пакет №219: назначать нечего — раньше функция молча уходила
+        // с return false, палата оставалась в player_assigning, а игрок —
+        // в вечной работе у стола. Теперь игрока освобождаем, а пациента
+        // с 100% здоровья сразу переводим в «выздоровел».
+        var _nothing_condition = 0;
+
+        if (variable_struct_exists(_pet.current_case, "condition")) {
+            _nothing_condition = _pet.current_case.condition;
+        }
+        else if (variable_instance_exists(_pet, "condition")) {
+            _nothing_condition = _pet.condition;
+        }
+
+        if (
+            _nothing_condition >= 100
+            && !inpatient_patient_waits_surgery(_ward)
+        ) {
+            inpatient_player_release(_ward, "recovered");
+        }
+        else {
+            inpatient_player_release(_ward, "waiting_doctor");
+        }
+
+        if (instance_exists(obj_UI_HUD)) {
+            var _nothing_hud = instance_find(obj_UI_HUD, 0);
+
+            if (
+                instance_exists(_nothing_hud)
+                && variable_instance_exists(_nothing_hud, "show_notice")
+            ) {
+                with (_nothing_hud) {
+                    show_notice(
+                        "НЕЧЕГО НАЗНАЧАТЬ",
+                        "Пациенту не требуются процедуры.",
+                        room_speed * 3
+                    );
+                }
+            }
+        }
+
+        return true;
     }
 
     doctor_visit_mark_inpatient_prescriber(_pet, _player);
@@ -2447,6 +2578,18 @@ function inpatient_controller_step(_ward) {
                     _ward.escort_return_y
                 );
             }
+
+            // Пакет №219: после операции лечение уже назначено —
+            // повторяемые процедуры палата берёт из случая сама,
+            // и ими занимается ассистент стационара. Осмотр врача
+            // не нужен, кнопки «НАЗНАЧИТЬ ЛЕЧЕНИЕ» у койки не будет.
+            if (
+                variable_instance_exists(_ward.patient, "or_post_surgery")
+                && _ward.patient.or_post_surgery
+                && !inpatient_patient_waits_surgery(_ward)
+            ) {
+                inpatient_auto_assign_post_surgery(_ward);
+            }
         }
     }
 
@@ -2918,6 +3061,79 @@ function inpatient_controller_step(_ward) {
             } else {
                 _ward.stock_retry_timer = room_speed * 2;
             }
+        }
+    }
+
+    // ── Пакет №219 ──────────────────────────────────────────────
+    // 1) Пациент с состоянием 100% не должен ждать назначений:
+    //    палата сразу переводится в «выздоровел», владельца зовут.
+    //    Раньше после операции пациент с 100% сидел в фазе
+    //    waiting_doctor, и у карточки появлялась кнопка
+    //    «НАЗНАЧИТЬ ЛЕЧЕНИЕ», которая вела в зависание.
+    // 2) Если игрок был занят у койки — освобождаем и его.
+    var _full_health_patient = (
+        instance_exists(_ward.patient)
+        && !inpatient_patient_waits_surgery(_ward)
+    );
+
+    if (_full_health_patient) {
+        if (
+            variable_instance_exists(_ward.patient, "current_case")
+            && is_struct(_ward.patient.current_case)
+            && variable_struct_exists(_ward.patient.current_case, "condition")
+        ) {
+            _full_health_patient = (
+                _ward.patient.current_case.condition >= 100
+            );
+        }
+        else if (variable_instance_exists(_ward.patient, "condition")) {
+            _full_health_patient = (_ward.patient.condition >= 100);
+        }
+        else {
+            _full_health_patient = false;
+        }
+    }
+
+    if (
+        _full_health_patient
+        && (
+            _ward.phase == "waiting_doctor"
+            || _ward.phase == "player_going_assign"
+            || _ward.phase == "player_assigning"
+        )
+    ) {
+        if (instance_exists(_ward.player_actor)) {
+            inpatient_player_release(_ward, "recovered");
+        }
+        else {
+            _ward.phase = "recovered";
+        }
+    }
+
+    // Пакет №219: игрок числится за палатой, а пациента уже нет или
+    // он больше не пациент этой койки — снимаем игрока с задачи,
+    // чтобы он никогда не застревал в рабочем состоянии.
+    if (
+        instance_exists(_ward.player_actor)
+        && (
+            !instance_exists(_ward.patient)
+            || (
+                variable_instance_exists(_ward.player_actor, "assigned_pet")
+                && instance_exists(_ward.player_actor.assigned_pet)
+                && _ward.player_actor.assigned_pet != _ward.patient
+            )
+        )
+    ) {
+        if (_ward.phase == "player_going_assign"
+            || _ward.phase == "player_assigning"
+            || _ward.phase == "player_going_treat"
+            || _ward.phase == "player_treating"
+        ) {
+            inpatient_player_release(_ward, "empty");
+        }
+        else {
+            _ward.player_actor = noone;
+            _ward.player_task = "";
         }
     }
 
