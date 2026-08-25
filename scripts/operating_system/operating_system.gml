@@ -871,6 +871,23 @@ function operating_seat_actor(_ctrl, _actor, _seat) {
         _actor.or_seat_stuck_timer = 0;
         _actor.or_seat_attempts += 1;
 
+        // Пакет №218: если до стула рукой подать — доводим силой,
+        // ровно как operating_move_member_to_point доводит бригаду
+        // до рабочих точек. Хирург больше не «вечно стоит у стола».
+        if (_dist <= 70) {
+            inpatient_stop_actor(_actor);
+
+            _actor.x = _seat.x;
+            _actor.y = _seat.y;
+
+            _actor.or_seated = true;
+            _actor.or_seat_attempts = 0;
+            _actor.or_seat_stuck_timer = 0;
+            _actor.or_seat_unreachable = false;
+
+            return true;
+        }
+
         if (_actor.or_seat_attempts >= 4) {
             _actor.or_seat_unreachable = true;
             _actor.or_seat_retry_timer = _fps * 10;
@@ -1053,6 +1070,58 @@ function operating_seats_update(_ctrl) {
     for (var _j = 0; _j < instance_number(obj_staff_assistant); _j++) {
         var _asst = instance_find(obj_staff_assistant, _j);
         if (instance_exists(_asst)) array_push(_staff, _asst);
+    }
+
+    // ── Пакет №218: сторож «вечно стоящего» сотрудника операционной ──
+    //
+    // Если свободный сотрудник операционной застрял в рабочем состоянии
+    // (operating_at_point / operating_going_to_point), не входя в текущую
+    // бригаду, — через 3 секунды состояние принудительно возвращается
+    // в operating_idle, и рассадка на стулья подхватывает его заново.
+    var _watch_fps = max(1, game_get_speed(gamespeed_fps));
+
+    for (var _watch = 0; _watch < array_length(_staff); _watch++) {
+        var _watched = _staff[_watch];
+
+        if (!instance_exists(_watched)) continue;
+        if (_watched.object_index == obj_player) continue;
+
+        if (
+            !variable_instance_exists(_watched, "workplace_id")
+            || _watched.workplace_id != "operating"
+        ) {
+            continue;
+        }
+
+        if (operating_is_brigade_member(_ctrl, _watched)) continue;
+
+        var _watch_state = operating_actor_state(_watched);
+
+        if (
+            _watch_state == "operating_at_point"
+            || _watch_state == "operating_going_to_point"
+        ) {
+            if (!variable_instance_exists(_watched, "or_stale_state_timer")) {
+                _watched.or_stale_state_timer = 0;
+            }
+
+            _watched.or_stale_state_timer += 1;
+
+            if (_watched.or_stale_state_timer > _watch_fps * 3) {
+                _watched.or_stale_state_timer = 0;
+
+                operating_actor_set_state(_watched, "operating_idle");
+
+                if (variable_instance_exists(_watched, "or_seat_unreachable")) {
+                    _watched.or_seat_unreachable = false;
+                    _watched.or_seat_attempts = 0;
+                    _watched.or_seat_stuck_timer = 0;
+                }
+            }
+        }
+        else if (_watch_state == "operating_idle") {
+            _watched.or_stale_state_timer = 0;
+        }
     }
 
     var _seat_count = instance_exists(obj_operating_seat)
@@ -1627,6 +1696,15 @@ function operating_begin_surgery(_ctrl) {
     _ctrl.or_timer = _ctrl.or_timer_max;
     _ctrl.or_phase = "operating";
 
+    // Пакет №218: пока идёт операция, у пациента скрыта зелёная шкала
+    // «ВЫЗДОРОВЛЕНИЕ» — над животным мутный экран операционного поля.
+    if (
+        instance_exists(_ctrl.or_pet)
+        && variable_instance_exists(_ctrl.or_pet, "state")
+    ) {
+        _ctrl.or_pet.or_in_surgery = true;
+    }
+
     // Пакет №168: только теперь бригада работает руками.
     operating_set_working(_ctrl, true);
 
@@ -1709,6 +1787,66 @@ function operating_apply_result(_pet, _action_id) {
 
 
 // ═══════════════════════════════════════════════════════════════
+// 9.1 НАГРАДА XP ЗА ОПЕРАЦИЮ (пакет №218)
+//
+// Операции проходят редко, поэтому опыта значительно больше, чем
+// за визит на приёме (там профильный навык получает +4). Хирургия
+// и анестезиология раньше не качались вообще — теперь качаются
+// всегда, ассистент получает +15 к «Процедурам». Если роль занял
+// главный игрок, опыт начисляется ему.
+// ═══════════════════════════════════════════════════════════════
+
+function operating_award_role_xp(_actor, _role) {
+    if (!instance_exists(_actor)) return;
+
+    // Ассистент: +15 ПРОЦЕДУРЫ (у ассистента это собственный навык).
+    if (_role == "assistant") {
+        if (_actor.object_index == obj_player) {
+            player_add_assistant_skill_xp(_actor, 0, 15, true);
+
+            if (variable_instance_exists(_actor, "add_xp_log")) {
+                _actor.add_xp_log("+15 ПРОЦЕДУРЫ");
+            }
+        }
+        else {
+            var _asst_xp = assistant_add_skill_xp(_actor, 0, 15, true);
+
+            if (_asst_xp > 0 && variable_instance_exists(_actor, "add_xp_log")) {
+                _actor.add_xp_log("+" + string(_asst_xp) + " ПРОЦЕДУРЫ");
+            }
+        }
+
+        return;
+    }
+
+    // Врачи: +30 к профильному навыку (Хирургия / Анестезиология).
+    var _skill_index = operating_role_skill_index(_role);
+
+    if (_skill_index < 0) return;
+    if (!variable_instance_exists(_actor, "skills")) return;
+
+    var _xp_added = doctor_add_skill_xp(_actor, _skill_index, 30, true);
+
+    if (_xp_added > 0 && variable_instance_exists(_actor, "add_xp_log")) {
+        var _skill_names = doctor_get_skill_names();
+        var _skill_name = (_skill_index < array_length(_skill_names))
+            ? _skill_names[_skill_index]
+            : "НАВЫК";
+
+        _actor.add_xp_log("+" + string(_xp_added) + " " + _skill_name);
+    }
+}
+
+function operating_award_xp(_ctrl) {
+    if (!instance_exists(_ctrl)) return;
+
+    operating_award_role_xp(_ctrl.or_surgeon, "surgeon");
+    operating_award_role_xp(_ctrl.or_anesthetist, "anesthetist");
+    operating_award_role_xp(_ctrl.or_assistant, "assistant");
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // 10. ПЕРСОНАЛ: ВОЗВРАТ НА СТУЛ
 // ═══════════════════════════════════════════════════════════════
 
@@ -1774,6 +1912,14 @@ function operating_table_free(_ctrl) {
 
 function operating_controller_abort(_ctrl) {
     if (!instance_exists(_ctrl)) return;
+
+    // Пакет №218: операция прервана — шкала выздоровления возвращается.
+    if (
+        instance_exists(_ctrl.or_pet)
+        && variable_instance_exists(_ctrl.or_pet, "or_in_surgery")
+    ) {
+        _ctrl.or_pet.or_in_surgery = false;
+    }
 
     operating_table_free(_ctrl);
     operating_release_staff(_ctrl);
@@ -1998,6 +2144,7 @@ function operating_send_pet_back_to_ward(_ctrl) {
     _pet.or_post_surgery = true;
     _pet.or_waiting_surgery = false;
     _pet.or_pending_action = "";
+    _pet.or_in_surgery = false;
 
     with (_pet) {
         assigned_table = _ward.ward_table;
@@ -2052,6 +2199,14 @@ function operating_send_pet_back_to_ward(_ctrl) {
     // Врачи свободны сразу.
     operating_send_home(_ctrl.or_surgeon, "doctor");
     operating_send_home(_ctrl.or_anesthetist, "doctor");
+
+    // Пакет №218: врачи больше не нужны контроллеру до конца цикла,
+    // поэтому членство в бригаде снимается СРАЗУ. Раньше ссылки
+    // or_surgeon/or_anesthetist жили до конца фазы «returning», и
+    // operating_seat_actor считала их участниками операции — хирург
+    // вечно стоял у стола, хотя уже был свободен.
+    _ctrl.or_surgeon = noone;
+    _ctrl.or_anesthetist = noone;
 
     return true;
 }
@@ -2215,6 +2370,10 @@ function operating_controller_step(_ctrl) {
     if (_ctrl.or_phase == "finishing") {
         operating_apply_result(_ctrl.or_pet, _ctrl.or_action_id);
         operating_set_working(_ctrl, false);
+
+        // Пакет №218: награда за операцию — хирургия, анестезиология
+        // и процедуры ассистента качаются всегда.
+        operating_award_xp(_ctrl);
 
         operating_notify(
             "ОПЕРАЦИЯ ЗАВЕРШЕНА",
@@ -2880,22 +3039,132 @@ function operating_draw_ward_labels(_ctrl) {
             variable_instance_exists(_patient, "or_waiting_surgery")
             && _patient.or_waiting_surgery
         ) {
-            operating_draw_plaque(
-                _patient.x,
-                _patient.y - 150,
-                "ЖДЁТ ОПЕРАЦИЮ",
-                false,
-                0
-            );
+            // Пакет №218: табличка видна, ТОЛЬКО пока пациент реально
+            // лежит на койке стационара. Как только его повезли
+            // в операционную (он стал пациентом контроллера) или уже
+            // оперируют — над животным таблички нет: за ним числится
+            // койка, и над ней висит «НА ОПЕРАЦИИ».
+            var _on_ward_bed = true;
+
+            if (instance_exists(_ctrl) && _patient == _ctrl.or_pet) {
+                _on_ward_bed = false;
+            }
+
+            if (
+                _on_ward_bed
+                && (
+                    !variable_instance_exists(_patient, "state")
+                    || _patient.state != "in_exam"
+                    || !variable_instance_exists(_patient, "assigned_table")
+                    || !instance_exists(_ward.ward_table)
+                    || _patient.assigned_table != _ward.ward_table
+                )
+            ) {
+                _on_ward_bed = false;
+            }
+
+            if (_on_ward_bed) {
+                operating_draw_plaque(
+                    _patient.x,
+                    _patient.y - 150,
+                    "ЖДЁТ ОПЕРАЦИЮ",
+                    false,
+                    0
+                );
+            }
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 13.2 МУТНЫЙ ЭКРАН ОПЕРАЦИОННОГО ПОЛЯ (пакет №218)
+//
+// Во время операции стол с пациентом накрывает полупрозрачная
+// «стерильная шторка»: животное чуть видно сквозь неё, поверх —
+// пятна крови, которые растут по ходу операции. Рисуется ДО
+// таблички с названием, поэтому название остаётся сверху и чистым.
+// ═══════════════════════════════════════════════════════════════
+
+function operating_draw_surgery_screen(_ctrl) {
+    if (!instance_exists(_ctrl)) return;
+    if (_ctrl.or_phase != "operating") return;
+
+    var _table = _ctrl.or_table;
+
+    if (!instance_exists(_table)) return;
+    if (!sprite_exists(_table.sprite_index)) return;
+
+    var _ratio = 1 - (_ctrl.or_timer / max(1, _ctrl.or_timer_max));
+    _ratio = clamp(_ratio, 0, 1);
+
+    var _w = max(120, _table.sprite_width * 0.86);
+    var _h = max(70, _table.sprite_height * 0.58);
+
+    var _x1 = _table.x - _w * 0.5;
+    var _x2 = _table.x + _w * 0.5;
+    var _y1 = _table.y - _table.sprite_height * 0.46 - _h * 0.5;
+    var _y2 = _y1 + _h;
+
+    // Тень шторки.
+    draw_set_alpha(0.16);
+    draw_set_color(c_black);
+    draw_roundrect_ext(_x1 + 3, _y1 + 4, _x2 + 3, _y2 + 4, 10, 10, false);
+    draw_set_alpha(1);
+
+    // Мутное стекло: два слоя разной плотности.
+    draw_set_alpha(0.46);
+    draw_set_color(make_color_rgb(222, 232, 236));
+    draw_roundrect_ext(_x1, _y1, _x2, _y2, 10, 10, false);
+
+    draw_set_alpha(0.20);
+    draw_set_color(make_color_rgb(245, 250, 250));
+    draw_roundrect_ext(_x1, _y1, _x2, _y1 + (_y2 - _y1) * 0.5, 10, 10, false);
+
+    draw_set_alpha(1);
+
+    // Пятна крови: позиции фиксированные, размер растёт с прогрессом.
+    var _spots_x = [-0.30, 0.10, 0.32, -0.06, 0.22, -0.20];
+    var _spots_y = [-0.14, 0.10, -0.20, 0.26, 0.02, 0.24];
+    var _spot_area_w = _x2 - _x1;
+    var _spot_area_h = _y2 - _y1;
+
+    for (var _spot = 0; _spot < array_length(_spots_x); _spot++) {
+        var _grow = 0.55 + _ratio * 0.9;
+
+        if (_ratio < 0.08 && _spot > 2) continue;
+
+        var _spot_r = (5 + (_spot mod 3) * 3) * _grow;
+        var _spot_cx = _x1 + _spot_area_w * (0.5 + _spots_x[_spot]);
+        var _spot_cy = _y1 + _spot_area_h * (0.5 + _spots_y[_spot]);
+
+        draw_set_alpha(0.34 + _ratio * 0.18);
+        draw_set_color(make_color_rgb(148, 30, 26));
+        draw_circle(_spot_cx, _spot_cy, _spot_r, false);
+    }
+
+    draw_set_alpha(1);
+
+    // Рамка шторки.
+    draw_set_color(make_color_rgb(58, 39, 24));
+    draw_roundrect_ext(_x1, _y1, _x2, _y2, 10, 10, true);
+
+    draw_set_alpha(0.55);
+    draw_set_color(make_color_rgb(252, 254, 254));
+    draw_roundrect_ext(_x1 + 2, _y1 + 2, _x2 - 2, _y2 - 2, 8, 8, true);
+    draw_set_alpha(1);
+
+    draw_set_color(c_white);
+}
+
 
 function operating_controller_draw(_ctrl) {
     if (!instance_exists(_ctrl)) return;
 
     operating_debug_draw(_ctrl);
     operating_draw_ward_labels(_ctrl);
+
+    // Пакет №218: мутная шторка закрывает пациента на время операции.
+    operating_draw_surgery_screen(_ctrl);
 
     // Пакет №169: одна табличка со шкалой в стиле приёма
     // (actor_draw_action_progress), и только во время самой операции.
@@ -2936,8 +3205,10 @@ function operating_controller_draw(_ctrl) {
     var _tw = max(_text_w + _pad_x * 2 + 8, 140);
     var _th = _text_h + _pad_y * 2 + 4 + _bar_gap + _bar_h;
 
+    // Пакет №218: табличка поднята выше (было -150) — под ней теперь
+    // мутный экран операционного поля, и они не наезжают друг на друга.
     var _bx1 = _ctrl.or_table.x - (_tw * 0.5);
-    var _by1 = _ctrl.or_table.y - 150;
+    var _by1 = _ctrl.or_table.y - 215;
     var _bx2 = _bx1 + _tw;
     var _by2 = _by1 + _th;
 

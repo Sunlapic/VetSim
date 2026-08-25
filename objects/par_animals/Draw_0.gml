@@ -166,12 +166,18 @@ if (sprite_exists(sprite_index)) {
 // ═══════════════════════════════════════════════════════════════
 // 3. ШКАЛА ВЫЗДОРОВЛЕНИЯ СТАЦИОНАРА
 // Добавлена поверх прежнего Draw без удаления тени или подсветки.
+// Пакет №218: во время операции (or_in_surgery) шкала скрыта —
+// пациента накрывает мутный экран операционного поля.
 // ═══════════════════════════════════════════════════════════════
 
 if (
     variable_instance_exists(id, "inpatient_active")
     && inpatient_active
     && !is_dead
+    && !(
+        variable_instance_exists(id, "or_in_surgery")
+        && or_in_surgery
+    )
 ) {
     var _condition_value = variable_instance_exists(id, "condition")
         ? condition
