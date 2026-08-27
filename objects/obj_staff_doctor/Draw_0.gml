@@ -114,6 +114,34 @@ if (sprite_exists(sprite_index)) {
 }
 
 
+
+
+// ═══════════════════════════════════════════════════════════════
+// 3a. ХАЛАТ ВРАЧА — СИДЯ (Пакет 220)
+//     spr_human_FR_sit_Robe_Man подхватится сам, как только
+//     спрайт будет импортирован (поиск по имени, кэш на запуск).
+// ═══════════════════════════════════════════════════════════════
+
+var _outfit_sex = "M";
+if (variable_instance_exists(id, "is_female") && is_female) _outfit_sex = "F";
+
+if (_outfit_sex == "M") {
+    if (!variable_global_exists("_robe220_sit_idx")) {
+        global._robe220_sit_idx = asset_get_index("spr_human_FR_sit_Robe_Man");
+        show_debug_message("ХАЛАТ 220 (сидя): "
+            + (global._robe220_sit_idx > -1 ? "спрайт найден" : "спрайта пока нет"));
+    }
+    if (global._robe220_sit_idx > -1 && sprite_exists(global._robe220_sit_idx)) {
+        var _robe_color = c_white;
+        if (variable_instance_exists(id, "robe_color")) _robe_color = robe_color;
+        var _robe_frame = image_index % sprite_get_number(global._robe220_sit_idx);
+        draw_sprite_ext(global._robe220_sit_idx, _robe_frame,
+            _draw_x, _draw_y,
+            _face_dir * _draw_sx, _draw_sy,
+            0, _robe_color, 1);
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // 4. СЛОИ ЛИЦА — _fx=-27, _fy=21, face_frame=0
 // ═══════════════════════════════════════════════════════════════
