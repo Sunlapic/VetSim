@@ -118,11 +118,9 @@ if (sprite_exists(sprite_index)) {
 
 // ───────────────────────────────────────────────────────────────
 // 4a. ОДЕЖДА ПОВЕРХ ТЕЛА (Пакет 221)
-//     Халат врача-мужчины во всех позах: ходьба FR/B, работа, сидение.
-//     ПРЯМЫЕ ссылки на спрайты — asset_get_index в этом проекте
-//     спрайты не находил, поэтому никаких поисков по имени.
-//     Стойка (idle): спрайт ещё не импортирован — ищется по имени,
-//     до импорта врач в стойке просто без халата, ошибок нет.
+//     Халат врача-мужчины во всех позах: ходьба FR/B, стойка, работа,
+//     сидение. ВСЕ спрайты — ПРЯМЫЕ ссылки (asset_get_index в этом
+//     проекте спрайты не находил), поэтому имена должны совпадать точно.
 // ───────────────────────────────────────────────────────────────
 var _outfit_sex = "M";
 if (variable_instance_exists(id, "is_female") && is_female) _outfit_sex = "F";
@@ -140,13 +138,7 @@ if (role == "doctor" && _outfit_sex == "M") {
     } else if (sprite_index == spr_human_FR_sit) {
         _robe_spr = spr_human_FR_sit_Robe_Man;       // прямая ссылка
     } else if (sprite_index == spr_human_FR_idle) {
-        // стойка — спрайт в работе, подхватится через поиск по имени
-        if (!variable_global_exists("_robe221_idle_idx")) {
-            global._robe221_idle_idx = asset_get_index("spr_human_FR_idle_Robe_Man");
-            show_debug_message("ХАЛАТ 221 (стойка): "
-                + (global._robe221_idle_idx > -1 ? "найден" : "спрайта пока нет"));
-        }
-        _robe_spr = global._robe221_idle_idx;
+        _robe_spr = spr_human_FR_idle_Robe_Man;       // прямая ссылка
     }
 
     if (_robe_spr != -1 && sprite_exists(_robe_spr)) {
