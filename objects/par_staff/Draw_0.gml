@@ -117,54 +117,45 @@ if (sprite_exists(sprite_index)) {
 }
 
 // ───────────────────────────────────────────────────────────────
-// 4a. ОДЕЖДА ПОВЕРХ ТЕЛА (Пакет 220)
-//     Халат врача-мужчины: ходьба (FR/B), стойка, работа.
-//     Каждая поза ищет свой спрайт по имени с кэшем на запуск:
-//     нет спрайта → поза просто без халата, проект не падает.
-//         ходьба спереди  spr_human_FR_walk_Robe_Man   (готов)
-//         ходьба сзади    spr_human_B_walk_Robe_Man    (готов)
-//         стойка          spr_human_FR_idle_Robe_Man   (режется)
-//         работа          spr_human_FR_work_Robe_Man   (режется)
-//         сидение         spr_human_FR_sit_Robe_Man    → ветка в Draw доктора
-//     Окраска — robe_color у персонажа (как image_blend), база белая.
+// 4a. ОДЕЖДА ПОВЕРХ ТЕЛА (Пакет 221)
+//     Халат врача-мужчины во всех позах: ходьба FR/B, работа, сидение.
+//     ПРЯМЫЕ ссылки на спрайты — asset_get_index в этом проекте
+//     спрайты не находил, поэтому никаких поисков по имени.
+//     Стойка (idle): спрайт ещё не импортирован — ищется по имени,
+//     до импорта врач в стойке просто без халата, ошибок нет.
 // ───────────────────────────────────────────────────────────────
 var _outfit_sex = "M";
 if (variable_instance_exists(id, "is_female") && is_female) _outfit_sex = "F";
 
 if (role == "doctor" && _outfit_sex == "M") {
 
-    var _robe_name = "";
+    var _robe_spr = -1;
+
     if (sprite_index == spr_human_FR_walk) {
-        _robe_name = "spr_human_FR_walk_Robe_Man";
+        _robe_spr = spr_human_FR_walk_Robe_Man;      // прямая ссылка
     } else if (sprite_index == spr_human_B_walk) {
-        _robe_name = "spr_human_B_walk_Robe_Man";
-    } else if (sprite_index == spr_human_FR_idle) {
-        _robe_name = "spr_human_FR_idle_Robe_Man";
+        _robe_spr = spr_human_B_walk_Robe_Man;       // прямая ссылка
     } else if (sprite_index == spr_human_FR_work) {
-        _robe_name = "spr_human_FR_work_Robe_Man";
+        _robe_spr = spr_human_FR_work_Robe_Man;      // прямая ссылка
     } else if (sprite_index == spr_human_FR_sit) {
-        // страховка: сидящего врача обычно рисует своя ветка Draw доктора,
-        // но если поза sit пришла другим путём — халат тоже нарисуем
-        _robe_name = "spr_human_FR_sit_Robe_Man";
+        _robe_spr = spr_human_FR_sit_Robe_Man;       // прямая ссылка
+    } else if (sprite_index == spr_human_FR_idle) {
+        // стойка — спрайт в работе, подхватится через поиск по имени
+        if (!variable_global_exists("_robe221_idle_idx")) {
+            global._robe221_idle_idx = asset_get_index("spr_human_FR_idle_Robe_Man");
+            show_debug_message("ХАЛАТ 221 (стойка): "
+                + (global._robe221_idle_idx > -1 ? "найден" : "спрайта пока нет"));
+        }
+        _robe_spr = global._robe221_idle_idx;
     }
 
-    if (_robe_name != "") {
-        var _robe_key = "_robe220_" + _robe_name;
-        if (!variable_global_exists(_robe_key)) {
-            global[$ _robe_key] = asset_get_index(_robe_name);
-            show_debug_message("ХАЛАТ 220: " + _robe_name + " → "
-                + (global[$ _robe_key] > -1 ? "найден" : "спрайта пока нет"));
-        }
-        var _robe_idx = global[$ _robe_key];
-        if (_robe_idx > -1 && sprite_exists(_robe_idx)) {
-            var _robe_color = c_white;
-            if (variable_instance_exists(id, "robe_color")) _robe_color = robe_color;
-            var _robe_frame = image_index % sprite_get_number(_robe_idx);
-            draw_sprite_ext(_robe_idx, _robe_frame,
-                            _draw_x, _draw_y,
-                            _face_dir * _draw_sx, _draw_sy,
-                            0, _robe_color, 1);
-        }
+    if (_robe_spr != -1 && sprite_exists(_robe_spr)) {
+        var _robe_color = c_white;
+        if (variable_instance_exists(id, "robe_color")) _robe_color = robe_color;
+        draw_sprite_ext(_robe_spr, image_index % sprite_get_number(_robe_spr),
+                        _draw_x, _draw_y,
+                        _face_dir * _draw_sx, _draw_sy,
+                        0, _robe_color, 1);
     }
 }
 
