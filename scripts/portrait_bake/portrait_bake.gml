@@ -68,6 +68,42 @@ function portrait_bake() {
             c_white, c_white, c_white, c_white, 1
         );
 
+        // ── Пакет 226: ОДЕЖДА в портрете (халат врача / роба ассистента) ──
+        var _p_role = "";
+        if (variable_instance_exists(id, "role")) _p_role = role;
+        var _p_f = (variable_instance_exists(id, "is_female") && is_female);
+
+        var _cloth_spr = -1;
+        var _cloth_is_scrub = false;
+        if (_p_role == "doctor" || object_index == obj_staff_doctor || object_index == obj_player) {
+            _cloth_spr = _p_f ? spr_human_FR_walk_Robe_Woman : spr_human_FR_walk_Robe_Man;
+        } else if (_p_role == "assistant" || object_index == obj_staff_assistant) {
+            _cloth_spr = _p_f ? spr_human_FR_walk_Scrub_Woman : spr_human_FR_walk_Scrub;
+            _cloth_is_scrub = true;
+        }
+
+        if (_cloth_spr != -1 && sprite_exists(_cloth_spr)) {
+            // цвет/узор: если ещё не назначены (портрет печётся в Create,
+            // до первого кадра) — выдаём здесь, в игре сохранится тот же
+            if (!variable_instance_exists(id, "robe_color")) {
+                robe_color = _cloth_is_scrub
+                    ? staff_random_scrub_color()
+                    : staff_random_robe_color();
+            }
+            if (_cloth_is_scrub && !variable_instance_exists(id, "scrub_pattern")) {
+                scrub_pattern    = irandom(4);
+                scrub_pat_size   = random_range(0.6, 1.8);
+                scrub_pat_phase  = random(1.0);
+            }
+            // в фото узор не рисуем (мелко), только цвет формы
+            draw_sprite_general(
+                _cloth_spr, 0,
+                _px_cam, _py_cam, _src_w, _src_h,
+                0, 0, _draw_scale, _draw_scale, 0,
+                robe_color, robe_color, robe_color, robe_color, 1
+            );
+        }
+
         if (variable_instance_exists(id, "my_nose") && sprite_exists(my_nose)) {
             draw_sprite_general(
                 my_nose, 0,

@@ -117,18 +117,103 @@ if (sprite_exists(sprite_index)) {
 
 
 // ═══════════════════════════════════════════════════════════════
-// 3a. ХАЛАТ ВРАЧА — СИДЯ (Пакет 221)
+// 3a. ХАЛАТ ВРАЧА — СИДЯ (Пакет 225 v3: М/Ж, через шейдер — руки не красятся)
 //     Прямая ссылка на спрайт: надёжнее поиска по имени.
 // ═══════════════════════════════════════════════════════════════
 
 var _outfit_sex = "M";
 if (variable_instance_exists(id, "is_female") && is_female) _outfit_sex = "F";
 
-if (_outfit_sex == "M" && sprite_exists(spr_human_FR_sit_Robe_Man)) {
+// Пакет 229: КРОКСЫ сидя (под штаны)
+var _crs_spr = -1;
+_crs_spr = spr_human_FR_sit_Crocs;
+
+if (sprite_exists(_crs_spr)) {
+    if (!variable_instance_exists(id, "crocs_color")) {
+        crocs_color = staff_random_crocs_color();
+    }
+    shader_set(sh_scrub_pattern);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
+        color_get_red(crocs_color) / 255,
+        color_get_green(crocs_color) / 255,
+        color_get_blue(crocs_color) / 255);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 1);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+    var _crs_frame = image_index % sprite_get_number(_crs_spr);
+    var _crsuvs = sprite_get_uvs(_crs_spr, _crs_frame);
+    var _crsu0 = 0; var _crsv0 = 0; var _crsu1 = 0; var _crsv1 = 0;
+    if (array_length(_crsuvs) >= 8 && max(_crsuvs[4], _crsuvs[5], _crsuvs[6], _crsuvs[7]) <= 2.0) {
+        _crsu0 = _crsuvs[4]; _crsv0 = _crsuvs[5]; _crsu1 = _crsuvs[6]; _crsv1 = _crsuvs[7];
+    } else {
+        _crsu0 = _crsuvs[0]; _crsv0 = _crsuvs[1]; _crsu1 = _crsuvs[2]; _crsv1 = _crsuvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _crsu0, _crsv0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_crsu1 - _crsu0), abs(_crsv1 - _crsv0));
+    draw_sprite_ext(_crs_spr, _crs_frame,
+            _draw_x, _draw_y,
+            _face_dir * _draw_sx, _draw_sy,
+            0, c_white, 1);
+    shader_reset();
+}
+
+// Пакет 228: ШТАНЫ под халатом (сидя) — тот же крой/цвет, что стоя
+if (!variable_instance_exists(id, "pants_style")) {
+    if (variable_instance_exists(id, "is_female") && is_female) {
+        pants_style = choose(1, 1, 0);
+    } else {
+        pants_style = choose(0, 0, 1);
+    }
+}
+var _dp_sit_spr = (pants_style == 1)
+    ? spr_human_FR_sit_Pants_Slim
+    : spr_human_FR_sit_Pants;
+
+if (sprite_exists(_dp_sit_spr)) {
+    if (!variable_instance_exists(id, "pants_color")) {
+        pants_color = staff_random_doctor_pants_color();
+    }
+    shader_set(sh_scrub_pattern);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
+        color_get_red(pants_color) / 255,
+        color_get_green(pants_color) / 255,
+        color_get_blue(pants_color) / 255);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+    var _dp_sit_frame = image_index % sprite_get_number(_dp_sit_spr);
+    var _dpsuvs = sprite_get_uvs(_dp_sit_spr, _dp_sit_frame);
+    var _dpsu0 = 0; var _dpsv0 = 0; var _dpsu1 = 0; var _dpsv1 = 0;
+    if (array_length(_dpsuvs) >= 8 && max(_dpsuvs[4], _dpsuvs[5], _dpsuvs[6], _dpsuvs[7]) <= 2.0) {
+        _dpsu0 = _dpsuvs[4]; _dpsv0 = _dpsuvs[5]; _dpsu1 = _dpsuvs[6]; _dpsv1 = _dpsuvs[7];
+    } else {
+        _dpsu0 = _dpsuvs[0]; _dpsv0 = _dpsuvs[1]; _dpsu1 = _dpsuvs[2]; _dpsv1 = _dpsuvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _dpsu0, _dpsv0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_dpsu1 - _dpsu0), abs(_dpsv1 - _dpsv0));
+    // Пакет 243: режим явно: обувь=плоско, остальное=обычно (утечка u_simple)
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 1);
+    draw_sprite_ext(_dp_sit_spr, _dp_sit_frame,
+        _draw_x, _draw_y,
+        _face_dir * _draw_sx, _draw_sy,
+        0, c_white, 1);
+    shader_reset();
+}
+
+var _robe_sit_spr = (_outfit_sex == "F")
+    ? spr_human_FR_sit_Robe_Woman
+    : spr_human_FR_sit_Robe_Man;
+
+if (sprite_exists(_robe_sit_spr)) {
     var _robe_color = c_white;
     if (variable_instance_exists(id, "robe_color")) _robe_color = robe_color;
-    draw_sprite_ext(spr_human_FR_sit_Robe_Man,
-        image_index % sprite_get_number(spr_human_FR_sit_Robe_Man),
+    // Пакет 243: как у стоящего врача (239) — лёгкий оттенок ПЕРЕМНОЖЕНИЕМ,
+    // без шейдера: кисть остаётся арт-цветом, утечка режимов невозможна
+    draw_sprite_ext(_robe_sit_spr,
+        image_index % sprite_get_number(_robe_sit_spr),
         _draw_x, _draw_y,
         _face_dir * _draw_sx, _draw_sy,
         0, _robe_color, 1);
