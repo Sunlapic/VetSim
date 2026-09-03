@@ -258,13 +258,35 @@ if (sprite_exists(_scrub_sit_spr)) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 3b. РУКА ПОВЕРХ РОБЫ — СИДЯ (Пакет 231, без шейдера)
+// 3b. РУКА ПОВЕРХ РОБЫ — СИДЯ (Пакет 231)
+// Пакет 250: через шейдер u_skin=2 — тёплая кисть → эталонная кожа,
+// серое предплечье и контур не трогаются (кисти в пакете 249 были
+// покрашены слишком тёмными).
 if (sprite_exists(spr_human_FR_sit_ArmTop)) {
+    shader_set(sh_scrub_pattern);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"), 1.0, 1.0, 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 2);
+    var _armsit_frame = image_index % sprite_get_number(spr_human_FR_sit_ArmTop);
+    var _armsit_uvs = sprite_get_uvs(spr_human_FR_sit_ArmTop, _armsit_frame);
+    var _as_u0 = 0; var _as_v0 = 0; var _as_u1 = 0; var _as_v1 = 0;
+    if (array_length(_armsit_uvs) >= 8 && max(_armsit_uvs[4], _armsit_uvs[5], _armsit_uvs[6], _armsit_uvs[7]) <= 2.0) {
+        _as_u0 = _armsit_uvs[4]; _as_v0 = _armsit_uvs[5]; _as_u1 = _armsit_uvs[6]; _as_v1 = _armsit_uvs[7];
+    } else {
+        _as_u0 = _armsit_uvs[0]; _as_v0 = _armsit_uvs[1]; _as_u1 = _armsit_uvs[2]; _as_v1 = _armsit_uvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _as_u0, _as_v0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_as_u1 - _as_u0), abs(_as_v1 - _as_v0));
     draw_sprite_ext(spr_human_FR_sit_ArmTop,
-        image_index % sprite_get_number(spr_human_FR_sit_ArmTop),
+        _armsit_frame,
         _draw_x, _draw_y,
         _face_dir * _draw_sx, _draw_sy,
         0, c_white, 1);
+    shader_reset();
 }
 
 // 4. СЛОИ ЛИЦА — _fx=-27, _fy=21, face_frame=0

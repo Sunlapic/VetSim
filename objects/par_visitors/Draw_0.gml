@@ -295,10 +295,17 @@ if (_vt_spr != -1 && sprite_exists(_vt_spr)) {
 // ───────────────────────────────────────────────────────────────
 // 4c. РУКА ПОВЕРХ РОБЫ ПОСЕТИТЕЛЕЙ (Пакет 249)
 //     Готовые ArmTop-спрайты ассистента (231): серое предплечье +
-//     кожаная кисть ПОВЕРХ робы, БЕЗ шейдера. Перекрывает впечённую
-//     в спрайт робы руку (которая красится цветом). Посетители носят
-//     ту же робу — слой садится точно. Поз посетителей всего 4,
-//     все покрыты. Владельцы (наследники) — тоже.
+//     кожаная кисть ПОВЕРХ робы. Перекрывает впечённую в спрайт робы
+//     руку (которая красится цветом). Посетители носят ту же робу —
+//     слой садится точно. Поз посетителей всего 4, все покрыты.
+//     Владельцы (наследники) — тоже.
+//
+//     Пакет 250: кисти в этих спрайтах были покрашены вручную и
+//     получились слишком тёмными. Гоним слой через sh_scrub_pattern
+//     в режиме u_skin=2 — ТЁПЛЫЕ пиксели кисти перекрашиваются в
+//     эталонную кожу (226,177,117), серое предплечье и контур не
+//     трогаются. UV-юниформы шейдер в этом режиме не использует
+//     (u_pattern=0), но выставляем их, как у остальных слоёв.
 // ───────────────────────────────────────────────────────────────
 var _va_spr = -1;
 if (sprite_index == spr_human_FR_walk) {
@@ -312,10 +319,29 @@ if (sprite_index == spr_human_FR_walk) {
 }
 
 if (_va_spr != -1 && sprite_exists(_va_spr)) {
-    draw_sprite_ext(_va_spr, image_index % sprite_get_number(_va_spr),
+    shader_set(sh_scrub_pattern);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"), 1.0, 1.0, 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 2);
+    var _va_frame = image_index % sprite_get_number(_va_spr);
+    var _vauvs = sprite_get_uvs(_va_spr, _va_frame);
+    var _vau0 = 0; var _vav0 = 0; var _vau1 = 0; var _vav1 = 0;
+    if (array_length(_vauvs) >= 8 && max(_vauvs[4], _vauvs[5], _vauvs[6], _vauvs[7]) <= 2.0) {
+        _vau0 = _vauvs[4]; _vav0 = _vauvs[5]; _vau1 = _vauvs[6]; _vav1 = _vauvs[7];
+    } else {
+        _vau0 = _vauvs[0]; _vav0 = _vauvs[1]; _vau1 = _vauvs[2]; _vav1 = _vauvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _vau0, _vav0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_vau1 - _vau0), abs(_vav1 - _vav0));
+    draw_sprite_ext(_va_spr, _va_frame,
                     _draw_x, _draw_y,
                     _face_dir * _draw_sx, _draw_sy,
                     0, c_white, 1);
+    shader_reset();
 }
 
 // ───────────────────────────────────────────────────────────────

@@ -491,10 +491,33 @@ if (sprite_index == spr_human_FR_walk) {
 }
 
 if (_arm_spr != -1 && sprite_exists(_arm_spr)) {
-    draw_sprite_ext(_arm_spr, image_index % sprite_get_number(_arm_spr),
+    // Пакет 250: кисти в ArmTop покрашены вручную и у владельцев вышли
+    // слишком тёмными. Спрайты общие с посетителями — гоним слой через
+    // шейдер в режиме u_skin=2: тёплые пиксели кисти → эталонная кожа,
+    // серое предплечье и контур не трогаются.
+    shader_set(sh_scrub_pattern);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"), 1.0, 1.0, 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 2);
+    var _arm_frame = image_index % sprite_get_number(_arm_spr);
+    var _armuvs = sprite_get_uvs(_arm_spr, _arm_frame);
+    var _armu0 = 0; var _armv0 = 0; var _armu1 = 0; var _armv1 = 0;
+    if (array_length(_armuvs) >= 8 && max(_armuvs[4], _armuvs[5], _armuvs[6], _armuvs[7]) <= 2.0) {
+        _armu0 = _armuvs[4]; _armv0 = _armuvs[5]; _armu1 = _armuvs[6]; _armv1 = _armuvs[7];
+    } else {
+        _armu0 = _armuvs[0]; _armv0 = _armuvs[1]; _armu1 = _armuvs[2]; _armv1 = _armuvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _armu0, _armv0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_armu1 - _armu0), abs(_armv1 - _armv0));
+    draw_sprite_ext(_arm_spr, _arm_frame,
                     _draw_x, _draw_y,
                     _face_dir * _draw_sx, _draw_sy,
                     0, c_white, 1);
+    shader_reset();
 }
 }
 
