@@ -381,8 +381,34 @@ switch (reception_state) {
                     add_xp_log("+5 РЕГИСТРАЦИЯ");
                     staff_spend_energy(3);
 
+                    // ═══════════════════════════════════════════════
+                    // Пакет №268: администратор втайне сверяет карту
+                    // пациента с возможностями клиники.
+                    //
+                    // Обычно таких пациентов не бывает — фильтр в
+                    // db_pick_random_disease_for_species отсеивает их ещё
+                    // при создании щенка. Но клиент мог прийти ДО того, как
+                    // игрок продал последнюю койку, или попасть в запасной
+                    // путь фильтра. Тогда админ говорит об этом вслух.
+                    // ═══════════════════════════════════════════════
+                    var _missing_room = "";
+
+                    if (
+                        script_exists(
+                            asset_get_index("clinic_case_missing_room_for_owner")
+                        )
+                    ) {
+                        _missing_room = clinic_case_missing_room_for_owner(
+                            _finished_client
+                        );
+                    }
+
                     if (variable_struct_exists(global, "speech_say")) {
-                        global.speech_say(self, "Проходите!", 2);
+                        global.speech_say(
+                            self,
+                            (_missing_room != "") ? _missing_room : "Проходите!",
+                            (_missing_room != "") ? 3 : 2
+                        );
                     }
                 }
                 else if (instance_exists(_finished_client)) {
