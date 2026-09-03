@@ -7,7 +7,15 @@ is_hovered = (global.hover_target == id);
 var _is_candidate = (variable_instance_exists(id, "is_candidate") && is_candidate);
 
 // 3. Клик — обычный планшет открывают только обычные сотрудники
-if (is_hovered && mouse_check_button_pressed(mb_left) && !global.ui_block_world_click && !(instance_exists(obj_UI_Tablet) && obj_UI_Tablet.visible)) {
+//
+// Пакет №264: было mouse_check_button_pressed(mb_left) — момент
+// КАСАНИЯ экрана. На телефоне при перетягивании камеры одним пальцем
+// это открывало карточку, если жест начался на персонаже.
+//
+// world_tap_on_me() ждёт подтверждённого тапа: палец поднялся, не
+// сдвинувшись. Тот же механизм (пакет №141) уже использует obj_player,
+// поэтому герой при панорамировании никуда не идёт.
+if (world_tap_on_me() && !global.ui_block_world_click && !(instance_exists(obj_UI_Tablet) && obj_UI_Tablet.visible)) {
     if (!_is_candidate) {
         if (instance_exists(obj_UI_Tablet)) {
             obj_UI_Tablet.visible = true;

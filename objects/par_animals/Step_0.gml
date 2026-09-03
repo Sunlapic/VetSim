@@ -4,7 +4,8 @@
 is_hovered = (global.hover_target == id);
 
 // 2. Клик по животному — открыть планшет
-if (is_hovered && mouse_check_button_pressed(mb_left) && !global.ui_block_world_click && !(instance_exists(obj_UI_Tablet) && obj_UI_Tablet.visible)) {
+// Пакет №264: тап вместо момента касания (см. world_tap_input).
+if (world_tap_on_me() && !global.ui_block_world_click && !(instance_exists(obj_UI_Tablet) && obj_UI_Tablet.visible)) {
     if (instance_exists(obj_UI_Tablet)) {
         obj_UI_Tablet.visible = true;
         obj_UI_Tablet.target_id = id;

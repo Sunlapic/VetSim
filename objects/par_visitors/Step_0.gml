@@ -17,9 +17,10 @@ _width_scale = _height_scale;
 
 is_hovered = (global.hover_target == id);
 
+// Пакет №264: тап вместо момента касания — иначе перетягивание
+// камеры одним пальцем открывало карточку владельца.
 if (
-    is_hovered
-    && mouse_check_button_pressed(mb_left)
+    world_tap_on_me()
     && !world_clicks_blocked()
 ) {
     if (instance_exists(obj_UI_Tablet)) {
