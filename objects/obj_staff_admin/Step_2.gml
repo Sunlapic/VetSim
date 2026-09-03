@@ -48,36 +48,45 @@ if (
     // 3. РАБОЧИЙ СПРАЙТ И НАПРАВЛЕНИЕ
     // ═══════════════════════════════════════════════════════════
 
-    var _back_work_sprite = asset_get_index("spr_human_B_work");
-    var _has_back_work = (
-        _back_work_sprite != -1
-        && sprite_exists(_back_work_sprite)
-    );
+    // ═══════════════════════════════════════════════════════════
+    // Пакет 256: АНИМАЦИЯ РАБОТЫ АДМИНИСТРАТОРА
+    //
+    // Было две причины, почему админ стоял в 1-м кадре ХОДЬБЫ:
+    //
+    // 1) Позы "работа спиной" (spr_human_B_work) в проекте НЕТ.
+    //    Ветка _has_back_work не срабатывала никогда, и админ,
+    //    повёрнутый спиной, уходил в фолбэк spr_human_B_walk с
+    //    жёстко прибитым image_index = 0 — застывал на первом
+    //    кадре ходьбы. Все рабочие анимации в проекте фронтальные.
+    //    Теперь спиной админ не работает: всегда разворачивается
+    //    лицом и играет spr_human_FR_work. Клиент стоит по ту
+    //    сторону стойки, лицом к нему — единственный верный вариант.
+    //
+    // 2) _work_anim_timer здесь ЧИТАЛСЯ, но нигде не рос.
+    //    Его увеличивает par_staff -> End Step, но только в ветке
+    //    "else if (_is_working && _sprite_work_exists)". Этот End Step
+    //    админа идёт ПОСЛЕ event_inherited() и перезаписывает
+    //    sprite_index / image_index своими значениями. Даже когда
+    //    родитель таймер крутил, кадр тут считался от той же
+    //    переменной, но ветка спиной его игнорировала.
+    //    Теперь таймер увеличивается прямо здесь — источник один.
+    // ═══════════════════════════════════════════════════════════
 
-    if (_look_dy < 0) {
-        if (_has_back_work) {
-            sprite_index = _back_work_sprite;
+    if (!variable_instance_exists(id, "_work_anim_timer")) _work_anim_timer = 0;
 
-            var _back_frames = max(1, sprite_get_number(sprite_index));
-            image_speed = 0;
-            image_index = floor(_work_anim_timer / 6) mod _back_frames;
-        } else {
-            sprite_index = spr_human_B_walk;
-            image_speed = 0;
-            image_index = 0;
-        }
+    _work_anim_timer += 1;
 
-        // Задний спрайт зеркалится противоположно переднему.
-        pFacing = (abs(_look_dx) > 1 && _look_dx > 0) ? -1 : 1;
-    } else {
-        sprite_index = spr_human_FR_work;
+    sprite_index = spr_human_FR_work;
 
-        var _front_frames = max(1, sprite_get_number(sprite_index));
-        image_speed = 0;
-        image_index = floor(_work_anim_timer / 6) mod _front_frames;
+    var _work_frames = max(1, sprite_get_number(spr_human_FR_work));
+    var _work_speed  = 6;   // кадров игры на 1 кадр анимации (как в par_staff)
 
-        pFacing = (abs(_look_dx) > 1 && _look_dx < 0) ? -1 : 1;
-    }
+    image_speed = 0;
+    image_index = floor(_work_anim_timer / _work_speed) mod _work_frames;
+
+    // Разворот к клиенту. Спрайт фронтальный, поэтому зеркалим
+    // по горизонтали — формула та же, что была во фронтальной ветке.
+    pFacing = (abs(_look_dx) > 1 && _look_dx < 0) ? -1 : 1;
 
 
     // ═══════════════════════════════════════════════════════════

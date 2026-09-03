@@ -901,29 +901,41 @@ if (
 
     var _look_dx = _look_x - x;
     var _look_dy = _look_y - y;
-    var _back_work_sprite = asset_get_index("spr_human_B_work");
-    var _has_back_work = (
-        _back_work_sprite != -1
-        && sprite_exists(_back_work_sprite)
-    );
+    // ═══════════════════════════════════════════════════════════
+    // Пакет 257: РАБОЧАЯ АНИМАЦИЯ ИГРОКА У СТОЙКИ
+    //
+    // Раньше здесь был фолбэк на позу "работа спиной":
+    //
+    //     var _back_work_sprite = asset_get_index("spr_human_B_work");
+    //     if (_look_dy < 0) {
+    //         if (_has_back_work) { ...анимация... }  // не срабатывало
+    //         else {
+    //             sprite_index = spr_human_B_walk;
+    //             image_index = 0;                    // застывший кадр
+    //         }
+    //     }
+    //
+    // Спрайта spr_human_B_work в проекте НЕТ и не будет — все рабочие
+    // анимации фронтальные. Поэтому всегда шёл else, и игрок вставал
+    // в ПЕРВЫЙ КАДР ХОДЬБЫ, стоило клиенту оказаться выше по экрану
+    // (_look_dy < 0), а за стойкой это обычное дело.
+    //
+    // Теперь игрок при регистрации и оплате всегда разворачивается
+    // лицом к клиенту и играет spr_human_FR_work.
+    //
+    // Таймер _work_anim_timer здесь НЕ трогаем: секция 6 выше
+    // (строка ~829) уже увеличила его на этом же шаге, потому что
+    // manual_registering и manual_payment входят в _player_is_working.
+    // Второй инкремент удвоил бы скорость анимации.
+    // ═══════════════════════════════════════════════════════════
 
-    if (_look_dy < 0) {
-        if (_has_back_work) {
-            sprite_index = _back_work_sprite;
-            image_index = floor(_work_anim_timer / 6)
-                mod max(1, sprite_get_number(_back_work_sprite));
-        } else {
-            sprite_index = spr_human_B_walk;
-            image_index = 0;
-        }
+    sprite_index = spr_human_FR_work;
 
-        pFacing = (abs(_look_dx) > 1 && _look_dx > 0) ? -1 : 1;
-    } else {
-        sprite_index = spr_human_FR_work;
-        image_index = floor(_work_anim_timer / 6)
-            mod max(1, sprite_get_number(spr_human_FR_work));
-        pFacing = (abs(_look_dx) > 1 && _look_dx < 0) ? -1 : 1;
-    }
+    image_index = floor(_work_anim_timer / 6)
+        mod max(1, sprite_get_number(spr_human_FR_work));
+
+    // Спрайт фронтальный, поэтому зеркалим по горизонтали.
+    pFacing = (abs(_look_dx) > 1 && _look_dx < 0) ? -1 : 1;
 
     image_speed = 0;
     image_xscale = abs(image_xscale) * pFacing;
