@@ -8,6 +8,14 @@
 // ───────────────────────────────────────────────────────────────
 var _s = 0.5;
 
+// Пакет 255: единый белый для формы администратора.
+// ВАЖНО: обычная var, НЕ #macro. Директива #macro внутри события
+// объекта в GameMaker недопустима — из-за неё в 253/254 весь
+// par_staff -> Draw не компилировался, и админ оставался голым.
+// В проекте макросы объявляются только в scripts/macros.
+// Значение 245, а не 255: чистый белый съедает светотень.
+var _admin_white = make_color_rgb(245, 245, 245);
+
 // Страховка на случай если у какого-то инстанса переменных ещё нет
 if (!variable_instance_exists(id, "_height_scale"))   _height_scale   = 1.0;
 if (!variable_instance_exists(id, "_width_scale"))    _width_scale    = 1.0;
@@ -110,6 +118,9 @@ if (variable_instance_exists(id, "is_hovered") && is_hovered && sprite_exists(sp
 // 4. ТЕЛО
 // ───────────────────────────────────────────────────────────────
 if (sprite_exists(sprite_index)) {
+    // Пакет 252: тело ПЕРСОНАЛА рисуется БЕЗ шейдера — серые руки
+    // стандартные, как было до 251. Покраска тела в кожу оставлена
+    // ТОЛЬКО владельцам и посетителям (par_visitors).
     draw_sprite_ext(sprite_index, image_index,
                     _draw_x, _draw_y,
                     _face_dir * _draw_sx, _draw_sy,
@@ -152,6 +163,16 @@ if (role == "doctor") {
             crocs_color = staff_random_crocs_color();
         }
         shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
         shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
             color_get_red(crocs_color) / 255,
             color_get_green(crocs_color) / 255,
@@ -207,6 +228,16 @@ if (role == "doctor") {
             pants_color = staff_random_doctor_pants_color();
         }
         shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
         shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
             color_get_red(pants_color) / 255,
             color_get_green(pants_color) / 255,
@@ -298,6 +329,16 @@ else if (role == "assistant") {
             crocs_color = staff_random_crocs_color();
         }
         shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
         shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
             color_get_red(crocs_color) / 255,
             color_get_green(crocs_color) / 255,
@@ -363,6 +404,16 @@ else if (role == "assistant") {
             round(color_get_green(robe_color) * 0.72),
             round(color_get_blue(robe_color)  * 0.72));
         shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
         shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
             color_get_red(_pants_c) / 255,
             color_get_green(_pants_c) / 255,
@@ -430,6 +481,16 @@ else if (role == "assistant") {
             scrub_pat_phase = random(1.0);
         }
         shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 1);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
         shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
             color_get_red(robe_color) / 255,
             color_get_green(robe_color) / 255,
@@ -465,11 +526,236 @@ else if (role == "assistant") {
 }
 
 
+// ═══════════════════════════════════════════════════════════════
+// 4a-adm. ФОРМА АДМИНИСТРАТОРА (Пакет 253)
+//   Белый комплект: кроксы + штаны + роба ассистента, все ЧИСТО БЕЛЫЕ,
+//   одинаково у ВСЕХ админов (цвет фиксированный, узора нет).
+//   До 253 у роли "admin" ветки одежды не было вообще — в par_staff
+//   обрабатывались только doctor и assistant, поэтому админ ходил голым.
+//   Набор спрайтов тот же, что у ассистента, поэтому слой руки
+//   "4b. РУКА ПОВЕРХ РОБЫ" ниже теперь охватывает и админа.
+// ═══════════════════════════════════════════════════════════════
+else if (role == "admin") {
+
+
+    // ── Пакет 229: КРОКСЫ сотрудникам (под штаны) ──
+    var _cr_spr = -1;
+    if (sprite_index == spr_human_FR_walk) {
+        _cr_spr = spr_human_FR_walk_Crocs;
+    } else if (sprite_index == spr_human_B_walk) {
+        _cr_spr = spr_human_B_walk_Crocs;
+    } else if (sprite_index == spr_human_FR_idle) {
+        _cr_spr = spr_human_FR_idle_Crocs;
+    } else if (sprite_index == spr_human_FR_work) {
+        _cr_spr = spr_human_FR_work_Crocs;
+    } else if (sprite_index == spr_human_FR_sit) {
+        _cr_spr = spr_human_FR_sit_Crocs;
+    } else if (sprite_index == spr_human_FR_carry) {
+        _cr_spr = spr_human_FR_carry_Crocs;
+    } else if (sprite_index == spr_human_B_carry) {
+        _cr_spr = spr_human_B_carry_Crocs;
+    }
+
+    if (_cr_spr != -1 && sprite_exists(_cr_spr)) {
+        // Пакет 255: БЕЗУСЛОВНО, а не "если переменной ещё нет".
+        // Иначе у админа, нанятого до установки пакета, остались бы
+        // старые случайные цвета из общей генерации внешности.
+        crocs_color = _admin_white;
+        shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
+            color_get_red(crocs_color) / 255,
+            color_get_green(crocs_color) / 255,
+            color_get_blue(crocs_color) / 255);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+        var _cr_frame = image_index % sprite_get_number(_cr_spr);
+        var _cruvs = sprite_get_uvs(_cr_spr, _cr_frame);
+        var _cru0 = 0; var _crv0 = 0; var _cru1 = 0; var _crv1 = 0;
+        if (array_length(_cruvs) >= 8 && max(_cruvs[4], _cruvs[5], _cruvs[6], _cruvs[7]) <= 2.0) {
+            _cru0 = _cruvs[4]; _crv0 = _cruvs[5]; _cru1 = _cruvs[6]; _crv1 = _cruvs[7];
+        } else {
+            _cru0 = _cruvs[0]; _crv0 = _cruvs[1]; _cru1 = _cruvs[2]; _crv1 = _cruvs[3];
+        }
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _cru0, _crv0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+            abs(_cru1 - _cru0), abs(_crv1 - _crv0));
+    // Пакет 243: режим явно: обувь=плоско, остальное=обычно (утечка u_simple)
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 1);
+    draw_sprite_ext(_cr_spr, _cr_frame,
+                        _draw_x, _draw_y,
+                        _face_dir * _draw_sx, _draw_sy,
+                        0, c_white, 1);
+        shader_reset();
+    }
+
+    // ── Пакет 228: ШТАНЫ под робой (унисекс), рисуются ДО робы.
+    //    Два кроя: прямые (_Pants) и узкие (_Pants_Slim) — стиль
+    //    выдаётся персонажу один раз (pants_style 0/1) ──
+    if (!variable_instance_exists(id, "pants_style")) {
+        if (variable_instance_exists(id, "is_female") && is_female) {
+            pants_style = choose(1, 1, 0);   // женщины чаще узкие
+        } else {
+            pants_style = choose(0, 0, 1);   // мужчины чаще прямые
+        }
+    }
+    var _pants_spr = -1;
+    var _pants_slim = (pants_style == 1);
+    if (sprite_index == spr_human_FR_walk) {
+        _pants_spr = _pants_slim ? spr_human_FR_walk_Pants_Slim : spr_human_FR_walk_Pants;
+    } else if (sprite_index == spr_human_B_walk) {
+        _pants_spr = _pants_slim ? spr_human_B_walk_Pants_Slim : spr_human_B_walk_Pants;
+    } else if (sprite_index == spr_human_FR_idle) {
+        _pants_spr = _pants_slim ? spr_human_FR_idle_Pants_Slim : spr_human_FR_idle_Pants;
+    } else if (sprite_index == spr_human_FR_work) {
+        _pants_spr = _pants_slim ? spr_human_FR_work_Pants_Slim : spr_human_FR_work_Pants;
+    } else if (sprite_index == spr_human_FR_sit) {
+        _pants_spr = _pants_slim ? spr_human_FR_sit_Pants_Slim : spr_human_FR_sit_Pants;
+    } else if (sprite_index == spr_human_FR_carry) {
+        _pants_spr = _pants_slim ? spr_human_FR_carry_Pants_Slim : spr_human_FR_carry_Pants;
+    } else if (sprite_index == spr_human_B_carry) {
+        _pants_spr = _pants_slim ? spr_human_B_carry_Pants_Slim : spr_human_B_carry_Pants;
+    }
+
+    if (_pants_spr != -1 && sprite_exists(_pants_spr)) {
+        robe_color = _admin_white;   // Пакет 255: безусловно белая
+        // Пакет 253: у админа штаны БЕЛЫЕ, а не затемнённые под робу
+        // (у ассистента здесь robe_color * 0.72 — комплект в тон).
+        var _pants_c = _admin_white;
+        shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
+            color_get_red(_pants_c) / 255,
+            color_get_green(_pants_c) / 255,
+            color_get_blue(_pants_c) / 255);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+        var _pants_frame = image_index % sprite_get_number(_pants_spr);
+        var _puvs = sprite_get_uvs(_pants_spr, _pants_frame);
+        var _pu0 = 0; var _pv0 = 0; var _pu1 = 0; var _pv1 = 0;
+        if (array_length(_puvs) >= 8 && max(_puvs[4], _puvs[5], _puvs[6], _puvs[7]) <= 2.0) {
+            _pu0 = _puvs[4]; _pv0 = _puvs[5]; _pu1 = _puvs[6]; _pv1 = _puvs[7];
+        } else {
+            _pu0 = _puvs[0]; _pv0 = _puvs[1]; _pu1 = _puvs[2]; _pv1 = _puvs[3];
+        }
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _pu0, _pv0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+            abs(_pu1 - _pu0), abs(_pv1 - _pv0));
+    // Пакет 243: режим явно: обувь=плоско, остальное=обычно (утечка u_simple)
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 1);
+    draw_sprite_ext(_pants_spr, _pants_frame,
+                        _draw_x, _draw_y,
+                        _face_dir * _draw_sx, _draw_sy,
+                        0, c_white, 1);
+        shader_reset();
+    }
+
+    var _scrub_spr = -1;
+    // роба: спереди — М/Ж (у женской обозначена грудь), спина — общая
+    var _scrub_w = (_outfit_sex == "F");
+
+    if (sprite_index == spr_human_FR_walk) {
+        _scrub_spr = _scrub_w ? spr_human_FR_walk_Scrub_Woman : spr_human_FR_walk_Scrub;
+    } else if (sprite_index == spr_human_B_walk) {
+        _scrub_spr = spr_human_B_walk_Scrub;
+    } else if (sprite_index == spr_human_FR_idle) {
+        _scrub_spr = _scrub_w ? spr_human_FR_idle_Scrub_Woman : spr_human_FR_idle_Scrub;
+    } else if (sprite_index == spr_human_FR_work) {
+        _scrub_spr = _scrub_w ? spr_human_FR_work_Scrub_Woman : spr_human_FR_work_Scrub;
+    } else if (sprite_index == spr_human_FR_sit) {
+        _scrub_spr = _scrub_w ? spr_human_FR_sit_Scrub_Woman : spr_human_FR_sit_Scrub;
+    } else if (sprite_index == spr_human_FR_carry) {
+        _scrub_spr = _scrub_w ? spr_human_FR_carry_Scrub_Woman : spr_human_FR_carry_Scrub;
+    } else if (sprite_index == spr_human_B_carry) {
+        _scrub_spr = spr_human_B_carry_Scrub;
+    }
+
+    if (_scrub_spr != -1 && sprite_exists(_scrub_spr)) {
+        // Пакет 225: яркий цвет + узор (полоски/клетка) через шейдер.
+        // Цвет и узор выдаются ЗДЕСЬ при первом кадре — Draw всегда
+        // имеет контекст инстанса, и role к этому моменту уже назначена.
+        robe_color = _admin_white;   // Пакет 255: безусловно белая
+        // Пакет 226: дикий рандомайзер — тип узора (0..4: гладь, полоски,
+        // клетка, КРУЖКИ, РОМБИКИ) + размер + фазовый сдвиг.
+        // Комбинация почти не повторяется у двух сотрудников.
+        scrub_pattern  = 0;    // Пакет 255: роба админа гладкая, без узора
+        scrub_pat_size = 1.0;
+        scrub_pat_phase = 0.0;
+        shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 1);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
+            color_get_red(robe_color) / 255,
+            color_get_green(robe_color) / 255,
+            color_get_blue(robe_color) / 255);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"),
+            scrub_pattern);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"),
+            1.0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"),
+            0.0);
+        // Пакет 225 v5: границы текущего кадра для узора (без прыжков
+        // между кадрами). sprite_get_uvs может вернуть 8 значений
+        // [x,y,x,y,u0,v0,u1,v1] или 4 [u0,v0,u1,v1] — разбираем оба.
+        var _scrub_frame = image_index % sprite_get_number(_scrub_spr);
+        var _uvs = sprite_get_uvs(_scrub_spr, _scrub_frame);
+        var _u0 = 0; var _v0 = 0; var _u1 = 0; var _v1 = 0;
+        if (array_length(_uvs) >= 8 && max(_uvs[4], _uvs[5], _uvs[6], _uvs[7]) <= 2.0) {
+            _u0 = _uvs[4]; _v0 = _uvs[5]; _u1 = _uvs[6]; _v1 = _uvs[7];
+        } else {
+            _u0 = _uvs[0]; _v0 = _uvs[1]; _u1 = _uvs[2]; _v1 = _uvs[3];
+        }
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _u0, _v0);
+        shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+            abs(_u1 - _u0), abs(_v1 - _v0));
+    // Пакет 243: режим явно: обувь=плоско, остальное=обычно (утечка u_simple)
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 1);
+    draw_sprite_ext(_scrub_spr, _scrub_frame,
+                        _draw_x, _draw_y,
+                        _face_dir * _draw_sx, _draw_sy,
+                        0, c_white, 1);
+        shader_reset();
+    }
+}
+
+
+
+
 // ───────────────────────────────────────────────────────────────
-// 4b. РУКА ПОВЕРХ РОБЫ АССИСТЕНТА (Пакет 231, без шейдера)
+// 4b. РУКА ПОВЕРХ РОБЫ АССИСТЕНТА И АДМИНА (Пакет 231, расширено в 253)
 // Врачам НЕ рисуется: рукав халата впечен в халат и красится с ним.
+// Пакет 253: админ носит ту же робу, что ассистент, — значит впечённую
+// в неё руку тоже надо перекрыть, иначе она останется цветом робы.
 // ───────────────────────────────────────────────────────────────
-if (role == "assistant") {
+if (role == "assistant" || role == "admin") {
 // ── Пакет 231: РУКА ПОВЕРХ РОБЫ (отдельный слой, без шейдера).
 // Спрайт содержит руку БЕЗ части плеча, скрытой под рукавом робы:
 // серое предплечье + кожаная кисть. Никогда не красится.

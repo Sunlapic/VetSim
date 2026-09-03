@@ -112,13 +112,48 @@ if (variable_instance_exists(id, "is_hovered") && is_hovered && sprite_exists(sp
 // 4. ТЕЛО
 // ───────────────────────────────────────────────────────────────
 if (sprite_exists(sprite_index)) {
-    // Пакет 247: ВОЗВРАЩАЕМ СЕРЫЕ РУКИ КАК БЫЛО — тело рисуется БЕЗ
-    // шейдера (серые руки-манекены + кожаные кисти, как до 241).
-    // Никаких юниформов у тела — нечему течь и нечего фильтровать.
+    // ═══════════════════════════════════════════════════════════════
+    // Пакет 251: ТЕЛО ЧЕРЕЗ ШЕЙДЕР — красим ДАЛЬНЮЮ (заднюю) руку.
+    //
+    // Почему: спрайт ArmTop (пакет 231/249) кладётся только на БЛИЖНЮЮ
+    // руку. Дальняя рука впечена в сам спрайт тела, а тело с пакета 247
+    // рисовалось вообще без шейдера — поэтому после 250 ближняя рука
+    // стала телесной, а задняя осталась серым манекеном 157-161.
+    //
+    // Теперь тело идёт через шейдер с u_skin = 1: серый манекен
+    // превращается в кожу головы. Торс и ноги всё равно перекрыты
+    // одеждой, которая рисуется следом, так что видимый эффект —
+    // ровно задняя рука. Кожа лица/кистей тёплая — ветка warm её
+    // не трогает, тон остаётся идентичным голове.
+    // u_armguard = 0: здесь руку красить НУЖНО (это и есть цель).
+    // ═══════════════════════════════════════════════════════════════
+    shader_set(sh_scrub_pattern);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 1);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"), 1, 1, 1);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+
+    var _body_frame = image_index;
+    var _bd_uvs = sprite_get_uvs(sprite_index, _body_frame % sprite_get_number(sprite_index));
+    var _bdu0 = 0; var _bdv0 = 0; var _bdu1 = 0; var _bdv1 = 0;
+    if (array_length(_bd_uvs) >= 8 && max(_bd_uvs[4], _bd_uvs[5], _bd_uvs[6], _bd_uvs[7]) <= 2.0) {
+        _bdu0 = _bd_uvs[4]; _bdv0 = _bd_uvs[5]; _bdu1 = _bd_uvs[6]; _bdv1 = _bd_uvs[7];
+    } else {
+        _bdu0 = _bd_uvs[0]; _bdv0 = _bd_uvs[1]; _bdu1 = _bd_uvs[2]; _bdv1 = _bd_uvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _bdu0, _bdv0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_bdu1 - _bdu0), abs(_bdv1 - _bdv0));
+
     draw_sprite_ext(sprite_index, image_index,
                     _draw_x, _draw_y,
                     _face_dir * _draw_sx, _draw_sy,
                     0, c_white, 1);
+
+    shader_reset();
 }
 
 // ───────────────────────────────────────────────────────────────
@@ -150,6 +185,16 @@ if (_bt_spr != -1 && sprite_exists(_bt_spr)) {
         boots_color = staff_random_boots_color();
     }
         shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
         shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
             color_get_red(boots_color) / 255,
             color_get_green(boots_color) / 255,
@@ -203,6 +248,16 @@ if (_vp_spr != -1 && sprite_exists(_vp_spr)) {
         pants_color = staff_random_pants_color();
     }
     shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
     shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
         color_get_red(pants_color) / 255,
         color_get_green(pants_color) / 255,
@@ -265,6 +320,16 @@ if (_vt_spr != -1 && sprite_exists(_vt_spr)) {
         );
     }
     shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 1);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
     shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
         color_get_red(visit_top_color) / 255,
         color_get_green(visit_top_color) / 255,
@@ -293,12 +358,22 @@ if (_vt_spr != -1 && sprite_exists(_vt_spr)) {
 }
 
 // ───────────────────────────────────────────────────────────────
-// 4c. РУКА ПОВЕРХ РОБЫ ПОСЕТИТЕЛЕЙ (Пакет 249)
+// 4c. РУКА ПОВЕРХ РОБЫ ПОСЕТИТЕЛЕЙ (Пакет 249, ИСПРАВЛЕНО в 250)
 //     Готовые ArmTop-спрайты ассистента (231): серое предплечье +
-//     кожаная кисть ПОВЕРХ робы, БЕЗ шейдера. Перекрывает впечённую
-//     в спрайт робы руку (которая красится цветом). Посетители носят
-//     ту же робу — слой садится точно. Поз посетителей всего 4,
-//     все покрыты. Владельцы (наследники) — тоже.
+//     кожаная кисть ПОВЕРХ робы. Перекрывает впечённую в спрайт робы
+//     руку. Посетители носят ту же робу — слой садится точно.
+//
+//     ПАКЕТ 250 — ПОЧЕМУ РУКА БЫЛА ТЁМНОЙ:
+//     в 249 спрайт рисовался БЕЗ шейдера, «как есть». А в арте
+//     предплечье — это СЕРЫЙ МАНЕКЕН (замер: 325 984 пикселя,
+//     доминанта 157,157,157), он никогда не задумывался как готовая
+//     кожа. Серый рядом со светлой кожей головы (237,195,170) и
+//     читается как «тёмная рука».
+//     Теперь рука рисуется ЧЕРЕЗ шейдер с u_skin = 1: серый манекен
+//     перекрашивается в эталонную кожу головы с сохранением
+//     светотени. Кожаная кисть в том же спрайте уже тёплая —
+//     шейдер её не трогает (ветка warm), так что кисть и голова
+//     остаются идентичны.
 // ───────────────────────────────────────────────────────────────
 var _va_spr = -1;
 if (sprite_index == spr_human_FR_walk) {
@@ -312,10 +387,49 @@ if (sprite_index == spr_human_FR_walk) {
 }
 
 if (_va_spr != -1 && sprite_exists(_va_spr)) {
-    draw_sprite_ext(_va_spr, image_index % sprite_get_number(_va_spr),
+    var _va_frame = image_index % sprite_get_number(_va_spr);
+
+    shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 1);
+
+    // Пакет 250: u_skin = 1 — единственное место в проекте, где
+    // серый манекен разрешено красить кожей. Одежда всегда шлёт 0,
+    // иначе на тенях ткани вылезут кожаные пятна (см. V20 в шейдере).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 1);
+
+    // фильтрующий режим (НЕ плоская заливка): нам нужны ветки
+    // warm / mannequin, которые в u_simple = 1 не работают
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_simple"), 0);
+
+    // u_base руке не нужен (кожа берётся из констант шейдера),
+    // но юниформы обязаны быть заданы — иначе в них утечёт
+    // значение от предыдущего draw (штаны/обувь)
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"), 1, 1, 1);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pattern"), 0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_psize"), 1.0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_pphase"), 0.0);
+
+    var _vauvs = sprite_get_uvs(_va_spr, _va_frame);
+    var _vau0 = 0; var _vav0 = 0; var _vau1 = 0; var _vav1 = 0;
+    if (array_length(_vauvs) >= 8 && max(_vauvs[4], _vauvs[5], _vauvs[6], _vauvs[7]) <= 2.0) {
+        _vau0 = _vauvs[4]; _vav0 = _vauvs[5]; _vau1 = _vauvs[6]; _vav1 = _vauvs[7];
+    } else {
+        _vau0 = _vauvs[0]; _vav0 = _vauvs[1]; _vau1 = _vauvs[2]; _vav1 = _vauvs[3];
+    }
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uv0"), _vau0, _vav0);
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_uvspan"),
+        abs(_vau1 - _vau0), abs(_vav1 - _vav0));
+
+    draw_sprite_ext(_va_spr, _va_frame,
                     _draw_x, _draw_y,
                     _face_dir * _draw_sx, _draw_sy,
                     0, c_white, 1);
+
+    shader_reset();
 }
 
 // ───────────────────────────────────────────────────────────────

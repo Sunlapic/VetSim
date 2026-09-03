@@ -100,6 +100,7 @@ if (is_hovered && sprite_exists(sprite_index)) {
 // ═══════════════════════════════════════════════════════════════
 
 if (sprite_exists(sprite_index)) {
+    // Пакет 252: тело ПЕРСОНАЛА без шейдера — серые руки стандартные.
     draw_sprite_ext(
         sprite_index,
         image_index,
@@ -133,6 +134,16 @@ if (sprite_exists(_crs_spr)) {
         crocs_color = staff_random_crocs_color();
     }
     shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
     shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
         color_get_red(crocs_color) / 255,
         color_get_green(crocs_color) / 255,
@@ -176,6 +187,16 @@ if (sprite_exists(_dp_sit_spr)) {
         pants_color = staff_random_doctor_pants_color();
     }
     shader_set(sh_scrub_pattern);
+    // Пакет 251: u_armguard — есть ли в этом спрайте впечённая
+    // рука-манекен. 1 = роба/халат (руку не красить),
+    // 0 = обувь/штаны/кроксы (руки нет, красить весь силуэт;
+    // иначе серые пиксели остаются светлыми просветами).
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_armguard"), 0);
+    // Пакет 250: u_skin = 0 — серые манекены НЕ красить кожей.
+    // Юниформ живёт между draw-вызовами (та же утечка, что у
+    // u_simple в 243): без явного нуля рука-манекен на одежде
+    // окрасилась бы кожей и дала пятна.
+    shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_skin"), 0);
     shader_set_uniform_f(shader_get_uniform(sh_scrub_pattern, "u_base"),
         color_get_red(pants_color) / 255,
         color_get_green(pants_color) / 255,
