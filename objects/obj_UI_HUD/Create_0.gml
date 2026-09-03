@@ -262,6 +262,71 @@ speed4_y1 = 0;
 speed4_x2 = 0;
 speed4_y2 = 0;
 
+// ═══════════════════════════════════════════════════════════════
+// ПАКЕТ 271: МЕНЮ ИГРЫ (шестерёнка в верхней панели)
+// ═══════════════════════════════════════════════════════════════
+
+// Кнопка-шестерёнка слева от кнопок скорости.
+gear_x1 = 0;
+gear_y1 = 0;
+gear_x2 = 0;
+gear_y2 = 0;
+hover_gear = false;
+
+// Какое окно меню открыто:
+//   ""      закрыто
+//   "main"  СОХРАНИТЬ / ЗАГРУЗИТЬ / НОВАЯ ИГРА
+//   "save"  выбор слота для записи
+//   "load"  выбор слота для чтения
+game_menu_mode = "";
+
+// Прямоугольник окна меню.
+game_menu_x1 = 0;
+game_menu_y1 = 0;
+game_menu_x2 = 0;
+game_menu_y2 = 0;
+
+// Кнопки главного меню.
+menu_save_x1 = 0;   menu_save_y1 = 0;   menu_save_x2 = 0;   menu_save_y2 = 0;
+menu_load_x1 = 0;   menu_load_y1 = 0;   menu_load_x2 = 0;   menu_load_y2 = 0;
+menu_new_x1 = 0;    menu_new_y1 = 0;    menu_new_x2 = 0;    menu_new_y2 = 0;
+menu_close_x1 = 0;  menu_close_y1 = 0;  menu_close_x2 = 0;  menu_close_y2 = 0;
+
+hover_menu_save = false;
+hover_menu_load = false;
+hover_menu_new = false;
+hover_menu_close = false;
+
+// Список слотов: массив структур из save_slot_list_all().
+// Пересобирается при каждом открытии окна, а не каждый кадр —
+// чтение восьми файлов на кадре съело бы производительность.
+menu_slot_entries = [];
+menu_slot_rects = [];
+hover_menu_slot = -1;
+
+// ── Подтверждения ──
+// Отдельное окно поверх меню. Пока оно открыто, клики по остальному
+// интерфейсу игнорируются — как у fire_confirm.
+menu_confirm_open = false;
+menu_confirm_kind = "";      // "save" | "load" | "new"
+menu_confirm_text = "";
+menu_confirm_slot_auto = false;
+menu_confirm_slot_index = 0;
+
+menu_confirm_x1 = 0;
+menu_confirm_y1 = 0;
+menu_confirm_x2 = 0;
+menu_confirm_y2 = 0;
+
+menu_confirm_yes_x1 = 0;  menu_confirm_yes_y1 = 0;
+menu_confirm_yes_x2 = 0;  menu_confirm_yes_y2 = 0;
+menu_confirm_no_x1 = 0;   menu_confirm_no_y1 = 0;
+menu_confirm_no_x2 = 0;   menu_confirm_no_y2 = 0;
+
+hover_menu_yes = false;
+hover_menu_no = false;
+
+
 hover_pause = false;
 hover_1x = false;
 hover_2x = false;

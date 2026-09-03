@@ -90,6 +90,32 @@ function ui_hud_modal_panel_open() {
     if (_hud.hiring_panel_open) return true;
     if (_hud.fire_confirm_open) return true;
 
+    // ── Пакет 271: МЕНЮ ИГРЫ (шестерёнка) ──
+    //
+    // Без этого клик сквозь открытое меню уходил в мир: тык по
+    // сотруднику за окном меню открывал его карточку ПОД меню.
+    //
+    // Именно эта функция — центральная точка блокировки: её результат
+    // obj_Render кладёт в global.ui_block_world_click, а world_tap_on_me
+    // и камера смотрят уже на него. Регистрировать модальное окно
+    // нужно здесь, а не городить отдельную проверку.
+    //
+    // variable_instance_exists — на случай, если Create старой версии
+    // ещё не создал переменную (порядок установки файлов не гарантирован).
+    if (
+        variable_instance_exists(_hud, "game_menu_mode")
+        && _hud.game_menu_mode != ""
+    ) {
+        return true;
+    }
+
+    if (
+        variable_instance_exists(_hud, "menu_confirm_open")
+        && _hud.menu_confirm_open
+    ) {
+        return true;
+    }
+
     if (
         variable_instance_exists(_hud, "handbook_open")
         && _hud.handbook_open

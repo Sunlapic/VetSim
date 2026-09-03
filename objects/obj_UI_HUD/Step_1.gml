@@ -550,6 +550,118 @@ pause_x2 = pause_x1 + btn_w;
 pause_y2 = pause_y1 + btn_h;
 
 // ─────────────────────────────────────────────
+// ПАКЕТ 271: КНОПКА-ШЕСТЕРЁНКА (меню игры)
+//
+// Ставится левее паузы, в свободном месте между табличкой ШТАТ и
+// кнопками скорости. Шире обычной кнопки времени и выше — это
+// главная кнопка меню, и палец должен попадать уверенно.
+// ─────────────────────────────────────────────
+var _gear_w = round(btn_w * 1.25);
+var _gear_h = btn_h + 6;
+
+gear_x1 = pause_x1 - btn_gap * 3 - _gear_w;
+gear_y1 = topbar_y1 + round((topbar_y2 - topbar_y1 - _gear_h) * 0.5);
+gear_x2 = gear_x1 + _gear_w;
+gear_y2 = gear_y1 + _gear_h;
+
+// ─────────────────────────────────────────────
+// ПАКЕТ 271: ОКНО МЕНЮ ИГРЫ
+//
+// Крупное окно по центру экрана. Размеры считаются от экрана, а не
+// заданы числами: игра телефонная, разрешения разные.
+// ─────────────────────────────────────────────
+var _menu_w = min(_gw - 60, 620);
+var _menu_h = min(_gh - 80, 720);
+
+game_menu_x1 = round((_gw - _menu_w) * 0.5);
+game_menu_y1 = round((_gh - _menu_h) * 0.5);
+game_menu_x2 = game_menu_x1 + _menu_w;
+game_menu_y2 = game_menu_y1 + _menu_h;
+
+// Кнопки главного меню: крупные, во всю ширину окна.
+var _mb_pad = 26;
+var _mb_h = 74;                       // выше UI_BUTTON_H (64) — под палец
+var _mb_gap = 16;
+var _mb_x1 = game_menu_x1 + _mb_pad;
+var _mb_x2 = game_menu_x2 - _mb_pad;
+var _mb_y = game_menu_y1 + 96;        // ниже заголовка окна
+
+menu_save_x1 = _mb_x1;  menu_save_y1 = _mb_y;
+menu_save_x2 = _mb_x2;  menu_save_y2 = _mb_y + _mb_h;
+
+_mb_y += _mb_h + _mb_gap;
+menu_load_x1 = _mb_x1;  menu_load_y1 = _mb_y;
+menu_load_x2 = _mb_x2;  menu_load_y2 = _mb_y + _mb_h;
+
+_mb_y += _mb_h + _mb_gap;
+menu_new_x1 = _mb_x1;   menu_new_y1 = _mb_y;
+menu_new_x2 = _mb_x2;   menu_new_y2 = _mb_y + _mb_h;
+
+// ЗАКРЫТЬ — всегда у нижнего края окна.
+menu_close_x1 = _mb_x1;
+menu_close_y2 = game_menu_y2 - _mb_pad;
+menu_close_y1 = menu_close_y2 - _mb_h;
+menu_close_x2 = _mb_x2;
+
+// ─────────────────────────────────────────────
+// СТРОКИ СПИСКА СЛОТОВ
+// Прямоугольники считаем всегда, чтобы клики и отрисовка брали
+// одни и те же числа из одного места.
+// ─────────────────────────────────────────────
+menu_slot_rects = [];
+
+if (game_menu_mode == "save" || game_menu_mode == "load") {
+    var _row_h = 66;
+    var _row_gap = 10;
+    var _row_y = game_menu_y1 + 96;
+    var _rows = array_length(menu_slot_entries);
+
+    for (var _r = 0; _r < _rows; _r++) {
+        // Не вылезаем за кнопку ЗАКРЫТЬ.
+        if (_row_y + _row_h > menu_close_y1 - 12) break;
+
+        array_push(menu_slot_rects, {
+            x1 : _mb_x1,
+            y1 : _row_y,
+            x2 : _mb_x2,
+            y2 : _row_y + _row_h,
+            entry_index : _r
+        });
+
+        _row_y += _row_h + _row_gap;
+    }
+}
+
+// ─────────────────────────────────────────────
+// ОКНО ПОДТВЕРЖДЕНИЯ (поверх меню)
+// ─────────────────────────────────────────────
+var _cf_w = min(_gw - 80, 560);
+// Пакет 271: 340, а не 300 — текст подтверждения рисуется крупно
+// (UI_FS_TITLE), и длинному вопросу про новую игру нужен запас,
+// иначе он ужимался бы обратно до мелкого.
+var _cf_h = 340;
+
+menu_confirm_x1 = round((_gw - _cf_w) * 0.5);
+menu_confirm_y1 = round((_gh - _cf_h) * 0.5);
+menu_confirm_x2 = menu_confirm_x1 + _cf_w;
+menu_confirm_y2 = menu_confirm_y1 + _cf_h;
+
+var _cf_btn_h = 72;
+var _cf_pad = 22;
+var _cf_btn_w = round((_cf_w - _cf_pad * 3) * 0.5);
+var _cf_btn_y = menu_confirm_y2 - _cf_pad - _cf_btn_h;
+
+menu_confirm_yes_x1 = menu_confirm_x1 + _cf_pad;
+menu_confirm_yes_y1 = _cf_btn_y;
+menu_confirm_yes_x2 = menu_confirm_yes_x1 + _cf_btn_w;
+menu_confirm_yes_y2 = _cf_btn_y + _cf_btn_h;
+
+menu_confirm_no_x1 = menu_confirm_yes_x2 + _cf_pad;
+menu_confirm_no_y1 = _cf_btn_y;
+menu_confirm_no_x2 = menu_confirm_no_x1 + _cf_btn_w;
+menu_confirm_no_y2 = _cf_btn_y + _cf_btn_h;
+
+// ─────────────────────────────────────────────
 // КРЕСТИК ПАНЕЛИ НАЙМА
 // ─────────────────────────────────────────────
 hiring_close_x2 = candidate_x2 - 18;
@@ -613,6 +725,34 @@ if (clients_panel_open && clients_subtab == "all") {
 // HOVER
 // ─────────────────────────────────────────────
 hover_pause = point_in_rectangle(_mx, _my, pause_x1, pause_y1, pause_x2, pause_y2);
+
+// ── Пакет 271: наведение на меню игры ──
+hover_gear = point_in_rectangle(_mx, _my, gear_x1, gear_y1, gear_x2, gear_y2);
+
+hover_menu_save = (game_menu_mode == "main")
+    && point_in_rectangle(_mx, _my, menu_save_x1, menu_save_y1, menu_save_x2, menu_save_y2);
+hover_menu_load = (game_menu_mode == "main")
+    && point_in_rectangle(_mx, _my, menu_load_x1, menu_load_y1, menu_load_x2, menu_load_y2);
+hover_menu_new = (game_menu_mode == "main")
+    && point_in_rectangle(_mx, _my, menu_new_x1, menu_new_y1, menu_new_x2, menu_new_y2);
+hover_menu_close = (game_menu_mode != "")
+    && point_in_rectangle(_mx, _my, menu_close_x1, menu_close_y1, menu_close_x2, menu_close_y2);
+
+hover_menu_slot = -1;
+
+for (var _hs = 0; _hs < array_length(menu_slot_rects); _hs++) {
+    var _hr = menu_slot_rects[_hs];
+
+    if (point_in_rectangle(_mx, _my, _hr.x1, _hr.y1, _hr.x2, _hr.y2)) {
+        hover_menu_slot = _hs;
+        break;
+    }
+}
+
+hover_menu_yes = menu_confirm_open
+    && point_in_rectangle(_mx, _my, menu_confirm_yes_x1, menu_confirm_yes_y1, menu_confirm_yes_x2, menu_confirm_yes_y2);
+hover_menu_no = menu_confirm_open
+    && point_in_rectangle(_mx, _my, menu_confirm_no_x1, menu_confirm_no_y1, menu_confirm_no_x2, menu_confirm_no_y2);
 hover_1x    = point_in_rectangle(_mx, _my, speed1_x1, speed1_y1, speed1_x2, speed1_y2);
 hover_2x    = point_in_rectangle(_mx, _my, speed2_x1, speed2_y1, speed2_x2, speed2_y2);
 hover_4x    = point_in_rectangle(_mx, _my, speed4_x1, speed4_y1, speed4_x2, speed4_y2);
@@ -894,6 +1034,11 @@ global.ui_block_world_click =
     || (hiring_panel_open && point_in_rectangle(_mx, _my, candidate_x1, candidate_y1, candidate_x2, candidate_y2))
     || (handbook_open && point_in_rectangle(_mx, _my, handbook_panel_x1, handbook_panel_y1, handbook_panel_x2, handbook_panel_y2))
     || (fire_confirm_open && point_in_rectangle(_mx, _my, fire_confirm_x1, fire_confirm_y1, fire_confirm_x2, fire_confirm_y2))
+    // Пакет 271: меню игры блокирует мир ЦЕЛИКОМ, а не только под своим
+    // окном. Окно модальное и затемняет экран — клик мимо него не должен
+    // проваливаться на сотрудника и открывать карточку под меню.
+    || (game_menu_mode != "")
+    || menu_confirm_open
     || _notice_hover;
 
 // ─────────────────────────────────────────────
@@ -944,9 +1089,113 @@ if (mouse_check_button_pressed(mb_left)) {
             fire_confirm_open = false;
         }
     }
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ 271: МЕНЮ ИГРЫ
+    //
+    // Стоит ПЕРЕД остальным интерфейсом и всегда завершается ветвью
+    // else — пока меню открыто, клики не проваливаются в игру под ним.
+    // ═══════════════════════════════════════════════════════════
+    else if (menu_confirm_open) {
+        // Подтверждение перехватывает всё.
+        if (hover_menu_yes) {
+            if (menu_confirm_kind == "save") {
+                if (script_exists(asset_get_index("save_slot_save_manual"))) {
+                    save_slot_save_manual(menu_confirm_slot_index);
+                }
+
+                game_menu_mode = "";
+            }
+            else if (menu_confirm_kind == "load") {
+                if (script_exists(asset_get_index("save_slot_load"))) {
+                    save_slot_load(menu_confirm_slot_auto, menu_confirm_slot_index);
+                }
+
+                game_menu_mode = "";
+            }
+            else if (menu_confirm_kind == "new") {
+                if (script_exists(asset_get_index("save_slot_new_game"))) {
+                    save_slot_new_game();
+                }
+            }
+
+            menu_confirm_open = false;
+            menu_confirm_kind = "";
+        }
+        else if (hover_menu_no) {
+            menu_confirm_open = false;
+            menu_confirm_kind = "";
+        }
+    }
+    else if (game_menu_mode == "main") {
+        if (hover_menu_save) {
+            game_menu_mode = "save";
+
+            // Список читается ОДИН раз при открытии, а не каждый кадр:
+            // это чтение файлов с диска.
+            if (script_exists(asset_get_index("save_slot_list_manual"))) {
+                menu_slot_entries = save_slot_list_manual();
+            }
+        }
+        else if (hover_menu_load) {
+            game_menu_mode = "load";
+
+            if (script_exists(asset_get_index("save_slot_list_all"))) {
+                menu_slot_entries = save_slot_list_all();
+            }
+        }
+        else if (hover_menu_new) {
+            menu_confirm_open = true;
+            menu_confirm_kind = "new";
+            menu_confirm_text = "Начать новую игру? Текущий прогресс будет потерян, сохранения останутся.";
+        }
+        else if (hover_menu_close) {
+            game_menu_mode = "";
+        }
+    }
+    else if (game_menu_mode == "save" || game_menu_mode == "load") {
+        if (hover_menu_close) {
+            game_menu_mode = "main";
+        }
+        else if (hover_menu_slot >= 0
+            && hover_menu_slot < array_length(menu_slot_rects)) {
+
+            var _rect = menu_slot_rects[hover_menu_slot];
+            var _entry = menu_slot_entries[_rect.entry_index];
+
+            if (game_menu_mode == "save") {
+                // В автослот вручную писать нельзя — он кольцевой.
+                if (!_entry.is_auto) {
+                    menu_confirm_open = true;
+                    menu_confirm_kind = "save";
+                    menu_confirm_slot_auto = false;
+                    menu_confirm_slot_index = _entry.index;
+
+                    menu_confirm_text = _entry.exists
+                        ? ("Перезаписать сохранение " + string(_entry.index)
+                            + "? День " + string(_entry.day) + " будет потерян.")
+                        : ("Сохранить игру в слот " + string(_entry.index) + "?");
+                }
+            }
+            else {
+                // Загружать можно только непустой слот.
+                if (_entry.exists) {
+                    menu_confirm_open = true;
+                    menu_confirm_kind = "load";
+                    menu_confirm_slot_auto = _entry.is_auto;
+                    menu_confirm_slot_index = _entry.index;
+
+                    menu_confirm_text = "Загрузить День " + string(_entry.day)
+                        + "? Несохранённый прогресс будет потерян.";
+                }
+            }
+        }
+    }
     else {
         // Верхняя панель
-        if (hover_pause) {
+        if (hover_gear) {
+            game_menu_mode = "main";
+        }
+        else if (hover_pause) {
             global.time_paused = !global.time_paused;
         }
         else if (hover_1x) {

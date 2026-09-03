@@ -1054,6 +1054,31 @@ else {
 
 if (render_last_day != global.game_day) {
     render_last_day = global.game_day;
+
+    // ═══════════════════════════════════════════════════════════
+    // Пакет №269: АВТОСОХРАНЕНИЕ РАЗ В ИГРОВОЙ ДЕНЬ
+    //
+    // Наступил новый день — самый спокойный момент: приёмы закрыты,
+    // зарплаты посчитаны. Сохраняем прогресс.
+    //
+    // script_exists — защита, если скрипт save_system не создан в IDE.
+    // ═══════════════════════════════════════════════════════════
+    // Пакет 271: автосохранение пишется в кольцо из трёх слотов
+    // (save_slots), а не в один файл. Если скрипт save_slots ещё не
+    // создан в IDE — откатываемся на одиночный автосейв пакета 269.
+    var _slot_fn = asset_get_index("save_slot_autosave_check");
+
+    if (_slot_fn != -1 && script_exists(_slot_fn)) {
+        save_slot_autosave_check();
+    }
+    else {
+        var _autosave_fn = asset_get_index("save_autosave_check");
+
+        if (_autosave_fn != -1 && script_exists(_autosave_fn)) {
+            save_autosave_check();
+        }
+    }
+
     followup_spawn_cooldown = 0;
     random_arrival_pending = false;
     random_arrival_cooldown = 0;

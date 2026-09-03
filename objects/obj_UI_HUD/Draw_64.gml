@@ -18,6 +18,12 @@ tablet_click_lock = max(0, tablet_click_lock - 1);
 // Основные постоянные панели.
 hud_draw_main_bars(id);
 
+// Пакет 271: кнопка-шестерёнка в верхней панели.
+// Рисуется сразу после main_bars, чтобы лечь поверх фона панели.
+if (script_exists(asset_get_index("hud_draw_gear_button"))) {
+    hud_draw_gear_button(id);
+}
+
 // Большие панели, которые ещё относятся к основному HUD.
 hud_draw_clinic_storage(id);
 hud_draw_clients_database(id);
@@ -29,6 +35,11 @@ hud_draw_handbook_panel(id);
 hud_draw_notifications(id);
 hud_draw_hover_tooltip(id);
 hud_draw_storage_radial_menu(id);
+
+// Пакет 271: окна меню игры — поверх всех панелей, но под итогами дня.
+if (script_exists(asset_get_index("hud_draw_game_menu"))) {
+    hud_draw_game_menu(id);
+}
 
 // Итоги дня рисуются в Draw GUI End поверх staff/finance/чистоты.
 
