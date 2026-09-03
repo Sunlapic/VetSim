@@ -68,33 +68,68 @@ function portrait_bake() {
             c_white, c_white, c_white, c_white, 1
         );
 
-        // ── Пакет 226: ОДЕЖДА в портрете (халат врача / роба ассистента) ──
+        // ═════════════════════════════════════════════════════════
+        // ОДЕЖДА В ПОРТРЕТЕ (Пакет 226, расширено в Пакете 270)
+        //
+        // Пакет 270 добавил АДМИНИСТРАТОРА. До этого веток было
+        // только две — врач и ассистент, — поэтому админ печатался
+        // на фото голым телом, хотя в игровом мире (par_staff/Draw,
+        // пакеты 253 и 255) он давно ходит в белом комплекте.
+        //
+        // Цвета здесь обязаны совпадать с миром, иначе фото и
+        // персонаж в клинике будут выглядеть по-разному:
+        //   • админ     — безусловно белый, узора нет (Пакет 255);
+        //   • ассистент — случайный цвет скраба + узор;
+        //   • врач      — случайный светлый халат.
+        // ═════════════════════════════════════════════════════════
+
+        // Пакет 255: белый цвет формы администратора.
+        var _admin_white = make_color_rgb(245, 245, 245);
+
         var _p_role = "";
         if (variable_instance_exists(id, "role")) _p_role = role;
         var _p_f = (variable_instance_exists(id, "is_female") && is_female);
 
         var _cloth_spr = -1;
         var _cloth_is_scrub = false;
+        var _cloth_is_admin = false;
+
         if (_p_role == "doctor" || object_index == obj_staff_doctor || object_index == obj_player) {
             _cloth_spr = _p_f ? spr_human_FR_walk_Robe_Woman : spr_human_FR_walk_Robe_Man;
         } else if (_p_role == "assistant" || object_index == obj_staff_assistant) {
             _cloth_spr = _p_f ? spr_human_FR_walk_Scrub_Woman : spr_human_FR_walk_Scrub;
             _cloth_is_scrub = true;
+        } else if (_p_role == "admin" || object_index == obj_staff_admin) {
+            // Пакет 270: админ носит ту же робу, что ассистент,
+            // но чисто белую и без узора — как в мире.
+            _cloth_spr = _p_f ? spr_human_FR_walk_Scrub_Woman : spr_human_FR_walk_Scrub;
+            _cloth_is_scrub = true;
+            _cloth_is_admin = true;
         }
 
         if (_cloth_spr != -1 && sprite_exists(_cloth_spr)) {
             // цвет/узор: если ещё не назначены (портрет печётся в Create,
             // до первого кадра) — выдаём здесь, в игре сохранится тот же
-            if (!variable_instance_exists(id, "robe_color")) {
-                robe_color = _cloth_is_scrub
-                    ? staff_random_scrub_color()
-                    : staff_random_robe_color();
+            if (_cloth_is_admin) {
+                // Пакет 255: БЕЗУСЛОВНО белая, а не «если ещё нет».
+                robe_color = _admin_white;
+                scrub_pattern   = 0;
+                scrub_pat_size  = 1.0;
+                scrub_pat_phase = 0.0;
             }
-            if (_cloth_is_scrub && !variable_instance_exists(id, "scrub_pattern")) {
-                scrub_pattern    = irandom(4);
-                scrub_pat_size   = random_range(0.6, 1.8);
-                scrub_pat_phase  = random(1.0);
+            else {
+                if (!variable_instance_exists(id, "robe_color")) {
+                    robe_color = _cloth_is_scrub
+                        ? staff_random_scrub_color()
+                        : staff_random_robe_color();
+                }
+                if (_cloth_is_scrub && !variable_instance_exists(id, "scrub_pattern")) {
+                    scrub_pattern    = irandom(4);
+                    scrub_pat_size   = random_range(0.6, 1.8);
+                    scrub_pat_phase  = random(1.0);
+                }
             }
+
             // в фото узор не рисуем (мелко), только цвет формы
             draw_sprite_general(
                 _cloth_spr, 0,
@@ -102,6 +137,25 @@ function portrait_bake() {
                 0, 0, _draw_scale, _draw_scale, 0,
                 robe_color, robe_color, robe_color, robe_color, 1
             );
+
+            // ── Пакет 270: РУКА ПОВЕРХ РОБЫ ──
+            //
+            // В спрайт робы впечена рука-манекен, и выше она
+            // окрасилась в цвет формы вместе с тканью. В мире это
+            // лечит отдельный слой ArmTop (пакет 231, расширен на
+            // админа в 253) — в портрете его не было, из-за чего
+            // плечо на фото отливало цветом робы.
+            //
+            // Врачу НЕ рисуем: у халата рукав длинный и впечён
+            // в ткань намеренно — так же, как в мире.
+            if (_cloth_is_scrub && sprite_exists(spr_human_FR_walk_ArmTop)) {
+                draw_sprite_general(
+                    spr_human_FR_walk_ArmTop, 0,
+                    _px_cam, _py_cam, _src_w, _src_h,
+                    0, 0, _draw_scale, _draw_scale, 0,
+                    c_white, c_white, c_white, c_white, 1
+                );
+            }
         }
 
         if (variable_instance_exists(id, "my_nose") && sprite_exists(my_nose)) {
