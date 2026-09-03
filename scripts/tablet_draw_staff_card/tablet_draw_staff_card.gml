@@ -272,6 +272,38 @@ function doctor_get_specialty_title(_target) {
 }
 
 
+// ════════════════════════════════════════════════════════════════
+// 2.9 ИМЯ И ФАМИЛИЯ ДВУМЯ СТРОКАМИ (пакет №265)
+//
+// В игре имя хранится одной строкой char_name вида "Сергей Петров"
+// (get_random_name возвращает _first_name + " " + _last_name). Отдельных
+// полей имени и фамилии нет, поэтому делим по первому пробелу:
+// первое слово — имя, всё остальное — фамилия.
+//
+// Возвращает массив [имя, фамилия]. Если пробела нет ("Сотрудник"),
+// фамилия пустая и вторая строка просто не рисуется.
+// ════════════════════════════════════════════════════════════════
+
+function tablet_staff_split_name(_full_name) {
+    var _src = string(_full_name);
+    var _space = string_pos(" ", _src);
+
+    if (_space <= 0) {
+        return [_src, ""];
+    }
+
+    var _first = string_copy(_src, 1, _space - 1);
+    var _last = string_delete(_src, 1, _space);
+
+    // На случай двойных пробелов в ручных именах.
+    while (string_length(_last) > 0 && string_char_at(_last, 1) == " ") {
+        _last = string_delete(_last, 1, 1);
+    }
+
+    return [_first, _last];
+}
+
+
 // ═══════════════════════════════════════════════════════════════
 // 3. ОСНОВНАЯ КАРТОЧКА СОТРУДНИКА
 // ═══════════════════════════════════════════════════════════════
@@ -309,12 +341,23 @@ function tablet_draw_staff_card(
 
     // Верхние панели стоят на том же отступе от заголовка,
     // что и остальные панели друг от друга.
-    var _content_top = _frame_y + 22 * _ui_scale;
-    var _content_bottom = _frame_y + 304 * _ui_scale;
+    // Пакет №267: весь блок поднят на 6 юнитов.
+    //
+    // На скриншоте было видно: сверху у белого листа оставалось 23 юнита
+    // пустоты, а снизу всего 4 — панель подсказки упиралась в край
+    // и выглядела вылезшей. Теперь поля сверху и снизу одинаковые.
+    var _shift_up = 6 * _ui_scale;
+
+    var _content_top = _frame_y + 22 * _ui_scale - _shift_up;
+    var _content_bottom = _frame_y + 304 * _ui_scale - _shift_up;
 
     // Подсказка остаётся внутри светлого листа.
     var _help_y1 = _content_bottom + _gap;
-    var _help_y2 = _help_y1 + 65 * _ui_scale;
+    // Пакет №267: подсказка чуть ниже ростом (92 -> 86) и вместе
+    // со всей карточкой поднята на 6 юнитов. Низ белого листа
+    // теперь на +209 юнитах при крае планшета +226 — поле 17 юнитов,
+    // столько же, сколько сверху.
+    var _help_y2 = _help_y1 + 86 * _ui_scale;
 
     var _card_x1 = _frame_x;
     var _card_x2 = _center_x + 260 * _ui_scale;
@@ -329,7 +372,7 @@ function tablet_draw_staff_card(
     draw_set_color(make_color_rgb(252, 250, 246));
     draw_rectangle(
         _card_x1 - 8 * _ui_scale,
-        _frame_y - 12 * _ui_scale,
+        _frame_y - 12 * _ui_scale - _shift_up,
         _card_x2 + 8 * _ui_scale,
         _help_y2 + 8 * _ui_scale,
         false
@@ -345,7 +388,7 @@ function tablet_draw_staff_card(
     draw_set_color(_wood_dark);
     draw_text_transformed(
         _center_x,
-        _frame_y - 6 * _ui_scale,
+        _frame_y - 6 * _ui_scale - _shift_up,
         (_target.object_index == obj_player)
             ? "КАРТОЧКА ИГРОКА"
             : "КАРТОЧКА СОТРУДНИКА",
@@ -365,7 +408,14 @@ function tablet_draw_staff_card(
     var _info_x1 = _left_x1;
     var _info_y1 = _content_top;
     var _info_x2 = _left_x2;
-    var _info_y2 = _info_y1 + 198 * _ui_scale;
+    // Пакет №266: нижняя панель "ПОСЛЕДНИЕ НАВЫКИ" убрана,
+    // поэтому панель данных выросла с 218 до 244 юнитов:
+    // строки разложены свободнее и крупнее.
+    //
+    // До самого низа (_content_bottom) её тянуть НЕЛЬЗЯ: список места
+    // работы раскрывается ВНИЗ от кнопки и занимает до 4 пунктов по 36
+    // юнитов — при кнопке ниже 232 юнитов он вылезает за край планшета.
+    var _info_y2 = _info_y1 + 244 * _ui_scale;
 
     tablet_staff_draw_panel(_info_x1, _info_y1, _info_x2, _info_y2);
 
@@ -514,80 +564,138 @@ function tablet_draw_staff_card(
 
     _target.specialty_title = _specialty;
 
-    // ───────────────────────────────────────────────────────────
-    // Пакет №184: данные крупнее и разложены по полосам.
+    // ─────────────────────────────────────────────────────────
+    // Пакет №265: единый крупный шрифт и новый порядок строк.
     //
-    // Справа от фотографии колонка узкая (примерно 84 юнита), поэтому
-    // там живут только короткие строки: имя, роль (у врача сразу с его
-    // профилем) и возраст. Длинная строка характера переехала ПОД фото,
-    // на всю ширину панели: места вдвое больше, значит и шрифт крупнее.
+    // Было: у каждой строки свой множитель (имя 1.05, роль 0.95,
+    // возраст 0.88, характер 0.85, энергия 0.66, зарплата 0.80) —
+    // карточка выглядела разнокалиберной, а мелкие строки на телефоне
+    // не читались. Стало: весь текст одного размера _row_font.
     //
-    // Масштаб каждой строки подбирается по её ширине, так что даже самое
-    // длинное имя или «Стрессоустойчивый» не вылезут за панель.
-    // ───────────────────────────────────────────────────────────
+    // Порядок строк: Имя / Фамилия / Возраст / ЗП — в колонке справа
+    // от фотографии; Специализация / Характер / Энергия / Место —
+    // ниже, во всю ширину панели.
+    //
+    // Ширина по-прежнему автоподгоняется внутри tablet_staff_text_row,
+    // так что длинное "Стрессоустойчивый" или "Анастасия" не вылезет.
+    // ─────────────────────────────────────────────────────────
 
-    var _col_y = _info_y1 + 12 * _ui_scale;
+    // Единый размер шрифта для ВСЕГО текста карточки.
+    var _row_font = 0.86 * _font_ui;
+    var _row_h = 26 * _ui_scale;
 
+    // Пакет №266: имя и фамилия — это одно целое, расстояние
+    // между ними вдвое меньше, чем между остальными строками.
+    var _name_row_h = _row_h * 0.5;
+
+    var _name_parts = tablet_staff_split_name(_name);
+    var _name_first = _name_parts[0];
+    var _name_last = _name_parts[1];
+
+    var _salary_value = variable_instance_exists(_target, "salary")
+        ? _target.salary
+        : (
+            variable_instance_exists(_target, "skills_sum")
+            ? _target.skills_sum * 10
+            : 0
+        );
+
+    var _col_y = _info_y1 + 14 * _ui_scale;
+
+    // Имя и фамилия — двумя отдельными строками вплотную.
     draw_set_color(_blue);
     _col_y = tablet_staff_text_row(
         _data_x,
         _col_y,
-        32 * _ui_scale,
-        string_upper(_name),
+        _name_row_h,
+        string_upper(_name_first),
         _data_w,
-        1.05 * _font_ui
+        _row_font
     );
 
-    // Роль, а у врача сразу и его профиль: «ВРАЧ - ХИРУРГИЯ».
-    var _role_line = _role_name;
-
-    if (
-        (_role == "doctor" || _target.object_index == obj_player)
-        && _specialty != ""
-    ) {
-        _role_line += " - " + string_upper(_specialty);
+    if (_name_last != "") {
+        // Фамилия рисуется в такой же узкой полосе, как и имя, —
+        // поэтому расстояние между их центрами ровно _name_row_h,
+        // то есть вдвое меньше обычного шага строки.
+        _col_y = tablet_staff_text_row(
+            _data_x,
+            _col_y,
+            _name_row_h,
+            string_upper(_name_last),
+            _data_w,
+            _row_font
+        );
+    } else {
+        _col_y += _name_row_h;
     }
 
-    draw_set_color(_text_soft);
-    _col_y = tablet_staff_text_row(
-        _data_x,
-        _col_y,
-        26 * _ui_scale,
-        _role_line,
-        _data_w,
-        0.95 * _font_ui
-    );
+    // Добираем половину от половины, чтобы от фамилии до возраста
+    // был обычный шаг: блок "имя + фамилия" читается как одно целое.
+    _col_y += _row_h * 0.25;
 
     draw_set_color(_text);
     _col_y = tablet_staff_text_row(
         _data_x,
         _col_y,
-        24 * _ui_scale,
+        _row_h,
         "Возраст: " + _age,
         _data_w,
-        0.88 * _font_ui
+        _row_font
     );
 
+    // Пакет №265: ЗП сразу под возрастом и У ВСЕХ ролей.
+    // Раньше зарплата рисовалась только в ветке else блока 3.4,
+    // то есть у врача и ассистента её вообще не было видно:
+    // вместо неё там стояла кнопка "МЕСТО".
+    if (_target.object_index != obj_player) {
+        tablet_staff_text_row(
+            _data_x,
+            _col_y,
+            _row_h,
+            "ЗП: $ " + string(_salary_value),
+            _data_w,
+            _row_font
+        );
+    }
 
-    // ═══════════════════════════════════════════════════════════
-    // 3.3.1 ХАРАКТЕР — ВО ВСЮ ШИРИНУ ПАНЕЛИ
-    // Колонка справа от фото узкая, длинное слово вроде
-    // «Стрессоустойчивый» там ужималось почти вдвое. Под фотографией
-    // ширины ровно вдвое больше, поэтому строка читается крупно.
-    // ═══════════════════════════════════════════════════════════
+
+    // ═════════════════════════════════════════════════════════
+    // 3.3.1 СПЕЦИАЛИЗАЦИЯ И ХАРАКТЕР — ВО ВСЮ ШИРИНУ
+    //
+    // Пакет №265: слово "ВРАЧ" больше не пишется. Раньше строка
+    // собиралась как "ВРАЧ - ХИРУРГИЯ"; теперь у врача остаётся
+    // только его профессия ("Терапевт", "Хирург").
+    // У ассистента и администратора специализации нет, поэтому
+    // в этой же строке стоит их должность — иначе непонятно, кто это.
+    // ═════════════════════════════════════════════════════════
 
     var _energy_x1 = _info_x1 + _padding;
     var _energy_x2 = _info_x2 - _padding;
     var _wide_w = _energy_x2 - _energy_x1;
 
+    var _specialty_line = _specialty;
+
+    if (_specialty_line == "") {
+        _specialty_line = _role_name;
+    }
+
     draw_set_color(_text_soft);
     tablet_staff_text_row(
         _energy_x1,
-        _info_y1 + 104 * _ui_scale,
-        22 * _ui_scale,
+        _info_y1 + 112 * _ui_scale,
+        _row_h,
+        "Специализация: " + _specialty_line,
+        _wide_w,
+        _row_font
+    );
+
+    tablet_staff_text_row(
+        _energy_x1,
+        _info_y1 + 138 * _ui_scale,
+        _row_h,
         "Характер: " + _trait,
         _wide_w,
-        0.85 * _font_ui
+        _row_font
     );
 
 
@@ -605,7 +713,7 @@ function tablet_draw_staff_card(
 
     // Энергия всегда стоит на одном месте, независимо от того,
     // была ли строка специализации.
-    var _energy_y = _info_y1 + 128 * _ui_scale;
+    var _energy_y = _info_y1 + 168 * _ui_scale;
     var _energy_color = _green;
 
     if (_energy_ratio <= 0.10) _energy_color = _red;
@@ -615,13 +723,13 @@ function tablet_draw_staff_card(
     tablet_staff_text_row(
         _energy_x1,
         _energy_y,
-        16 * _ui_scale,
+        20 * _ui_scale,
         "ЭНЕРГИЯ " + string(floor(_energy_current)) + "/" + string(round(_energy_max)),
         _wide_w,
-        0.66 * _font_ui
+        _row_font
     );
 
-    var _energy_bar_y = _energy_y + 17 * _ui_scale;
+    var _energy_bar_y = _energy_y + 21 * _ui_scale;
 
     draw_set_color(make_color_rgb(220, 216, 207));
     draw_roundrect_ext(_energy_x1, _energy_bar_y, _energy_x2, _energy_bar_y + 7 * _ui_scale, 7, 7, false);
@@ -640,13 +748,8 @@ function tablet_draw_staff_card(
     draw_set_color(_wood_dark);
     draw_roundrect_ext(_energy_x1, _energy_bar_y, _energy_x2, _energy_bar_y + 7 * _ui_scale, 7, 7, true);
 
-    var _salary = variable_instance_exists(_target, "salary")
-        ? _target.salary
-        : (
-            variable_instance_exists(_target, "skills_sum")
-            ? _target.skills_sum * 10
-            : 0
-        );
+    // Пакет №265: сама зарплата уже посчитана выше (_salary_value)
+    // и напечатана строкой "ЗП" под возрастом у всех ролей.
     var _loyalty = variable_instance_exists(_target, "loyalty")
         ? _target.loyalty
         : 75;
@@ -671,8 +774,8 @@ function tablet_draw_staff_card(
         // НЕТ — именно она подрезалась кнопкой снизу. Подпись переехала
         // внутрь самой кнопки: «МЕСТО: СТАЦИОНАР». Подрезать теперь нечего,
         // а освободившееся место ушло в высоту кнопки и размер шрифта.
-        var _workplace_y1 = _info_y1 + 156 * _ui_scale;
-        var _workplace_y2 = _info_y1 + 196 * _ui_scale;
+        var _workplace_y1 = _info_y1 + 198 * _ui_scale;
+        var _workplace_y2 = _info_y1 + 232 * _ui_scale;
         var _workplace_x1 = _energy_x1;
         var _workplace_x2 = _energy_x2;
         var _workplace_hover = point_in_rectangle(
@@ -720,7 +823,7 @@ function tablet_draw_staff_card(
         var _workplace_scale = tablet_staff_fit_scale(
             _workplace_label,
             (_workplace_x2 - _workplace_x1) - 10 * _ui_scale,
-            0.85 * _font_ui
+            _row_font
         );
 
         draw_set_halign(fa_center);
@@ -762,94 +865,31 @@ function tablet_draw_staff_card(
         }
     }
     else if (_target.object_index != obj_player) {
-        // Пакет №184: зарплата и лояльность — двумя строками во всю
-        // ширину панели и крупно. В одну строку они не помещались
-        // и рисовались вдвое мельче остального текста.
+        // У администратора кнопки места нет, поэтому в той же полосе
+        // стоит лояльность. Зарплата больше здесь не дублируется —
+        // она теперь есть у всех строкой "ЗП" под возрастом.
         draw_set_color(_text);
         tablet_staff_text_row(
             _energy_x1,
-            _info_y1 + 154 * _ui_scale,
-            21 * _ui_scale,
-            "Зарплата: $ " + string(_salary),
-            _wide_w,
-            0.80 * _font_ui
-        );
-
-        tablet_staff_text_row(
-            _energy_x1,
-            _info_y1 + 175 * _ui_scale,
-            21 * _ui_scale,
+            _info_y1 + 202 * _ui_scale,
+            _row_h,
             "Лояльность: " + string(_loyalty) + "/100",
             _wide_w,
-            0.80 * _font_ui
+            _row_font
         );
     }
 
 
-    // ═══════════════════════════════════════════════════════════
-    // 3.5 ЛЕВАЯ НИЖНЯЯ ПАНЕЛЬ: ПОСЛЕДНИЕ НАВЫКИ
-    // ═══════════════════════════════════════════════════════════
-
-    var _log_x1 = _left_x1;
-    var _log_y1 = _info_y2 + _gap;
-    var _log_x2 = _left_x2;
-    var _log_y2 = _content_bottom;
-
-    tablet_staff_draw_panel(_log_x1, _log_y1, _log_x2, _log_y2);
-
-    draw_set_color(_wood_dark);
-    draw_text_transformed(
-        _log_x1 + _padding,
-        _log_y1 + 8 * _ui_scale,
-        "ПОСЛЕДНИЕ НАВЫКИ:",
-        0.47 * _font_ui,
-        0.52 * _font_ui,
-        0
-    );
-
-    var _log_entries = variable_instance_exists(_target, "xp_log")
-        ? _target.xp_log
-        : [];
-
-    if (array_length(_log_entries) <= 0) {
-        draw_set_color(make_color_rgb(120, 110, 95));
-        draw_text_transformed(
-            _log_x1 + _padding,
-            _log_y1 + 28 * _ui_scale,
-            "Нет записей",
-            0.42 * _font_ui,
-            0.47 * _font_ui,
-            0
-        );
-    } else {
-        for (var _log_index = 0; _log_index < min(5, array_length(_log_entries)); _log_index++) {
-            var _entry = _log_entries[_log_index];
-            var _entry_text = "";
-
-            if (is_struct(_entry) && variable_struct_exists(_entry, "txt")) {
-                _entry_text = string(_entry.txt);
-            } else {
-                _entry_text = string(_entry);
-            }
-
-            if (_entry_text == "") continue;
-
-            draw_set_alpha(1 - _log_index * 0.12);
-            draw_set_color(make_color_rgb(40, 110, 50));
-            draw_text_ext_transformed(
-                _log_x1 + _padding,
-                _log_y1 + (26 + _log_index * 12) * _ui_scale,
-                _entry_text,
-                12 * _ui_scale,
-                _log_x2 - _log_x1 - _padding * 2,
-                0.42 * _font_ui,
-                0.47 * _font_ui,
-                0
-            );
-        }
-    }
-
-    draw_set_alpha(1);
+    // ═════════════════════════════════════════════════════════
+    // 3.5 ПАНЕЛЬ "ПОСЛЕДНИЕ НАВЫКИ" УДАЛЕНА (пакет №266)
+    //
+    // Журнал xp_log занимал всю левую нижнюю четверть карточки
+    // ради трёх мелких строчек. Освобождённое место отдано
+    // панели данных сверху: теперь она идёт до самого низа,
+    // строки в ней крупнее и с воздухом.
+    //
+    // Сам массив xp_log в игре не тронут — его просто не рисуем.
+    // ═════════════════════════════════════════════════════════
 
 
     // ═══════════════════════════════════════════════════════════
@@ -898,8 +938,8 @@ function tablet_draw_staff_card(
     var _help = tablet_get_staff_skill_help(_help_id);
 
     if (_help_id == "") {
-        var _empty_help_scale_x = 0.56 * _font_ui;
-        var _empty_help_scale_y = 0.63 * _font_ui;
+        var _empty_help_scale_x = 0.70 * _font_ui;
+        var _empty_help_scale_y = 0.76 * _font_ui;
         var _empty_help_width = (
             _card_x2 - _card_x1 - _padding * 2
         ) / max(0.01, _empty_help_scale_x);
@@ -927,8 +967,8 @@ function tablet_draw_staff_card(
             _help_draw_x,
             _help_y1 + 5 * _ui_scale,
             _help.title,
-            0.64 * _font_ui,
-            0.70 * _font_ui,
+            0.74 * _font_ui,
+            0.80 * _font_ui,
             0
         );
 
@@ -951,8 +991,15 @@ function tablet_draw_staff_card(
         }
 
         // Описание навыка.
-        var _help_scale_x = 0.54 * _font_ui;
-        var _help_scale_y = 0.61 * _font_ui;
+        //
+        // Пакет №267: в 266 прибавка была 0.54 -> 0.56, то есть всего 4% —
+        // на глаз разница не читалась, текст остался мелким.
+        //
+        // Теперь описание КРУПНЕЕ строки цифр: 0.70 против 0.56,
+        // то есть плюс 25% к тому, что было в 266. Сама строка
+        // "УРОВЕНЬ / ОПЫТ / КАЧЕСТВО / СКОРОСТЬ" НЕ трогалась.
+        var _help_scale_x = 0.70 * _font_ui;
+        var _help_scale_y = 0.76 * _font_ui;
 
         // В draw_text_ext_transformed ширина переноса задаётся ДО масштабирования.
         // Поэтому реальную ширину окна делим на горизонтальный масштаб текста.
@@ -963,7 +1010,7 @@ function tablet_draw_staff_card(
             _help_draw_x,
             _desc_y,
             _help.text,
-            7 * _ui_scale,
+            13 * _ui_scale,
             _help_wrap_width,
             _help_scale_x,
             _help_scale_y,

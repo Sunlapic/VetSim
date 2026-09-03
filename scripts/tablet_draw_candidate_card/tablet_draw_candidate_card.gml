@@ -93,7 +93,10 @@ function tablet_draw_candidate_card(
     var _info_x1 = _left_x1;
     var _info_y1 = _content_top;
     var _info_x2 = _left_x2;
-    var _info_y2 = _info_y1 + 182 * _ui_scale;
+    // Пакет №266: панель "ПОСЛЕДНИЕ НАВЫКИ" убрана, панель данных
+    // выросла до 244 юнитов — точно как в карточке сотрудника,
+    // чтобы обе карточки выглядели одинаково.
+    var _info_y2 = _info_y1 + 244 * _ui_scale;
 
     tablet_staff_draw_panel(_info_x1, _info_y1, _info_x2, _info_y2);
 
@@ -238,66 +241,117 @@ function tablet_draw_candidate_card(
         : "?";
     var _role_name = tablet_staff_get_role_name(_target);
     var _specialty = doctor_get_specialty_title(_target);
-    var _trait = tablet_staff_get_trait_name(_target);
 
     _target.specialty_title = _specialty;
 
+    // ─────────────────────────────────────────────────────────
+    // Пакет №265: карточка кандидата повторяет карточку сотрудника:
+    // тот же порядок строк и тот же единый крупный шрифт.
+    //
+    // Имя / Фамилия / Возраст / ЗП — колонкой справа от фото,
+    // Специализация / Характер / Энергия — ниже во всю ширину.
+    //
+    // Слово "ВРАЧ" убрано: у врача пишется только его профессия,
+    // у ассистента и администратора — их должность.
+    //
+    // Характер у кандидата СКРЫТ: до найма его не узнать,
+    // поэтому выводится "Характер: ???" — как прочие скрытые данные.
+    // ─────────────────────────────────────────────────────────
+
+    var _row_font = 0.86 * _font_ui;
+    var _row_h = 26 * _ui_scale;
+
+    // Имя и фамилия — один блок, расстояние между ними вдвое меньше.
+    var _name_row_h = _row_h * 0.5;
+
+    var _name_parts = tablet_staff_split_name(_name);
+    var _name_first = _name_parts[0];
+    var _name_last = _name_parts[1];
+
+    // У кандидата это ожидаемая зарплата, а не назначенная.
+    var _salary_value = variable_instance_exists(_target, "salary_expected")
+        ? _target.salary_expected
+        : (
+            variable_instance_exists(_target, "salary")
+            ? _target.salary
+            : 0
+        );
+
+    var _col_y = _info_y1 + 14 * _ui_scale;
+
     draw_set_color(_blue);
-    draw_text_ext_transformed(
+    _col_y = tablet_staff_text_row(
         _data_x,
-        _info_y1 + 12 * _ui_scale,
-        string_upper(_name),
-        14 * _ui_scale,
+        _col_y,
+        _name_row_h,
+        string_upper(_name_first),
         _data_w,
-        0.58 * _font_ui,
-        0.64 * _font_ui,
-        0
+        _row_font
     );
 
-    draw_set_color(_text);
-    draw_text_transformed(_data_x, _info_y1 + 42 * _ui_scale, "Возраст: " + _age, 0.46 * _font_ui, 0.51 * _font_ui, 0);
-
-    draw_set_color(_text_soft);
-    draw_text_ext_transformed(
-        _data_x,
-        _info_y1 + 62 * _ui_scale,
-        "Роль: " + _role_name,
-        12 * _ui_scale,
-        _data_w,
-        0.44 * _font_ui,
-        0.49 * _font_ui,
-        0
-    );
-
-    // Пакет №79: специализация есть только у врачей.
-    // У администраторов и ассистентов строку полностью пропускаем.
-    var _trait_y = _info_y1 + 107 * _ui_scale;
-
-    if (_role == "doctor") {
-        draw_text_ext_transformed(
+    if (_name_last != "") {
+        _col_y = tablet_staff_text_row(
             _data_x,
-            _info_y1 + 83 * _ui_scale,
-            (_specialty != "" ? "Специализация: " + _specialty : ""),
-            12 * _ui_scale,
+            _col_y,
+            _name_row_h,
+            string_upper(_name_last),
             _data_w,
-            0.41 * _font_ui,
-            0.46 * _font_ui,
-            0
+            _row_font
         );
     } else {
-        // Освободившееся место занимает строка характера.
-        _trait_y = _info_y1 + 83 * _ui_scale;
+        _col_y += _name_row_h;
     }
 
-    draw_text_ext_transformed(
+    // Половина от половины — чтобы от фамилии до возраста
+    // был обычный шаг строки.
+    _col_y += _row_h * 0.25;
+
+    draw_set_color(_text);
+    _col_y = tablet_staff_text_row(
         _data_x,
-        _trait_y,
-        "Характер: " + _trait,
-        12 * _ui_scale,
+        _col_y,
+        _row_h,
+        "Возраст: " + _age,
         _data_w,
-        0.41 * _font_ui,
-        0.46 * _font_ui,
-        0
+        _row_font
+    );
+
+    tablet_staff_text_row(
+        _data_x,
+        _col_y,
+        _row_h,
+        "ЗП: $ " + string(_salary_value),
+        _data_w,
+        _row_font
+    );
+
+    var _wide_x1 = _info_x1 + _padding;
+    var _wide_x2 = _info_x2 - _padding;
+    var _wide_w = _wide_x2 - _wide_x1;
+
+    var _specialty_line = _specialty;
+
+    if (_specialty_line == "") {
+        _specialty_line = _role_name;
+    }
+
+    draw_set_color(_text_soft);
+    tablet_staff_text_row(
+        _wide_x1,
+        _info_y1 + 112 * _ui_scale,
+        _row_h,
+        "Специализация: " + _specialty_line,
+        _wide_w,
+        _row_font
+    );
+
+    tablet_staff_text_row(
+        _wide_x1,
+        _info_y1 + 138 * _ui_scale,
+        _row_h,
+        "Характер: ???",
+        _wide_w,
+        _row_font
     );
 
 
@@ -313,25 +367,25 @@ function tablet_draw_candidate_card(
         : 100;
     var _energy_ratio = clamp(_energy_current / _energy_max, 0, 1);
 
-    var _energy_y = _info_y1 + 132 * _ui_scale;
-    var _energy_x1 = _info_x1 + _padding;
-    var _energy_x2 = _info_x2 - _padding;
+    var _energy_y = _info_y1 + 168 * _ui_scale;
+    var _energy_x1 = _wide_x1;
+    var _energy_x2 = _wide_x2;
     var _energy_color = _green;
 
     if (_energy_ratio <= 0.10) _energy_color = _red;
     else if (_energy_ratio <= 0.30) _energy_color = _gold;
 
     draw_set_color(_text_soft);
-    draw_text_transformed(
+    tablet_staff_text_row(
         _energy_x1,
         _energy_y,
+        20 * _ui_scale,
         "ЭНЕРГИЯ " + string(floor(_energy_current)) + "/" + string(round(_energy_max)),
-        0.42 * _font_ui,
-        0.47 * _font_ui,
-        0
+        _wide_w,
+        _row_font
     );
 
-    var _energy_bar_y = _energy_y + 16 * _ui_scale;
+    var _energy_bar_y = _energy_y + 21 * _ui_scale;
 
     draw_set_color(make_color_rgb(220, 216, 207));
     draw_roundrect_ext(_energy_x1, _energy_bar_y, _energy_x2, _energy_bar_y + 7 * _ui_scale, 7, 7, false);
@@ -350,100 +404,26 @@ function tablet_draw_candidate_card(
     draw_set_color(_wood_dark);
     draw_roundrect_ext(_energy_x1, _energy_bar_y, _energy_x2, _energy_bar_y + 7 * _ui_scale, 7, 7, true);
 
-    var _salary = variable_instance_exists(_target, "salary_expected")
-        ? _target.salary_expected
-        : (
-            variable_instance_exists(_target, "salary")
-            ? _target.salary
-            : 0
-        );
-
-    // Строка занимает то же место и использует тот же шрифт,
-    // что зарплата и лояльность в обычной карточке сотрудника.
+    // Пакет №265: ожидаемая зарплата теперь стоит выше — строкой "ЗП"
+    // сразу под возрастом, как и в карточке нанятого сотрудника.
+    // Здесь осталась только пометка статуса.
     draw_set_color(_text);
-    draw_text_transformed(
+    tablet_staff_text_row(
         _energy_x1,
-        _info_y1 + 165 * _ui_scale,
-        "Ожидаемая з/п/день: $ " + string(_salary),
-        0.40 * _font_ui,
-        0.45 * _font_ui,
-        0
-    );
-
-    draw_text_transformed(
-        _energy_x1 + 112 * _ui_scale,
-        _info_y1 + 165 * _ui_scale,
-        "Кандидат",
-        0.40 * _font_ui,
-        0.45 * _font_ui,
-        0
+        _info_y1 + 202 * _ui_scale,
+        _row_h,
+        "Статус: кандидат",
+        _wide_w,
+        _row_font
     );
 
 
-    // ═══════════════════════════════════════════════════════════
-    // 3.5 ЛЕВАЯ НИЖНЯЯ ПАНЕЛЬ: ПОСЛЕДНИЕ НАВЫКИ
-    // ═══════════════════════════════════════════════════════════
-
-    var _log_x1 = _left_x1;
-    var _log_y1 = _info_y2 + _gap;
-    var _log_x2 = _left_x2;
-    var _log_y2 = _content_bottom;
-
-    tablet_staff_draw_panel(_log_x1, _log_y1, _log_x2, _log_y2);
-
-    draw_set_color(_wood_dark);
-    draw_text_transformed(
-        _log_x1 + _padding,
-        _log_y1 + 8 * _ui_scale,
-        "ПОСЛЕДНИЕ НАВЫКИ:",
-        0.47 * _font_ui,
-        0.52 * _font_ui,
-        0
-    );
-
-    var _log_entries = variable_instance_exists(_target, "xp_log")
-        ? _target.xp_log
-        : [];
-
-    if (array_length(_log_entries) <= 0) {
-        draw_set_color(make_color_rgb(120, 110, 95));
-        draw_text_transformed(
-            _log_x1 + _padding,
-            _log_y1 + 34 * _ui_scale,
-            "Нет записей",
-            0.42 * _font_ui,
-            0.47 * _font_ui,
-            0
-        );
-    } else {
-        for (var _log_index = 0; _log_index < min(5, array_length(_log_entries)); _log_index++) {
-            var _entry = _log_entries[_log_index];
-            var _entry_text = "";
-
-            if (is_struct(_entry) && variable_struct_exists(_entry, "txt")) {
-                _entry_text = string(_entry.txt);
-            } else {
-                _entry_text = string(_entry);
-            }
-
-            if (_entry_text == "") continue;
-
-            draw_set_alpha(1 - _log_index * 0.12);
-            draw_set_color(make_color_rgb(40, 110, 50));
-            draw_text_ext_transformed(
-                _log_x1 + _padding,
-                _log_y1 + (30 + _log_index * 13) * _ui_scale,
-                _entry_text,
-                12 * _ui_scale,
-                _log_x2 - _log_x1 - _padding * 2,
-                0.42 * _font_ui,
-                0.47 * _font_ui,
-                0
-            );
-        }
-    }
-
-    draw_set_alpha(1);
+    // ═════════════════════════════════════════════════════════
+    // 3.5 ПАНЕЛЬ "ПОСЛЕДНИЕ НАВЫКИ" УДАЛЕНА (пакет №266)
+    //
+    // У кандидата она тем более лишняя: опыта в клинике у него
+    // ещё нет, журнал всегда пустой. Место отдано панели данных.
+    // ═════════════════════════════════════════════════════════
 
 
     // ═══════════════════════════════════════════════════════════
