@@ -171,19 +171,32 @@ if (state != "registering" && registration_in_progress) {
 // ═══════════════════════════════════════════════════════════════
 
 if (state == "in_exam" && instance_exists(assigned_table)) {
+
+    // ═══════════════════════════════════════════════════════════
+    // Пакет 263: ВЛАДЕЛЕЦ НА ПРИЁМЕ — ЖИВАЯ IDLE-ПОЗА
+    //
+    // В 262 здесь жёстко ставился спрайт ходьбы с image_speed = 0
+    // и image_index = 0. Получался застывший первый кадр ходьбы.
+    //
+    // Теперь этот блок НЕ трогает спрайт вообще: он только
+    // разворачивает владельца по горизонтали к столу. Позу ставит
+    // par_visitors -> End Step, ветка простоя, и ставит она
+    // анимированный spr_human_FR_idle (13 кадров).
+    //
+    // Поза только фронтальная: спрайта idle со спины в проекте нет,
+    // есть единственный spr_human_FR_idle. Поэтому владелец стоит
+    // лицом вперёд и повёрнут в сторону стола — как и просили.
+    //
+    // image_speed и image_index здесь не задаются намеренно:
+    // любое присвоение снова заморозило бы анимацию.
+    // ═══════════════════════════════════════════════════════════
+
     var _table_dx = assigned_table.x - x;
-    var _table_dy = assigned_table.y - y;
 
-    if (_table_dy < 0) {
-        sprite_index = spr_human_FR_walk;
-        pFacing = (abs(_table_dx) > 1 && _table_dx < 0) ? -1 : 1;
-    } else {
-        sprite_index = spr_human_B_walk;
-        pFacing = (abs(_table_dx) > 1 && _table_dx > 0) ? -1 : 1;
-    }
+    // Спрайт фронтальный, поэтому зеркалим по горизонтали:
+    // стол слева — смотрим влево, стол справа — вправо.
+    pFacing = (abs(_table_dx) > 1 && _table_dx < 0) ? -1 : 1;
 
-    image_speed = 0;
-    image_index = 0;
     is_walking = false;
 }
 else if (
@@ -194,36 +207,28 @@ else if (
     )
     && instance_exists(assigned_desk)
 ) {
+    // Нужна только горизонталь: поза фронтальная, по вертикали
+    // разворачивать нечем (спрайта idle со спины в проекте нет).
     var _look_x = assigned_desk.x;
-    var _look_y = assigned_desk.y;
 
     if (
         variable_instance_exists(assigned_desk, "reception_staff_point")
         && instance_exists(assigned_desk.reception_staff_point)
     ) {
         _look_x = assigned_desk.reception_staff_point.x;
-        _look_y = assigned_desk.reception_staff_point.y;
     }
     else if (variable_instance_exists(assigned_desk, "admin_spot_x")) {
         _look_x = assigned_desk.admin_spot_x;
-        _look_y = assigned_desk.admin_spot_y;
     }
 
     var _look_dx = _look_x - x;
-    var _look_dy = _look_y - y;
+    // Пакет 263: у стойки та же история — только поворот, без
+    // подмены спрайта. Анимированный idle ставит End Step.
 
-    if (_look_dy < 0) {
-        sprite_index = spr_human_FR_walk;
-        pFacing = (abs(_look_dx) > 1 && _look_dx < 0) ? -1 : 1;
-    } else {
-        sprite_index = spr_human_B_walk;
-        pFacing = (abs(_look_dx) > 1 && _look_dx > 0) ? -1 : 1;
-    }
+    // Спрайт фронтальный: зеркалим в сторону администратора.
+    pFacing = (abs(_look_dx) > 1 && _look_dx < 0) ? -1 : 1;
 
-    image_speed = 0;
-    image_index = 0;
     is_walking = false;
-    image_xscale = abs(image_xscale) * pFacing;
 }
 
 
