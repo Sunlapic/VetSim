@@ -31,6 +31,10 @@ hud_draw_clients_database(id);
 // Справочник болезней (пакет №69).
 hud_draw_handbook_panel(id);
 
+// Пакет №280: экран карты клиник.
+// Рисуется здесь же, где остальные окна нижнего меню.
+hud_draw_clinics_map(id);
+
 // Элементы поверх мира и основных панелей.
 hud_draw_notifications(id);
 hud_draw_hover_tooltip(id);

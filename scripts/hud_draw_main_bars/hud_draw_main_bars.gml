@@ -157,7 +157,18 @@ function hud_draw_main_bars(_hud) {
         var _y2 = topbar_y2 - 8;
         var _gap = 10;
         var _left = topbar_x1 + 14;
+        // Пакет 271: правый край окошек упирается в кнопку-шестерёнку,
+        // а не в паузу. Кнопка стоит левее паузы и после увеличения до
+        // 84x84 перекрыла бы табличку «ШТАТ».
+        //
+        // gear_x1 читается через variable_instance_exists: если этот
+        // скрипт вызовут до того, как Begin Step посчитает геометрию
+        // (или при откате пакета 271), поведение остаётся прежним.
         var _right = pause_x1 - 12;
+
+        if (variable_instance_exists(id, "gear_x1") && gear_x1 > 0) {
+            _right = gear_x1 - 12;
+        }
 
         var _pad = 30;
         var _box_w = string_width("РЕПУТАЦИЯ") * _label_scale + _pad;
@@ -291,5 +302,27 @@ function hud_draw_main_bars(_hud) {
         hud_draw_button(staff_x1, staff_y1, staff_x2, staff_y2, "ПЕРСОНАЛ", _staff_active, hover_staff, _paper, _paper_hover, _paper_active, _line_dark, _text_dark);
         hud_draw_button(finance_x1, finance_y1, finance_x2, finance_y2, "ФИНАНСЫ", _finance_active, hover_finance, _paper, _paper_hover, _paper_active, _line_dark, _text_dark);
         hud_draw_button(_handbook_btn_x1, _handbook_btn_y1, _handbook_btn_x2, _handbook_btn_y2, "СПРАВОЧНИК", _handbook_active, _hover_handbook, _paper, _paper_hover, _paper_active, _line_dark, _text_dark);
+
+        // Пакет №280: шестая кнопка «КАРТА». Координаты читаем через
+        // variable_instance_exists с запасным вариантом — тем же приёмом,
+        // что и у справочника выше.
+        var _map_active = variable_instance_exists(id, "map_panel_open")
+            && map_panel_open;
+        var _hover_map_btn = variable_instance_exists(id, "hover_map")
+            && hover_map;
+        var _map_btn_x1 = variable_instance_exists(id, "map_btn_x1")
+            ? map_btn_x1
+            : _handbook_btn_x2 + 14;
+        var _map_btn_y1 = variable_instance_exists(id, "map_btn_y1")
+            ? map_btn_y1
+            : clinic_y1;
+        var _map_btn_x2 = variable_instance_exists(id, "map_btn_x2")
+            ? map_btn_x2
+            : _map_btn_x1 + 180;
+        var _map_btn_y2 = variable_instance_exists(id, "map_btn_y2")
+            ? map_btn_y2
+            : clinic_y2;
+
+        hud_draw_button(_map_btn_x1, _map_btn_y1, _map_btn_x2, _map_btn_y2, "КАРТА", _map_active, _hover_map_btn, _paper, _paper_hover, _paper_active, _line_dark, _text_dark);
     }
 }
