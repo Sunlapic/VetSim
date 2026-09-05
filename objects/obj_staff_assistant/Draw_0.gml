@@ -9,11 +9,12 @@
 
 if (!variable_instance_exists(id, "or_seated")) or_seated = false;
 
+// ПАКЕТ 272: условие приведено к тому же виду, что у владельцев
+// (par_visitors -> Draw): одна проверка флага _owner_sitting, без
+// довесков из состояний. Подробное объяснение — в obj_staff_doctor.
 var _assistant_sitting = (
     variable_instance_exists(id, "_owner_sitting")
     && _owner_sitting
-    && or_seated
-    && assistant_state == "operating_idle"
 );
 
 if (!_assistant_sitting) {

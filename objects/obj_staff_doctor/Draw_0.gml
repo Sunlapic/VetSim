@@ -7,13 +7,23 @@
 
 if (!variable_instance_exists(id, "or_seated")) or_seated = false;
 
+// ПАКЕТ 272: условие приведено к тому же виду, что у владельцев.
+//
+// В par_visitors -> Draw, где лицо сидящего всегда на месте, проверка
+// ровно одна:
+//     var _visitor_sitting = (variable_instance_exists(id, "_owner_sitting")
+//                             && _owner_sitting);
+//
+// Здесь же к флагу были дописаны ещё и состояния. Тело при этом
+// садится в End Step по ДРУГОМУ условию, без _owner_sitting. Стоило
+// состояниям разойтись с флагом хотя бы на кадр — тело уже сидит,
+// а лицо считается по стоячим смещениям и «висит в воздухе».
+//
+// Убираем лишние проверки состояний. Флаг _owner_sitting ставит
+// End Step врача, и он же ставит позу — теперь оба идут вместе.
 var _doctor_sitting = (
     variable_instance_exists(id, "_owner_sitting")
     && _owner_sitting
-    && (
-        doctor_state == "inpatient_at_chair"
-        || (or_seated && doctor_state == "operating_idle")
-    )
 );
 
 // Стояние, ходьба и работа полностью остаются у par_staff.
