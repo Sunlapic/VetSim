@@ -17,40 +17,62 @@
 // разрешении и не требует нового ассета.
 // ═══════════════════════════════════════════════════════════════
 
-function hud_draw_gear_icon(_cx, _cy, _radius, _color) {
-    draw_set_color(_color);
+function hud_draw_gear_icon(_cx, _cy, _radius, _color, _hole_color) {
+    // Пакет 271 (правка): шестерёнка перерисована.
+    //
+    // Было: 8 прямоугольных лучей и отверстие, залитое ФИКСИРОВАННЫМ
+    // тёмным цветом (52,40,28). На бежевой кнопке это выглядело не
+    // дыркой, а грязной точкой. Теперь отверстие вырезается цветом
+    // фона кнопки, который приходит параметром.
+    //
+    // Форма: зубцы-трапеции (у основания шире, к вершине уже) — так
+    // рисуют настоящие шестерни, силуэт читается даже мелко.
+    if (is_undefined(_hole_color)) _hole_color = make_color_rgb(242, 232, 214);
+
+    var _teeth     = 8;
+    var _step      = 360 / _teeth;
+    var _r_tip     = _radius;             // вершина зубца
+    var _r_body    = _radius * 0.74;      // тело шестерёнки
+    var _r_hole    = _radius * 0.34;      // отверстие
+    var _half_base = _step * 0.30;        // полуширина у основания
+    var _half_tip  = _step * 0.19;        // полуширина у вершины
+
     draw_set_alpha(1);
+    draw_set_color(_color);
 
-    var _teeth = 8;
-    var _inner = _radius * 0.62;
-    var _tooth_w = 360 / _teeth * 0.42;
+    // Зубцы. Основание утоплено в тело, чтобы не было щели на стыке.
+    var _r_base = _r_body - 1;
 
-    // Зубцы — короткие толстые лучи.
     for (var _t = 0; _t < _teeth; _t++) {
-        var _ang = _t * (360 / _teeth);
+        var _ang = _t * _step;
+
+        var _b1 = _ang - _half_base;
+        var _b2 = _ang + _half_base;
+        var _t1 = _ang - _half_tip;
+        var _t2 = _ang + _half_tip;
 
         draw_primitive_begin(pr_trianglestrip);
-
-        var _a1 = _ang - _tooth_w;
-        var _a2 = _ang + _tooth_w;
-
-        draw_vertex(_cx + lengthdir_x(_inner, _a1), _cy + lengthdir_y(_inner, _a1));
-        draw_vertex(_cx + lengthdir_x(_radius, _a1), _cy + lengthdir_y(_radius, _a1));
-        draw_vertex(_cx + lengthdir_x(_inner, _a2), _cy + lengthdir_y(_inner, _a2));
-        draw_vertex(_cx + lengthdir_x(_radius, _a2), _cy + lengthdir_y(_radius, _a2));
-
+        draw_vertex(_cx + lengthdir_x(_r_base, _b1), _cy + lengthdir_y(_r_base, _b1));
+        draw_vertex(_cx + lengthdir_x(_r_tip,  _t1), _cy + lengthdir_y(_r_tip,  _t1));
+        draw_vertex(_cx + lengthdir_x(_r_base, _b2), _cy + lengthdir_y(_r_base, _b2));
+        draw_vertex(_cx + lengthdir_x(_r_tip,  _t2), _cy + lengthdir_y(_r_tip,  _t2));
         draw_primitive_end();
     }
 
-    // Тело шестерёнки.
-    draw_circle(_cx, _cy, _inner, false);
+    // Тело.
+    draw_circle(_cx, _cy, _r_body, false);
 
-    // Отверстие в центре — вырезаем фоном панели.
-    draw_set_color(make_color_rgb(52, 40, 28));
-    draw_circle(_cx, _cy, _radius * 0.26, false);
+    // Отверстие — цветом фона кнопки.
+    draw_set_color(_hole_color);
+    draw_circle(_cx, _cy, _r_hole, false);
+
+    // Тонкий ободок вокруг отверстия — придаёт объём.
+    draw_set_color(_color);
+    draw_circle(_cx, _cy, _r_hole + 1, true);
 
     draw_set_color(c_white);
 }
+
 
 
 /// Кнопка-шестерёнка в верхней панели.
@@ -67,20 +89,22 @@ function hud_draw_gear_button(_hud) {
         // Тень.
         draw_set_alpha(0.25);
         draw_set_color(c_black);
-        draw_roundrect_ext(gear_x1 + 1, gear_y1 + 2, gear_x2 + 1, gear_y2 + 2, 8, 8, false);
+        draw_roundrect_ext(gear_x1 + 2, gear_y1 + 3, gear_x2 + 2, gear_y2 + 3, 12, 12, false);
         draw_set_alpha(1);
 
         draw_set_color(_fill);
-        draw_roundrect_ext(gear_x1, gear_y1, gear_x2, gear_y2, 8, 8, false);
+        draw_roundrect_ext(gear_x1, gear_y1, gear_x2, gear_y2, 12, 12, false);
 
         draw_set_color(make_color_rgb(58, 39, 24));
-        draw_roundrect_ext(gear_x1, gear_y1, gear_x2, gear_y2, 8, 8, true);
+        draw_roundrect_ext(gear_x1, gear_y1, gear_x2, gear_y2, 12, 12, true);
 
         var _cx = (gear_x1 + gear_x2) * 0.5;
         var _cy = (gear_y1 + gear_y2) * 0.5;
-        var _r = min(gear_x2 - gear_x1, gear_y2 - gear_y1) * 0.34;
+        // Кнопка стала крупной и квадратной — иконка занимает её
+        // почти целиком, оставляя только поля под рамку.
+        var _r = min(gear_x2 - gear_x1, gear_y2 - gear_y1) * 0.40;
 
-        hud_draw_gear_icon(_cx, _cy, _r, make_color_rgb(58, 39, 24));
+        hud_draw_gear_icon(_cx, _cy, _r, make_color_rgb(58, 39, 24), _fill);
 
         draw_set_color(c_white);
         draw_set_alpha(1);
@@ -268,12 +292,17 @@ function hud_draw_game_menu(_hud) {
 
                 draw_set_color(_ink);
 
+                // ПАКЕТ 274: текст обрезается по body_x2 — левому краю
+                // кнопки удаления, а не по краю строки. Иначе длинная
+                // подпись заезжала бы под крестик.
+                var _text_w = (_rect.body_x2 - _rect.x1) - 40;
+
                 // Первая строка — крупно: номер, день, деньги.
                 ui_text_fit_left(
                     _rect.x1 + 20,
                     _rect.y1 + 10,
                     _entry.label,
-                    (_rect.x2 - _rect.x1) - 40,
+                    _text_w,
                     UI_FS_BUTTON
                 );
 
@@ -290,9 +319,48 @@ function hud_draw_game_menu(_hud) {
                         _rect.x1 + 20,
                         _rect.y1 + 40,
                         _sub,
-                        (_rect.x2 - _rect.x1) - 40,
+                        _text_w,
                         UI_FS_ROW
                     );
+                }
+
+                // ── ПАКЕТ 274: КНОПКА УДАЛЕНИЯ ──
+                //
+                // Рисуется только у непустых слотов: стирать пустую
+                // строку нечего, и лишний крестик только мешал бы.
+                if (_entry.exists) {
+                    var _dhover = (hover_menu_del == _i);
+
+                    // Красная плашка. При наведении ярче — на телефоне
+                    // это единственная обратная связь до отпускания
+                    // пальца.
+                    draw_set_color(_dhover
+                        ? make_color_rgb(196, 74, 62)
+                        : make_color_rgb(176, 58, 48));
+                    draw_roundrect_ext(
+                        _rect.del_x1 + 4, _rect.del_y1 + 4,
+                        _rect.del_x2 - 4, _rect.del_y2 - 4,
+                        8, 8, false
+                    );
+
+                    draw_set_color(make_color_rgb(58, 39, 24));
+                    draw_roundrect_ext(
+                        _rect.del_x1 + 4, _rect.del_y1 + 4,
+                        _rect.del_x2 - 4, _rect.del_y2 - 4,
+                        8, 8, true
+                    );
+
+                    // Сам крестик — две толстые диагонали.
+                    // draw_line_width, а не текст «X»: символ зависел бы
+                    // от шрифта и не был бы одинаковым на всех кеглях.
+                    var _dcx = (_rect.del_x1 + _rect.del_x2) * 0.5;
+                    var _dcy = (_rect.del_y1 + _rect.del_y2) * 0.5;
+                    var _darm = (_rect.del_y2 - _rect.del_y1) * 0.22;
+                    var _dthick = max(3, round((_rect.del_y2 - _rect.del_y1) * 0.09));
+
+                    draw_set_color(make_color_rgb(252, 244, 232));
+                    draw_line_width(_dcx - _darm, _dcy - _darm, _dcx + _darm, _dcy + _darm, _dthick);
+                    draw_line_width(_dcx - _darm, _dcy + _darm, _dcx + _darm, _dcy - _darm, _dthick);
                 }
 
                 draw_set_color(c_white);

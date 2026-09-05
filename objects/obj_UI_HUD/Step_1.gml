@@ -25,6 +25,29 @@ if (!variable_instance_exists(id, "handbook_x2")) handbook_x2 = 0;
 if (!variable_instance_exists(id, "handbook_y2")) handbook_y2 = 0;
 if (!variable_instance_exists(id, "hover_handbook")) hover_handbook = false;
 if (!variable_instance_exists(id, "hover_handbook_close")) hover_handbook_close = false;
+
+// ── ПАКЕТ №280: КАРТА КЛИНИК ──
+if (!variable_instance_exists(id, "map_panel_open")) map_panel_open = false;
+if (!variable_instance_exists(id, "map_panel_x1")) map_panel_x1 = 0;
+if (!variable_instance_exists(id, "map_panel_y1")) map_panel_y1 = 0;
+if (!variable_instance_exists(id, "map_panel_x2")) map_panel_x2 = 0;
+if (!variable_instance_exists(id, "map_panel_y2")) map_panel_y2 = 0;
+if (!variable_instance_exists(id, "map_btn_x1")) map_btn_x1 = 0;
+if (!variable_instance_exists(id, "map_btn_y1")) map_btn_y1 = 0;
+if (!variable_instance_exists(id, "map_btn_x2")) map_btn_x2 = 0;
+if (!variable_instance_exists(id, "map_btn_y2")) map_btn_y2 = 0;
+if (!variable_instance_exists(id, "map_close_x1")) map_close_x1 = 0;
+if (!variable_instance_exists(id, "map_close_y1")) map_close_y1 = 0;
+if (!variable_instance_exists(id, "map_close_x2")) map_close_x2 = 0;
+if (!variable_instance_exists(id, "map_close_y2")) map_close_y2 = 0;
+if (!variable_instance_exists(id, "hover_map")) hover_map = false;
+if (!variable_instance_exists(id, "hover_map_close")) hover_map_close = false;
+if (!variable_instance_exists(id, "hover_map_building")) hover_map_building = -1;
+if (!variable_instance_exists(id, "hover_map_main")) hover_map_main = false;
+if (!variable_instance_exists(id, "hover_map_sell")) hover_map_sell = false;
+if (!variable_instance_exists(id, "hover_map_close_card")) hover_map_close_card = false;
+if (!variable_instance_exists(id, "map_card_clinic_id")) map_card_clinic_id = 0;
+if (!variable_instance_exists(id, "map_confirm_sell")) map_confirm_sell = false;
 if (!variable_instance_exists(id, "handbook_row_hover")) handbook_row_hover = -1;
 if (!variable_instance_exists(id, "handbook_scroll")) handbook_scroll = 0;
 if (!variable_instance_exists(id, "selected_handbook_disease")) selected_handbook_disease = "";
@@ -447,6 +470,26 @@ handbook_close_y1 = _handbook_close_rect.y1;
 handbook_close_x2 = _handbook_close_rect.x2;
 handbook_close_y2 = _handbook_close_rect.y2;
 
+// ── ПАКЕТ №280: ПАНЕЛЬ КАРТЫ ──
+// Та же область, что у справочника: карта открывается там, где игрок
+// привык видеть окна нижнего меню.
+map_panel_x1 = main_panel_x1;
+map_panel_y1 = main_panel_y1;
+map_panel_x2 = main_panel_x2;
+map_panel_y2 = main_panel_y2;
+
+var _map_close_rect = ui_close_button_rect(
+    map_panel_x1,
+    map_panel_y1,
+    map_panel_x2,
+    map_panel_y2
+);
+
+map_close_x1 = _map_close_rect.x1;
+map_close_y1 = _map_close_rect.y1;
+map_close_x2 = _map_close_rect.x2;
+map_close_y2 = _map_close_rect.y2;
+
 // Подвкладки клиники
 // Пакет №180: размеры вкладок берутся из UI-кита — один стиль во всей игре.
 clinic_tab_clinic_x1 = ui_tab_x1(main_panel_x1 + 26, 0);
@@ -488,10 +531,13 @@ client_clear_y2 = client_clear_y1 + 24;
 // Пакет №199: пять кнопок занимают ВСЮ нижнюю панель. Ширина считается
 // от панели, а не берётся фиксированной (было 180), высота — почти во всю
 // полосу. На телефоне по такой кнопке промахнуться трудно.
+// Пакет №280: кнопок стало ШЕСТЬ — добавилась «КАРТА». Шесть кнопок и
+// пять зазоров между ними. Промежуток уменьшен с 14 до 11: иначе на
+// узком экране подписи начинают ужиматься.
 var _menu_side_pad = 16;
-var _menu_gap = 14;
+var _menu_gap = 11;
 var _menu_area_w = (bottombar_x2 - bottombar_x1) - _menu_side_pad * 2;
-var _menu_btn_w = (_menu_area_w - _menu_gap * 4) / 5;
+var _menu_btn_w = (_menu_area_w - _menu_gap * 5) / 6;
 var _menu_btn_h = max(52, (bottombar_y2 - bottombar_y1) - 14);
 var _menu_x = bottombar_x1 + _menu_side_pad;
 var _menu_y = bottombar_y1 + ((bottombar_y2 - bottombar_y1) - _menu_btn_h) * 0.5;
@@ -521,6 +567,12 @@ handbook_x1 = finance_x2 + _menu_gap;
 handbook_y1 = _menu_y;
 handbook_x2 = handbook_x1 + _menu_btn_w;
 handbook_y2 = handbook_y1 + _menu_btn_h;
+
+// Пакет №280: шестая кнопка — КАРТА.
+map_btn_x1 = handbook_x2 + _menu_gap;
+map_btn_y1 = _menu_y;
+map_btn_x2 = map_btn_x1 + _menu_btn_w;
+map_btn_y2 = map_btn_y1 + _menu_btn_h;
 
 // ─────────────────────────────────────────────
 // ВЕРХНИЕ КНОПКИ ВРЕМЕНИ
@@ -556,8 +608,17 @@ pause_y2 = pause_y1 + btn_h;
 // кнопками скорости. Шире обычной кнопки времени и выше — это
 // главная кнопка меню, и палец должен попадать уверенно.
 // ─────────────────────────────────────────────
-var _gear_w = round(btn_w * 1.25);
-var _gear_h = btn_h + 6;
+// ПРАВКА: кнопка увеличена примерно втрое по площади и стала
+// квадратной. Было 55x32 (btn_w*1.25 на btn_h+6) — на телефоне это
+// был крошечный прямоугольник, палец мазал. Стало 84x84: высота
+// почти во всю панель (106 px, поля по 11), ширина в полтора раза
+// больше прежней. Площадь выросла с 1760 до 7056 px².
+//
+// Квадрат выбран потому, что иконка круглая: в прямоугольнике
+// шестерёнку ограничивала меньшая сторона, и половина кнопки
+// оставалась пустой.
+var _gear_h = min(84, topbar_y2 - topbar_y1 - 22);
+var _gear_w = _gear_h;
 
 gear_x1 = pause_x1 - btn_gap * 3 - _gear_w;
 gear_y1 = topbar_y1 + round((topbar_y2 - topbar_y1 - _gear_h) * 0.5);
@@ -610,22 +671,96 @@ menu_close_x2 = _mb_x2;
 // ─────────────────────────────────────────────
 menu_slot_rects = [];
 
-if (game_menu_mode == "save" || game_menu_mode == "load") {
-    var _row_h = 66;
-    var _row_gap = 10;
-    var _row_y = game_menu_y1 + 96;
+// ПАКЕТ 273, БАГ №1: прямоугольники строились по menu_slot_entries,
+// которые могли остаться от ПРЕДЫДУЩЕГО режима меню.
+//
+// Список читается один раз при нажатии СОХРАНИТЬ или ЗАГРУЗИТЬ, и это
+// РАЗНЫЕ списки: сохранение отдаёт 5 ручных слотов, загрузка — 8
+// (3 авто + 5 ручных). Если сначала открыть сохранение, а потом
+// загрузку, то один кадр строки уже рисуются по «загрузочной»
+// геометрии, а данные берутся ещё из «сохраняющего» списка. Клик по
+// третьей строке (Авто 3) попадал в menu_slot_entries[2] — третий
+// РУЧНОЙ слот. Отсюда «жму День 3, пишет День 1».
+//
+// Лечится тем, что строки строятся только когда список действительно
+// прочитан для текущего режима.
+if (!variable_instance_exists(id, "menu_slot_mode")) menu_slot_mode = "";
+
+if ((game_menu_mode == "save" || game_menu_mode == "load")
+    && menu_slot_mode == game_menu_mode) {
+
     var _rows = array_length(menu_slot_entries);
 
+    // На низком экране (720) при отступе 96 и зазоре 8 восьмой слот
+    // не помещался. Поджимаем шапку и зазор, когда записей много.
+    var _row_gap = (_rows > 6) ? 6 : 8;
+    var _row_top = game_menu_y1 + ((_rows > 6) ? 84 : 96);
+    var _row_bottom = menu_close_y1 - 10;
+
+    // ПАКЕТ 273, БАГ №2: восемь слотов не влезали в окно.
+    // Было жёстко _row_h = 66, и лишние строки молча обрезались через
+    // break — два последних ручных слота становились невидимыми и
+    // недоступными. Их нельзя было ни загрузить, ни перезаписать.
+    //
+    // Высота строки подгоняется под число записей, но не мельче 52 px:
+    // это минимум под палец, ниже опускаться нельзя. Если и при 52 px
+    // всё не влезает (очень низкий экран), окно меню растягивается —
+    // список слотов важнее красивых полей.
+    var _row_h = 66;
+
+    if (_rows > 0) {
+        var _need = 52 * _rows + _row_gap * (_rows - 1);
+        var _have = _row_bottom - _row_top;
+
+        // Не хватает даже на минимальную высоту — опускаем кнопку
+        // ЗАКРЫТЬ ниже и растим окно, чтобы поместились все слоты.
+        if (_have < _need) {
+            var _grow = _need - _have;
+
+            game_menu_y2 += _grow;
+            menu_close_y1 += _grow;
+            menu_close_y2 += _grow;
+
+            _row_bottom += _grow;
+        }
+
+        var _avail = (_row_bottom - _row_top) - _row_gap * (_rows - 1);
+        _row_h = clamp(floor(_avail / _rows), 52, 66);
+    }
+
+    var _row_y = _row_top;
+
     for (var _r = 0; _r < _rows; _r++) {
-        // Не вылезаем за кнопку ЗАКРЫТЬ.
-        if (_row_y + _row_h > menu_close_y1 - 12) break;
+        if (_row_y + _row_h > _row_bottom) break;
+
+        // ПАКЕТ 274: кнопка удаления справа в строке.
+        //
+        // Квадратная, во всю высоту строки — на телефоне это самая
+        // надёжная цель для пальца, и её невозможно перепутать с самой
+        // строкой. Ширина равна высоте, поэтому при любом _row_h
+        // (52..66) крестик остаётся квадратным.
+        //
+        // Полезная часть строки заканчивается ЛЕВЕЕ кнопки: del_x1.
+        // Текст рисуется по этой границе, иначе длинная подпись
+        // «День 12, 14:35 — $143 250» заезжала бы под крестик.
+        var _del_w = _row_h;
+        var _del_x1 = _mb_x2 - _del_w;
 
         array_push(menu_slot_rects, {
             x1 : _mb_x1,
             y1 : _row_y,
             x2 : _mb_x2,
             y2 : _row_y + _row_h,
-            entry_index : _r
+            entry_index : _r,
+
+            // Зона строки без кнопки удаления — по ней идёт
+            // сохранение/загрузка.
+            body_x2 : _del_x1 - 6,
+
+            del_x1 : _del_x1,
+            del_y1 : _row_y,
+            del_x2 : _mb_x2,
+            del_y2 : _row_y + _row_h
         });
 
         _row_y += _row_h + _row_gap;
@@ -739,12 +874,22 @@ hover_menu_close = (game_menu_mode != "")
     && point_in_rectangle(_mx, _my, menu_close_x1, menu_close_y1, menu_close_x2, menu_close_y2);
 
 hover_menu_slot = -1;
+// ПАКЕТ 274: наведение на кнопку удаления считается отдельно от
+// строки. Иначе тап по крестику одновременно означал бы «загрузить».
+hover_menu_del = -1;
 
 for (var _hs = 0; _hs < array_length(menu_slot_rects); _hs++) {
     var _hr = menu_slot_rects[_hs];
 
     if (point_in_rectangle(_mx, _my, _hr.x1, _hr.y1, _hr.x2, _hr.y2)) {
-        hover_menu_slot = _hs;
+        // Крестик перекрывает строку: сначала проверяем его.
+        if (point_in_rectangle(_mx, _my, _hr.del_x1, _hr.del_y1, _hr.del_x2, _hr.del_y2)) {
+            hover_menu_del = _hs;
+        }
+        else {
+            hover_menu_slot = _hs;
+        }
+
         break;
     }
 }
@@ -762,6 +907,45 @@ hover_clients = point_in_rectangle(_mx, _my, clients_x1, clients_y1, clients_x2,
 hover_staff   = point_in_rectangle(_mx, _my, staff_x1, staff_y1, staff_x2, staff_y2);
 hover_finance = point_in_rectangle(_mx, _my, finance_x1, finance_y1, finance_x2, finance_y2);
 hover_handbook = point_in_rectangle(_mx, _my, handbook_x1, handbook_y1, handbook_x2, handbook_y2);
+
+// ── ПАКЕТ №280: НАВЕДЕНИЕ НА КАРТЕ ──
+hover_map = point_in_rectangle(_mx, _my, map_btn_x1, map_btn_y1, map_btn_x2, map_btn_y2);
+hover_map_close = map_panel_open && point_in_rectangle(_mx, _my, map_close_x1, map_close_y1, map_close_x2, map_close_y2);
+
+hover_map_building = -1;
+hover_map_main = false;
+hover_map_sell = false;
+hover_map_close_card = false;
+
+if (map_panel_open) {
+
+    clinics_init();
+
+    if (map_card_clinic_id > 0) {
+
+        // Карточка открыта — она перехватывает наведение целиком,
+        // иначе здания подсвечивались бы сквозь затемнение.
+        var _card_btn = clinics_map_card_buttons(id);
+
+        hover_map_main = point_in_rectangle(_mx, _my, _card_btn.main_x1, _card_btn.main_y1, _card_btn.main_x2, _card_btn.main_y2);
+        hover_map_sell = point_in_rectangle(_mx, _my, _card_btn.sell_x1, _card_btn.sell_y1, _card_btn.sell_x2, _card_btn.sell_y2);
+        hover_map_close_card = point_in_rectangle(_mx, _my, _card_btn.close_x1, _card_btn.close_y1, _card_btn.close_x2, _card_btn.close_y2);
+    }
+    else if (variable_global_exists("clinics") && is_array(global.clinics)) {
+
+        // С конца: если здания перекрываются, верхнее (нарисованное
+        // последним) должно и нажиматься первым.
+        for (var _mb = array_length(global.clinics) - 1; _mb >= 0; _mb--) {
+
+            var _mb_rect = clinics_map_building_rect(id, _mb);
+
+            if (point_in_rectangle(_mx, _my, _mb_rect.x1, _mb_rect.y1, _mb_rect.x2, _mb_rect.y2)) {
+                hover_map_building = _mb;
+                break;
+            }
+        }
+    }
+}
 
 hover_handbook_close = handbook_open && point_in_rectangle(_mx, _my, handbook_close_x1, handbook_close_y1, handbook_close_x2, handbook_close_y2);
 
@@ -1112,6 +1296,30 @@ if (mouse_check_button_pressed(mb_left)) {
 
                 game_menu_mode = "";
             }
+            else if (menu_confirm_kind == "delete") {
+                // ПАКЕТ 274: стираем файл и СРАЗУ перечитываем список,
+                // иначе строка осталась бы на экране до переоткрытия
+                // окна, а клик по ней ушёл бы в несуществующий файл.
+                if (script_exists(asset_get_index("save_slot_delete"))) {
+                    save_slot_delete(menu_confirm_slot_auto, menu_confirm_slot_index);
+                }
+
+                if (game_menu_mode == "save") {
+                    if (script_exists(asset_get_index("save_slot_list_manual"))) {
+                        menu_slot_entries = save_slot_list_manual();
+                        menu_slot_mode = "save";
+                    }
+                }
+                else {
+                    if (script_exists(asset_get_index("save_slot_list_all"))) {
+                        menu_slot_entries = save_slot_list_all();
+                        menu_slot_mode = "load";
+                    }
+                }
+
+                // Меню НЕ закрываем: игрок обычно чистит несколько
+                // слотов подряд.
+            }
             else if (menu_confirm_kind == "new") {
                 if (script_exists(asset_get_index("save_slot_new_game"))) {
                     save_slot_new_game();
@@ -1134,6 +1342,7 @@ if (mouse_check_button_pressed(mb_left)) {
             // это чтение файлов с диска.
             if (script_exists(asset_get_index("save_slot_list_manual"))) {
                 menu_slot_entries = save_slot_list_manual();
+                menu_slot_mode = "save";   // пакет 273: список и режим всегда парой
             }
         }
         else if (hover_menu_load) {
@@ -1141,6 +1350,7 @@ if (mouse_check_button_pressed(mb_left)) {
 
             if (script_exists(asset_get_index("save_slot_list_all"))) {
                 menu_slot_entries = save_slot_list_all();
+                menu_slot_mode = "load";   // пакет 273: список и режим всегда парой
             }
         }
         else if (hover_menu_new) {
@@ -1155,11 +1365,40 @@ if (mouse_check_button_pressed(mb_left)) {
     else if (game_menu_mode == "save" || game_menu_mode == "load") {
         if (hover_menu_close) {
             game_menu_mode = "main";
+            menu_slot_mode = "";   // пакет 273: список больше не действителен
+        }
+        // ПАКЕТ 274: удаление слота. Проверяется ПЕРЕД обычным
+        // кликом по строке, потому что крестик лежит внутри неё.
+        else if (hover_menu_del >= 0
+            && hover_menu_del < array_length(menu_slot_rects)) {
+
+            var _drect = menu_slot_rects[hover_menu_del];
+
+            if (_drect.entry_index < array_length(menu_slot_entries)) {
+                var _dentry = menu_slot_entries[_drect.entry_index];
+
+                // Пустой слот удалять нечего.
+                if (_dentry.exists) {
+                    menu_confirm_open = true;
+                    menu_confirm_kind = "delete";
+                    menu_confirm_slot_auto = _dentry.is_auto;
+                    menu_confirm_slot_index = _dentry.index;
+
+                    menu_confirm_text = "Удалить сохранение День "
+                        + string(_dentry.day)
+                        + "? Восстановить его будет нельзя.";
+                }
+            }
         }
         else if (hover_menu_slot >= 0
             && hover_menu_slot < array_length(menu_slot_rects)) {
 
             var _rect = menu_slot_rects[hover_menu_slot];
+
+            // Пакет 273: страховка от выхода за массив. Даже если
+            // списки когда-нибудь снова разъедутся, игра не упадёт.
+            if (_rect.entry_index >= array_length(menu_slot_entries)) exit;
+
             var _entry = menu_slot_entries[_rect.entry_index];
 
             if (game_menu_mode == "save") {
@@ -1225,6 +1464,7 @@ if (mouse_check_button_pressed(mb_left)) {
             finance_panel_open = false;
             hiring_panel_open = false;
             handbook_open = false;
+            map_panel_open = false;
             client_search_active = false;
         }
         else if (hover_clients) {
@@ -1240,6 +1480,7 @@ if (mouse_check_button_pressed(mb_left)) {
             finance_panel_open = false;
             hiring_panel_open = false;
             handbook_open = false;
+            map_panel_open = false;
         }
         else if (hover_staff) {
             if (selected_sidebar_tab == "staff" && staff_panel_open) {
@@ -1254,6 +1495,7 @@ if (mouse_check_button_pressed(mb_left)) {
             finance_panel_open = false;
             hiring_panel_open = false;
             handbook_open = false;
+            map_panel_open = false;
             client_search_active = false;
         }
         else if (hover_finance) {
@@ -1269,6 +1511,7 @@ if (mouse_check_button_pressed(mb_left)) {
             staff_panel_open = false;
             hiring_panel_open = false;
             handbook_open = false;
+            map_panel_open = false;
             client_search_active = false;
         }
         else if (hover_handbook) {
@@ -1285,6 +1528,31 @@ if (mouse_check_button_pressed(mb_left)) {
             finance_panel_open = false;
             hiring_panel_open = false;
             client_search_active = false;
+            map_panel_open = false;
+        }
+        // ── ПАКЕТ №280: КНОПКА «КАРТА» ──
+        else if (hover_map) {
+            if (selected_sidebar_tab == "map" && map_panel_open) {
+                map_panel_open = false;
+            } else {
+                selected_sidebar_tab = "map";
+                map_panel_open = true;
+                clinics_init();
+            }
+
+            // Карточку закрываем вместе с картой, иначе она всплывёт
+            // при следующем открытии.
+            map_card_clinic_id = 0;
+            map_confirm_sell = false;
+
+            clinic_panel_open = false;
+            clients_panel_open = false;
+            staff_panel_open = false;
+            finance_panel_open = false;
+            hiring_panel_open = false;
+            client_search_active = false;
+            handbook_open = false;
+            map_panel_open = false;
         }
 
         // Вкладка и поиск клиентов
@@ -1328,6 +1596,116 @@ if (clinic_panel_open) {
         // Крестик панели справочника (пакет №69)
         if (handbook_open && hover_handbook_close) {
             handbook_open = false;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // ПАКЕТ №280: КЛИКИ ВНУТРИ КАРТЫ
+        //
+        // Блок стоит здесь, рядом с крестиком справочника, а НЕ в
+        // цепочке «else if (hover_...)» нижнего меню. Это важно: та
+        // цепочка перебирает кнопки самой панели и обрывается на
+        // первом совпадении, поэтому клик по зданию внутри открытого
+        // окна туда просто не доходил — карта не реагировала на тапы.
+        // ═══════════════════════════════════════════════════════════
+        if (map_panel_open) {
+
+            if (hover_map_close) {
+                map_panel_open = false;
+                map_card_clinic_id = 0;
+                map_confirm_sell = false;
+            }
+            else if (map_card_clinic_id > 0) {
+
+                var _card_clinic = clinics_get(map_card_clinic_id);
+
+                if (is_struct(_card_clinic)) {
+
+                    if (map_confirm_sell) {
+
+                        // Режим подтверждения продажи.
+                        if (hover_map_sell) {
+
+                            var _sold_name = _card_clinic.name;
+                            var _sold_sum = clinics_sell_price(_card_clinic);
+
+                            if (clinics_sell(map_card_clinic_id)) {
+                                show_notice(
+                                    "КЛИНИКА ПРОДАНА",
+                                    _sold_name + " — получено $" + string(_sold_sum),
+                                    room_speed * 3
+                                );
+
+                                map_card_clinic_id = 0;
+                            }
+
+                            map_confirm_sell = false;
+                        }
+                        else if (hover_map_close_card) {
+                            map_confirm_sell = false;
+                        }
+                    }
+                    else {
+
+                        if (hover_map_main) {
+
+                            if (!_card_clinic.owned) {
+
+                                var _buy_res = clinics_can_buy(_card_clinic);
+
+                                if (_buy_res.ok) {
+                                    if (clinics_buy(map_card_clinic_id)) {
+                                        show_notice(
+                                            "КЛИНИКА КУПЛЕНА",
+                                            _card_clinic.name + " теперь ваша",
+                                            room_speed * 3
+                                        );
+                                    }
+                                }
+                                else {
+                                    show_notice("НЕЛЬЗЯ КУПИТЬ", _buy_res.reason, room_speed * 3);
+                                }
+                            }
+                            else if (_card_clinic.id != global.active_clinic) {
+
+                                // Переезда ещё нет: комнаты 2-6 не собраны.
+                                show_notice(
+                                    "ПЕРЕЕЗД ПОКА НЕ ГОТОВ",
+                                    "Помещение этой клиники ещё не построено",
+                                    room_speed * 3
+                                );
+                            }
+                        }
+                        else if (hover_map_sell) {
+
+                            var _sell_res = clinics_can_sell(_card_clinic);
+
+                            if (_sell_res.ok) {
+                                // Продажа необратима — спрашиваем ещё раз.
+                                map_confirm_sell = true;
+                            }
+                            else {
+                                show_notice("НЕЛЬЗЯ ПРОДАТЬ", _sell_res.reason, room_speed * 3);
+                            }
+                        }
+                        else if (hover_map_close_card) {
+                            map_card_clinic_id = 0;
+                        }
+                    }
+                }
+                else {
+                    map_card_clinic_id = 0;
+                }
+            }
+            else if (hover_map_building >= 0) {
+
+                // Тап по зданию — открываем карточку.
+                var _picked = global.clinics[hover_map_building];
+
+                if (is_struct(_picked)) {
+                    map_card_clinic_id = _picked.id;
+                    map_confirm_sell = false;
+                }
+            }
         }
 
         // Кнопки кандидата

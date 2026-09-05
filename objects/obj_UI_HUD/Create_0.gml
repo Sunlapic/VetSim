@@ -301,8 +301,15 @@ hover_menu_close = false;
 // Пересобирается при каждом открытии окна, а не каждый кадр —
 // чтение восьми файлов на кадре съело бы производительность.
 menu_slot_entries = [];
+// Пакет 273: для какого режима прочитан menu_slot_entries — "save",
+// "load" или "" (не прочитан). Строки списка строятся только когда
+// это совпадает с game_menu_mode, иначе клик попадает не в тот слот.
+menu_slot_mode = "";
 menu_slot_rects = [];
 hover_menu_slot = -1;
+// Пакет 274: индекс строки, у которой курсор стоит на крестике
+// удаления. -1 = крестик не под курсором.
+hover_menu_del = -1;
 
 // ── Подтверждения ──
 // Отдельное окно поверх меню. Пока оно открыто, клики по остальному
@@ -338,6 +345,36 @@ hover_staff = false;
 hover_finance = false;
 
 selected_sidebar_tab = "clinic";
+
+// ── ПАКЕТ №280: КАРТА КЛИНИК ──
+// Состояние экрана карты. Геометрия считается каждый кадр в Begin Step,
+// здесь только начальные значения.
+map_panel_open = false;
+map_panel_x1 = 0;
+map_panel_y1 = 0;
+map_panel_x2 = 0;
+map_panel_y2 = 0;
+map_btn_x1 = 0;
+map_btn_y1 = 0;
+map_btn_x2 = 0;
+map_btn_y2 = 0;
+map_close_x1 = 0;
+map_close_y1 = 0;
+map_close_x2 = 0;
+map_close_y2 = 0;
+hover_map = false;
+hover_map_close = false;
+hover_map_building = -1;
+hover_map_main = false;
+hover_map_sell = false;
+hover_map_close_card = false;
+
+// Какая клиника открыта в карточке. 0 — карточка закрыта.
+map_card_clinic_id = 0;
+
+// Режим подтверждения продажи: продажа необратима, поэтому кнопка
+// сначала переводит карточку в этот режим, а не продаёт сразу.
+map_confirm_sell = false;
 
 
 // ═══════════════════════════════════════════════════════════════

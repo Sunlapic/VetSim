@@ -343,6 +343,29 @@ function save_slot_load(_is_auto, _index) {
 
 
 /// Есть ли хоть одно сохранение — для кнопки ЗАГРУЗИТЬ.
+/// @function save_slot_delete(_is_auto, _index)
+/// @description ПАКЕТ 274: удаляет файл одного слота.
+///
+/// Работает и с ручными, и с автослотами: игрок должен иметь право
+/// стереть любую строку списка, включая автосейв.
+///
+/// Отдельная тонкость — автосейв. Кольцевой счётчик global.save_auto_next
+/// указывает, куда писать следующий автосейв. Если удалить слот,
+/// счётчик трогать не нужно: save_slot_auto_next_index сам предпочтёт
+/// пустой слот занятому, то есть освободившееся место займётся первым.
+function save_slot_delete(_is_auto, _index) {
+    var _file = save_slot_file(_is_auto, _index);
+
+    if (!file_exists(_file)) return false;
+
+    file_delete(_file);
+
+    show_debug_message("[SLOT] Удалён " + _file);
+
+    return true;
+}
+
+
 function save_slot_any_exists() {
     for (var _a = 1; _a <= SAVE_SLOT_AUTO_COUNT; _a++) {
         if (file_exists(save_slot_auto_file(_a))) return true;
