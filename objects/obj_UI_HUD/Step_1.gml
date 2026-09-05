@@ -1552,7 +1552,6 @@ if (mouse_check_button_pressed(mb_left)) {
             hiring_panel_open = false;
             client_search_active = false;
             handbook_open = false;
-            map_panel_open = false;
         }
 
         // Вкладка и поиск клиентов
@@ -1665,14 +1664,50 @@ if (clinic_panel_open) {
                                     show_notice("НЕЛЬЗЯ КУПИТЬ", _buy_res.reason, room_speed * 3);
                                 }
                             }
-                            else if (_card_clinic.id != global.active_clinic) {
+                            else {
 
-                                // Переезда ещё нет: комнаты 2-6 не собраны.
-                                show_notice(
-                                    "ПЕРЕЕЗД ПОКА НЕ ГОТОВ",
-                                    "Помещение этой клиники ещё не построено",
-                                    room_speed * 3
+                                // ═══════════════════════════════════
+                                // ПАКЕТ №303: РЕАЛЬНЫЙ ПЕРЕЕЗД
+                                //
+                                // Здесь стояла заглушка из пакета 280
+                                // («переезд пока не готов»), и она
+                                // осталась даже после того, как в
+                                // пакете 301 появился clinics_enter,
+                                // а в 302 — комната клиники №1.
+                                // Кнопка выглядела рабочей, но не
+                                // делала ничего.
+                                //
+                                // Условие тоже изменено: сравнение с
+                                // active_clinic убрано. Игрок может
+                                // стоять в тестовой комнате, и тогда
+                                // «войти» в собственную клинику —
+                                // законное действие. Проверку «вы уже
+                                // здесь» делает clinics_can_enter,
+                                // сверяясь с реальной комнатой.
+                                // ═══════════════════════════════════
+
+                                var _enter = clinics_can_enter(
+                                    _card_clinic.id
                                 );
+
+                                if (_enter.ok) {
+                                    map_panel_open = false;
+
+                                    show_notice(
+                                        "ПЕРЕЕЗД",
+                                        _card_clinic.name,
+                                        room_speed * 2
+                                    );
+
+                                    clinics_enter(_card_clinic.id);
+                                }
+                                else {
+                                    show_notice(
+                                        "НЕ ПОЛУЧИЛОСЬ",
+                                        _enter.reason,
+                                        room_speed * 3
+                                    );
+                                }
                             }
                         }
                         else if (hover_map_sell) {

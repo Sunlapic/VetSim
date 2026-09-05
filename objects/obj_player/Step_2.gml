@@ -27,11 +27,41 @@ doctor_state = _real_player_state;
 // 1. РЕГИСТРАЦИЯ И ОПЛАТА
 // ═══════════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════════
+// ПАКЕТ №289: РУКИ ИГРОКА НАД СТОЛОМ ПРИЁМА
+//
+// Раньше здесь учитывалась ТОЛЬКО стойка регистрации, а во всех
+// остальных случаях безусловно ставилось depth = -y.
+//
+// Игрок на приёме стоит ВЫШЕ стола (у точки врача y меньше,
+// чем у obj_table), поэтому при depth = -y его depth БОЛЬШЕ
+// столового — стол рисуется позже и руки проваливаются под него.
+//
+// У NPC-врача и ассистента это давно решено (пакеты 76 и 166):
+// в рабочих состояниях они берут depth стола минус 3.
+// Здесь сделано точно так же — та же формула и тот же отступ,
+// чтобы игрок выглядел за столом как любой другой врач.
+// ══════════════════════════════════════════════════════════════
+
+var _depth_desk = noone;
+
 if (
     (doctor_state == "manual_registering" || doctor_state == "manual_payment")
     && instance_exists(registration_target_desk)
 ) {
-    depth = registration_target_desk.depth - 3;
+    _depth_desk = registration_target_desk;
+}
+else if (
+    (doctor_state == "manual_exam" || doctor_state == "manual_procedure")
+    && variable_instance_exists(id, "assigned_table")
+    && instance_exists(assigned_table)
+) {
+    // Приём и ручные процедуры: стол смотровой или койка.
+    _depth_desk = assigned_table;
+}
+
+if (instance_exists(_depth_desk)) {
+    depth = _depth_desk.depth - 3;
 }
 else {
     depth = -y;

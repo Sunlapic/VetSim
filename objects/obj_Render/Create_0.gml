@@ -1,5 +1,33 @@
 /// Create obj_Render
 /// @description Инициализация проекта без readonly debug_mode и устаревшего room_speed.
+///
+/// ═══════════════════════════════════════════════════════════════
+/// ПАКЕТ №300: СОБЫТИЕ РАЗДЕЛЕНО НА ПРОГРЕСС И ОБСТАНОВКУ
+///
+/// obj_Render не persistent. Пока комната была одна, это не мешало,
+/// но для перехода между клиниками стало опасно: при room_goto объект
+/// пересоздаётся и Create отрабатывает ВТОРОЙ раз.
+///
+/// Здесь 73 присваивания global, и защита стояла только у трёх. Всё
+/// остальное сбрасывалось безусловно — деньги возвращались к стартовым
+/// 100 000, репутация к 35, время на 8 утра, календарь на первый день,
+/// список жителей города очищался. То есть переезд в новую клинику
+/// откатил бы игру к началу.
+///
+/// Теперь:
+///
+///   • ПРОГРЕСС — под `if (!variable_global_exists(...))`. Создаётся
+///     один раз за запуск и переживает любые переходы. Список сверен
+///     с save_system: там перечислено ровно то, что игра считает
+///     прогрессом и пишет в сохранение.
+///
+///   • ОБСТАНОВКА КОМНАТЫ (сетка путей, точки ожидания, вход) —
+///     переехала в clinic_scene_system и вызывается из нового события
+///     Room Start. Она обязана пересобираться под каждую клинику.
+///
+///   • НАСТРОЙКИ И КОНСТАНТЫ (цены, лимиты, расписание) остались как
+///     были: их безопасно присваивать повторно, они одинаковы всегда.
+/// ═══════════════════════════════════════════════════════════════
 /// Пакет №138: убран вызов удалённого inventory_init() (склад наполняет db_init_items).
 /// Пакет №140: global.inventory_main создаётся сразу (вместо удалённого inventory_init).
 /// Пакет №144: тест — старт с $100 000 и 300 баллами.
@@ -17,6 +45,10 @@ db_init_items();
 // Вызов безопасен при повторе — если список уже есть (например,
 // поднят из сохранения), функция ничего не трогает.
 clinics_init();
+
+// Пакет №287: массив истории финансов. Функция идемпотентна:
+// если загрузка уже подняла историю из сейва, она её не затрёт.
+finance_history_init();
 
 // Пакет №140: создаём глобальный склад сразу (раньше это делал удалённый
 // inventory_init). obj_storage_main → Create читает global.inventory_main,
@@ -47,12 +79,19 @@ depth = 10000;
 // 2. ГЛОБАЛЬНЫЕ СЧЁТЧИКИ И МАССИВЫ
 // ═══════════════════════════════════════════════════════════════
 
-global.game_day = 1;
-global.owner_counter = 0;
-global.pet_counter = 0;
+// ПАКЕТ №300: прогресс. Счётчики и списки жителей города копятся всю
+// игру — при переезде в другую клинику их нельзя обнулять.
+//
+// active_visitors — исключение: это посетители, которые физически
+// находятся в комнате. При смене клиники старые инстансы уничтожаются
+// вместе с комнатой, поэтому список честно начинается заново.
+if (!variable_global_exists("game_day")) global.game_day = 1;
+if (!variable_global_exists("owner_counter")) global.owner_counter = 0;
+if (!variable_global_exists("pet_counter")) global.pet_counter = 0;
 
-global.city_citizens = [];
-global.city_pet_owners = [];
+if (!variable_global_exists("city_citizens")) global.city_citizens = [];
+if (!variable_global_exists("city_pet_owners")) global.city_pet_owners = [];
+
 global.active_visitors = [];
 
 
@@ -81,26 +120,34 @@ global.ui_block_world_click = false;
 // 5. КЛИНИКА И РЕСУРСЫ
 // ═══════════════════════════════════════════════════════════════
 
-global.clinic_name = "VetSim Clinic";
+// ПАКЕТ №300: прогресс. Это первое, что ломалось бы при переезде —
+// деньги возвращались к стартовым, а купленная клиника «оплачивалась»
+// заново.
+//
 // Пакет №144 (тест): старт с большими деньгами и баллами.
 // Вернуть обычный старт: money 15000, points убрать строку ниже.
-global.clinic_money = 100000;
-global.clinic_points = 300;
-global.clinic_reputation = 35;
+if (!variable_global_exists("clinic_name")) global.clinic_name = "VetSim Clinic";
+if (!variable_global_exists("clinic_money")) global.clinic_money = 100000;
+if (!variable_global_exists("clinic_points")) global.clinic_points = 300;
+if (!variable_global_exists("clinic_reputation")) global.clinic_reputation = 35;
 
 
 // ═══════════════════════════════════════════════════════════════
 // 6. ВРЕМЯ И КАЛЕНДАРЬ
 // ═══════════════════════════════════════════════════════════════
 
-global.game_hour = 8;
-global.game_minute = 0;
+// ПАКЕТ №300: время у сети клиник ОБЩЕЕ — переезд не должен
+// отматывать часы на утро, а календарь на первое число.
+if (!variable_global_exists("game_hour")) global.game_hour = 8;
+if (!variable_global_exists("game_minute")) global.game_minute = 0;
 
-global.week_day_index = 0;
-global.calendar_day = 1;
-global.calendar_month = 1;
-global.calendar_year = 1;
+if (!variable_global_exists("week_day_index")) global.week_day_index = 0;
+if (!variable_global_exists("calendar_day")) global.calendar_day = 1;
+if (!variable_global_exists("calendar_month")) global.calendar_month = 1;
+if (!variable_global_exists("calendar_year")) global.calendar_year = 1;
 
+// Скорость и пауза — настройки сеанса, а не прогресс: при входе в
+// новую клинику логично снимать паузу и возвращать обычный темп.
 global.time_speed = 1;
 global.time_paused = false;
 global.time_step_frames = _game_fps;
@@ -111,21 +158,20 @@ render_last_day = global.game_day;
 
 // ═══════════════════════════════════════════════════════════════
 // 7. СЕТКА AI
-// ═══════════════════════════════════════════════════════════════
-
-var _precision = 16;
-var _grid_w = ceil(room_width / _precision);
-var _grid_h = ceil(room_height / _precision);
-
-global.ai_grid = mp_grid_create(
-    0,
-    0,
-    _grid_w,
-    _grid_h,
-    _precision,
-    _precision
-);
-mp_grid_add_instances(global.ai_grid, par_objects, true);
+//
+// ПАКЕТ №300: переехала в clinic_scene_build_grid (скрипт
+// clinic_scene_system), вызывается из нового события Room Start.
+//
+// Причина: размер сетки считается от room_width/room_height, а
+// препятствия собираются обходом объектов ТЕКУЩЕЙ комнаты. В другой
+// клинике геометрия другая, и сетку обязательно строить заново —
+// иначе персонажи ходили бы по карте прошлой клиники.
+//
+// Здесь оставлена только заглушка: до Room Start ни один объект
+// комнаты сетку не трогает, но переменная должна существовать.
+if (!variable_global_exists("ai_grid")) {
+    global.ai_grid = -1;
+}
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -135,29 +181,18 @@ mp_grid_add_instances(global.ai_grid, par_objects, true);
 desk_x = 800;
 desk_y = 400;
 
+// ПАКЕТ №300: точки ожидания и координаты входа собираются в
+// clinic_scene_system → Room Start, потому что зависят от объектов
+// конкретной комнаты (obj_wait_spot их может быть разное количество).
+//
+// Значения ниже — только начальные, до первого Room Start. Он
+// срабатывает сразу после создания объектов комнаты и перезапишет их.
 spawn_x = 100;
 spawn_y = 100;
 
-global.wait_spots = [];
-
-for (var _wait_index = 0; _wait_index < instance_number(obj_wait_spot); _wait_index++) {
-    var _spot = instance_find(obj_wait_spot, _wait_index);
-
-    if (!instance_exists(_spot)) continue;
-
-    array_push(global.wait_spots, {
-        x : _spot.x,
-        y : _spot.y,
-        occupied_by : noone,
-        marker_inst : _spot
-    });
+if (!variable_global_exists("wait_spots")) {
+    global.wait_spots = [];
 }
-
-show_debug_message(
-    "[WAIT SPOTS] Загружено "
-    + string(array_length(global.wait_spots))
-    + " точек ожидания"
-);
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -170,6 +205,7 @@ global.clinic_hiring_open = true;
 
 global.candidate_test_mode = true;
 
+// ПАКЕТ №300: перезаписываются в Room Start под вход текущей клиники.
 candidate_spawn_x = 100;
 candidate_spawn_y = 100;
 candidate_exit_x = candidate_spawn_x;
@@ -184,11 +220,17 @@ else {
     candidate_max_gap_minutes = 240;
 }
 
-global.next_candidate_day = global.game_day;
+// ПАКЕТ №300: расписание найма — прогресс. Иначе каждый переезд
+// сбрасывал бы очередь кандидатов на «прямо сейчас».
+if (!variable_global_exists("next_candidate_day")) {
+    global.next_candidate_day = global.game_day;
+}
 
-global.next_candidate_minute = global.candidate_test_mode
-    ? global.game_hour * 60 + 2
-    : 9 * 60;
+if (!variable_global_exists("next_candidate_minute")) {
+    global.next_candidate_minute = global.candidate_test_mode
+        ? global.game_hour * 60 + 2
+        : 9 * 60;
+}
 
 
 // ═══════════════════════════════════════════════════════════════
@@ -350,8 +392,13 @@ zoom_epsilon = 0.001;
 // 13. ВЫХОД И БАЗОВАЯ ЦЕНА ПРИЁМА
 // ═══════════════════════════════════════════════════════════════
 
-global.clinic_exit_x = spawn_x;
-global.clinic_exit_y = spawn_y;
+// ПАКЕТ №300: точный выход ставит Room Start (clinic_scene_apply_spawn).
+// Здесь — начальное значение, чтобы переменная существовала раньше.
+if (!variable_global_exists("clinic_exit_x")) {
+    global.clinic_exit_x = spawn_x;
+    global.clinic_exit_y = spawn_y;
+}
+
 global.base_visit_price = 180;
 global.visit_price_random = 90;
 
@@ -432,6 +479,21 @@ global.daily_stats = {
 global.daily_stats_reset_pending = false;
 
 function daily_stats_reset_now() {
+    // ═══════════════════════════════════════════════════════
+    // ПАКЕТ №287: СНИМОК ДНЯ В ИСТОРИЮ
+    //
+    // Снимаем ДО обнуления — ниже все цифры станут нулями.
+    //
+    // Точка выбрана именно здесь, а не в полночи obj_Render/Step:
+    // сброс вызывается из ДВУХ мест (обычное и отложенное
+    // из пакета 211, когда открыто окно итогов дня). Одна точка
+    // внутри функции обслуживает оба пути и не даёт потерять день.
+    //
+    // Повторный вызов за тот же день дубля не создаёт —
+    // finance_history_close_day обновит запись на месте.
+    // ═══════════════════════════════════════════════════════
+    finance_history_close_day();
+
     global.daily_stats.paid_visits = 0;
     global.daily_stats.earned_money = 0;
     global.daily_stats.spent_money = 0;
@@ -491,3 +553,92 @@ global.save_last_day = global.game_day;
 global.save_load_pending = true;
 
 alarm[1] = 1;
+
+
+// ═══════════════════════════════════════════════════════════════
+// 13. ПАКЕТ №308: ИГРА НАЧИНАЕТСЯ В МАЛЕНЬКОЙ КЛИНИКЕ
+//
+// Стартовая комната задаётся порядком в Room Order, а он живёт в
+// файле проекта .yyp — его я не отдаю (правило: никаких .yy/.yyp).
+// Поэтому переход делается кодом, здесь.
+//
+// Как это работает: если игра запустилась в комнате, которая НЕ
+// принадлежит клинике №1, мы уходим в её комнату. Room1 при этом
+// остаётся первой в Room Order и продолжает открываться клавишей R
+// и через карту как клиника №4.
+//
+// Почему именно в Create, а не в Room Start: Room Start срабатывает
+// при КАЖДОМ входе в комнату, и переход оттуда зациклил бы игру —
+// заход в Room1 тут же выбрасывал бы обратно. Create у obj_Render
+// выполняется один раз на комнату, а флаг ниже гарантирует, что
+// перенос случится ровно один раз за запуск игры.
+//
+// room_goto (а не room_goto_immediate) — переход произойдёт в конце
+// шага, когда текущий Create спокойно доработает до конца.
+// ═══════════════════════════════════════════════════════════════
+
+if (!variable_global_exists("clinic_start_redirect_done")) {
+    global.clinic_start_redirect_done = false;
+}
+
+if (!variable_global_exists("clinic_room_transition")) {
+    global.clinic_room_transition = false;
+}
+
+if (!global.clinic_start_redirect_done) {
+    global.clinic_start_redirect_done = true;
+
+    var _home = clinics_get(1);
+
+    if (
+        is_struct(_home)
+        && string(_home.room_name) != ""
+    ) {
+        var _home_room = asset_get_index(_home.room_name);
+
+        if (
+            _home_room != -1
+            && room_exists(_home_room)
+            && room != _home_room
+        ) {
+            // Сохранение подхватится уже в новой комнате: флаг
+            // save_load_pending выставлен выше и переживёт переход,
+            // а Alarm 1 сработает у нового obj_Render.
+            show_debug_message(
+                "[CLINIC START] Старт перенесён в "
+                + string(_home.room_name)
+            );
+
+            // Будильник загрузки гасим: он сработал бы ЗДЕСЬ, в
+            // покидаемой комнате, и сохранение применилось бы к
+            // Room1 — с её девятью сотрудниками. Флаг
+            // save_load_pending остаётся поднятым, поэтому загрузку
+            // подхватит Alarm 1 нового obj_Render уже в клинике.
+            alarm[1] = -1;
+
+            // ═══════════════════════════════════════════════════
+            // ПАКЕТ №309: НЕ СОХРАНЯТЬ ПРИ ЭТОМ ПЕРЕХОДЕ
+            //
+            // При смене комнаты GameMaker вызывает CleanUp у всех
+            // объектов, а CleanUp у obj_Render пишет сохранение.
+            // На старте это падало с ошибкой: объекты комнаты
+            // создаются по очереди, obj_Render идёт раньше коек
+            // стационара, и у части obj_inpatient_controller
+            // событие Create ещё не выполнялось — переменной phase
+            // просто нет, а save_build_wards её читает.
+            //
+            // Сохранять тут и не нужно: игра только что запустилась,
+            // сохранять нечего. Флаг снимается в Room Start новой
+            // комнаты, чтобы обычный выход из игры сохранялся как
+            // раньше.
+            //
+            // Отдельный флаг, а не save_skip_on_exit: тот отвечает за
+            // «сохранение удалили, не воссоздавай», смешивать нельзя.
+            // ═══════════════════════════════════════════════════
+
+            global.clinic_room_transition = true;
+
+            room_goto(_home_room);
+        }
+    }
+}

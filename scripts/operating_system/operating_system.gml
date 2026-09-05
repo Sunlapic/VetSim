@@ -766,6 +766,58 @@ function operating_seat_state_init(_actor) {
     return true;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ПАКЕТ №292: КУДА ДЕВАТЬСЯ, ЕСЛИ СТУЛА НЕТ
+//
+// Стулья ожидания (obj_operating_seat) расставляются в комнате
+// вручную, и сейчас их в операционной не стоит ни одного. Вся
+// рассадка на этом молча заканчивалась: нет стула — функция выходила
+// с return false, никуда сотрудника не отправив.
+//
+// Для анестезиолога это было незаметно: его рабочая точка стоит в
+// стороне от стола, и внешне он выглядел «севшим на место». А хирург
+// работает вплотную к столу — он так и оставался стоять над
+// пациентом, будто операция ещё идёт.
+//
+// Теперь, если стула нет, свободный сотрудник просто отходит на своё
+// рабочее место (home_x/home_y — там, где он стоял при найме). Стул
+// по-прежнему в приоритете: как только его поставят в комнату, всё
+// будет работать как раньше.
+// ═══════════════════════════════════════════════════════════════
+
+function operating_park_at_home(_actor) {
+    if (!instance_exists(_actor)) return false;
+    if (_actor.object_index == obj_player) return false;
+
+    if (
+        !variable_instance_exists(_actor, "home_x")
+        || !variable_instance_exists(_actor, "home_y")
+    ) {
+        return false;
+    }
+
+    var _home_dist = point_distance(
+        _actor.x,
+        _actor.y,
+        _actor.home_x,
+        _actor.home_y
+    );
+
+    // Уже дома — стоим спокойно, не дёргаем маршрут каждый кадр.
+    if (_home_dist <= 24) {
+        if (_actor.is_walking) {
+            inpatient_stop_actor(_actor);
+        }
+
+        return true;
+    }
+
+    operating_walk_actor_to(_actor, _actor.home_x, _actor.home_y);
+
+    return true;
+}
+
+
 function operating_seat_actor(_ctrl, _actor, _seat) {
     if (!instance_exists(_actor)) return false;
 
@@ -783,9 +835,12 @@ function operating_seat_actor(_ctrl, _actor, _seat) {
         return false;
     }
 
-    // Стул не поставлен — сотрудник просто стоит, как раньше.
+    // Стула нет — уходим на своё рабочее место, чтобы не стоять над
+    // пациентом. Подробности в комментарии к operating_park_at_home.
     if (!instance_exists(_seat)) {
         _actor.or_seated = false;
+        operating_park_at_home(_actor);
+
         return false;
     }
 
@@ -832,9 +887,14 @@ function operating_seat_actor(_ctrl, _actor, _seat) {
 
     _actor.or_seated = false;
 
-    // ── Стул признан недостижимым: стоим спокойно, без «ходьбы на месте» ──
+    // ── Стул признан недостижимым ──
+    //
+    // Пакет №292: раньше сотрудник просто замирал там, где
+    // стоял. Для хирурга это означало «замереть вплотную к
+    // операционному столу». Теперь он отходит на своё рабочее
+    // место и ждёт там, продолжая раз в 10 секунд пробовать стул.
     if (_actor.or_seat_unreachable) {
-        inpatient_stop_actor(_actor);
+        operating_park_at_home(_actor);
 
         _actor.or_seat_retry_timer -= 1;
 
@@ -1121,6 +1181,21 @@ function operating_seats_update(_ctrl) {
         }
         else if (_watch_state == "operating_idle") {
             _watched.or_stale_state_timer = 0;
+
+            // Пакет 286: второй рубеж. Свободный сотрудник
+            // операционной, не входящий в бригаду, не должен
+            // держать ссылки на пациента и стол: именно они
+            // блокируют operating_actor_can_sit и оставляют врача
+            // стоять у стола. Страховка на случай, если ссылка
+            // пришла не через operating_send_home.
+            if (
+                variable_instance_exists(_watched, "assigned_pet")
+                && _watched.assigned_pet != noone
+            ) {
+                _watched.assigned_pet = noone;
+                _watched.assigned_owner = noone;
+                _watched.assigned_table = noone;
+            }
         }
     }
 
@@ -1859,6 +1934,35 @@ function operating_send_home(_actor, _kind) {
     operating_actor_stand_up(_actor);
     operating_actor_set_working(_actor, false);
     inpatient_stop_actor(_actor);
+
+    // ═════════════════════════════════════════════════════
+    // ПАКЕТ 286: ХИРУРГ ОСТАВАЛСЯ СТОЯТЬ У СТОЛА
+    //
+    // Состояние менялось на "operating_idle", но ссылки
+    // assigned_pet / assigned_table / assigned_owner оставались
+    // висеть на враче. А operating_actor_can_sit возвращает false,
+    // если assigned_pet жив («реальная работа важнее стула»).
+    //
+    // Итог: рассадка отказывалась усадить хирурга на стул, а
+    // сторож пакета 218 его не ловил: тот реагирует только на
+    // "operating_at_point" и "operating_going_to_point", а здесь
+    // состояние уже было правильным. Врач стоял у стола
+    // бесконечно — формально свободный, фактически занятый.
+    //
+    // Пакет 218 чинил соседнюю причину того же симптома
+    // (членство в бригаде), поэтому та правка не отменяется.
+    //
+    // Стол здесь НЕ освобождается: на нём ещё лежит пациент.
+    // Этим занимается operating_table_free в конце цикла.
+    // ═════════════════════════════════════════════════════
+
+    _actor.assigned_pet = noone;
+    _actor.assigned_owner = noone;
+    _actor.assigned_table = noone;
+
+    if (variable_instance_exists(_actor, "service_mode")) {
+        _actor.service_mode = "";
+    }
 
     if (string(_kind) == "assistant") {
         _actor.assistant_state = "operating_idle";
@@ -3023,6 +3127,17 @@ function operating_draw_plaque(_cx, _cy, _label, _has_bar, _ratio) {
 
 // Пакет №170: таблички «ЖДЁТ ОПЕРАЦИЮ» над пациентом и «НА ОПЕРАЦИИ»
 // над закреплённой за ним койкой стационара.
+// ══════════════════════════════════════════════════════════════
+// ПАКЕТ №289: ВЫСОТА ТАБЛИЧЕК НАД ПАЦИЕНТОМ
+//
+// Было 150 пикселей — табличка висела слишком высоко над
+// собакой и часто залезала на соседнюю стену.
+// Одно место вместо двух чисел в разных ветках.
+// ══════════════════════════════════════════════════════════════
+
+#macro OR_PLAQUE_RISE 75
+
+
 function operating_draw_ward_labels(_ctrl) {
     if (!instance_exists(obj_inpatient_controller)) return;
 
@@ -3041,7 +3156,7 @@ function operating_draw_ward_labels(_ctrl) {
             if (instance_exists(_ward.ward_table)) {
                 operating_draw_plaque(
                     _ward.ward_table.x,
-                    _ward.ward_table.y - 150,
+                    _ward.ward_table.y - OR_PLAQUE_RISE,
                     "НА ОПЕРАЦИИ",
                     false,
                     0
@@ -3087,7 +3202,7 @@ function operating_draw_ward_labels(_ctrl) {
             if (_on_ward_bed) {
                 operating_draw_plaque(
                     _patient.x,
-                    _patient.y - 150,
+                    _patient.y - OR_PLAQUE_RISE,
                     "ЖДЁТ ОПЕРАЦИЮ",
                     false,
                     0
@@ -3122,18 +3237,49 @@ function operating_draw_surgery_screen(_ctrl) {
     var _ratio = 1 - (_ctrl.or_timer / max(1, _ctrl.or_timer_max));
     _ratio = clamp(_ratio, 0, 1);
 
-    // ПАКЕТ 272: шторка поднята вверх и стала чуть выше ростом.
-    // Было _table.sprite_height * 0.46 — шторка висела на уровне
-    // столешницы и закрывала её край, а сама тушка оставалась
-    // открытой сверху. Стало 0.66: полотно уехало вверх на пятую
-    // часть высоты стола и накрывает именно животное.
-    var _w = max(120, _table.sprite_width * 0.86);
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ №293: ШТОРКА ПРИВЯЗАНА К ЖИВОТНОМУ, А НЕ К СТОЛУ
+    //
+    // Жалоба: «животное по-прежнему на переднем плане стекла».
+    //
+    // Глубина тут ни при чём — она считается верно. Проблема
+    // геометрическая: полотно висело слишком высоко и просто не
+    // накрывало пациента. Считаем по фактическим числам комнаты:
+    // спрайт стола 305x479, стол стоит в точке y = 2162,
+    // 0.66 высоты вверх плюс половина высоты полотна — низ шторки
+    // оказывался на y = 2000. А животное лежит на y = 2077, то есть
+    // на 77 пикселей НИЖЕ нижнего края стекла. Полотно закрывало
+    // пустоту над столом, а зверь целиком оставался снаружи —
+    // и выглядел «поверх» стекла.
+    //
+    // Пакет 272 подгонял высоту вслепую от размеров стола, поэтому
+    // промах и сохранился. Теперь шторка центруется по САМОМУ
+    // пациенту: где лежит животное, там и полотно.
+    //
+    // Ширина по просьбе уменьшена в 1.5 раза: было 0.86 ширины
+    // стола (262 px), стало 0.573 (175 px) — стекло стало заметно
+    // уже и не выходит за края стола.
+    // ═══════════════════════════════════════════════════════════
+
+    var _w = max(120, _table.sprite_width * 0.573);
     var _h = max(70, _table.sprite_height * 0.64);
 
-    var _x1 = _table.x - _w * 0.5;
-    var _x2 = _table.x + _w * 0.5;
-    var _y1 = _table.y - _table.sprite_height * 0.66 - _h * 0.5;
-    var _y2 = _y1 + _h;
+    // Центр полотна по горизонтали — по животному, если оно уже на
+    // столе; иначе, как раньше, по столу.
+    var _cx = _table.x;
+    var _pet_bottom = _table.y - _table.sprite_height * 0.66 + _h * 0.5;
+
+    if (instance_exists(_ctrl.or_pet)) {
+        _cx = _ctrl.or_pet.x;
+
+        // Нижний край чуть ниже лап, чтобы животное не торчало снизу.
+        _pet_bottom = _ctrl.or_pet.y + 24;
+    }
+
+    var _x1 = _cx - _w * 0.5;
+    var _x2 = _cx + _w * 0.5;
+    var _y2 = _pet_bottom;
+    var _y1 = _y2 - _h;
 
     // Тень шторки.
     draw_set_alpha(0.16);
@@ -3185,7 +3331,20 @@ function operating_controller_draw(_ctrl) {
     if (!instance_exists(_ctrl)) return;
 
     operating_debug_draw(_ctrl);
-    operating_draw_ward_labels(_ctrl);
+
+    // ПАКЕТ №289: таблички «ЖДЁТ ОПЕРАЦИЮ» / «НА ОПЕРАЦИИ»
+    // больше НЕ рисуются здесь — их рисует событие Draw End.
+    //
+    // Причина. Стены (obj_well*) наследуют от par_objects
+    // depth = -y. Стена, стоящая НИЖЕ койки по экрану, имеет
+    // больший y, а значит МЕНЬШИЙ depth и рисуется ПОЗЖЕ.
+    // Контроллер же сидит на глубине стола (строка с
+    // _table.depth - 5), поэтому его табличка уходила за стену.
+    //
+    // Менять depth контроллера нельзя: от него зависит
+    // положение стерильной шторки между животным и бригадой
+    // (пакет 272). Зато Draw End идёт отдельным проходом ПОСЛЕ
+    // всех обычных Draw и вообще не зависит от depth.
 
     // Пакет №218: мутная шторка закрывает пациента на время операции.
     operating_draw_surgery_screen(_ctrl);

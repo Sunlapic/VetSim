@@ -234,9 +234,9 @@ function tablet_animal_draw_action_button(
         (_y1 + _y2) * 0.5,
         _label,
         11,
-        (_x2 - _x1) - 14,
-        0.44 * _font_ui,
-        0.48 * _font_ui,
+        ((_x2 - _x1) - 14) / max(0.01, CARD_FS_LABEL * _font_ui),
+        CARD_FS_LABEL * _font_ui,
+        CARD_FS_LABEL * _font_ui,
         0
     );
 
@@ -289,9 +289,9 @@ function tablet_animal_draw_treatment_button(
         (_y1 + _y2) * 0.5,
         _label,
         11,
-        (_x2 - _x1) - 14,
-        0.44 * _font_ui,
-        0.48 * _font_ui,
+        ((_x2 - _x1) - 14) / max(0.01, CARD_FS_LABEL * _font_ui),
+        CARD_FS_LABEL * _font_ui,
+        CARD_FS_LABEL * _font_ui,
         0
     );
 
@@ -349,6 +349,25 @@ function tablet_animal_draw_candidate_button(
     draw_set_color(_wood_dark);
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 10, 10, true);
 
+    // ПАКЕТ №290. Надпись на кнопке заметно крупнее.
+    //
+    // Попутно исправлена давняя мелочь: по горизонтали текст брал
+    // CARD_FS_HEADER, а по вертикали CARD_FS_BUTTON — то есть буквы
+    // были растянуты в ширину. Теперь оба масштаба одинаковые.
+    //
+    // Кегль общий и крупный, но длинные надписи вроде «СНАЧАЛА
+    // ПОДТВЕРДИТЕ ДИАГНОЗ» шире кнопки не станут: если строка не
+    // помещается, масштаб ужимается ровно под неё. Короткие надписи
+    // («ОТМЕНА», «В СТАЦИОНАР») от этого не страдают и остаются
+    // крупными.
+    var _button_text_scale = CARD_FS_BUTTON * _font_ui;
+    var _button_text_room = (_x2 - _x1) - 24;
+    var _button_text_need = string_width(_label) * _button_text_scale;
+
+    if (_button_text_need > _button_text_room && _button_text_need > 0) {
+        _button_text_scale *= (_button_text_room / _button_text_need);
+    }
+
     draw_set_color(_text_color);
     draw_set_halign(fa_center);
     draw_set_valign(fa_middle);
@@ -356,8 +375,8 @@ function tablet_animal_draw_candidate_button(
         (_x1 + _x2) * 0.5,
         (_y1 + _y2) * 0.5,
         _label,
-        0.62 * _font_ui,
-        0.68 * _font_ui,
+        _button_text_scale,
+        _button_text_scale,
         0
     );
 
@@ -513,10 +532,19 @@ function tablet_draw_animal_card(
 
     var _column_title_y = _frame_y + 30 * _ui_scale;
     var _content_top = _frame_y + 54 * _ui_scale;
-    var _content_bottom = _frame_y + 360 * _ui_scale;
+    // ПАКЕТ №290. Кнопки стали заметно выше.
+    //
+    // Под ними на планшете простаивало место: белый лист спрайта
+    // кончается на 199 пунктах от центра, а кнопки заканчивались на
+    // 170. Эти свободные пункты и отданы кнопкам, поэтому нижняя
+    // граница контента опущена с 360 до 383.
+    //
+    // Панель с симптомами при этом не пострадала: она заканчивается
+    // там же, где и раньше, и даже стала чуть выше.
+    var _content_bottom = _frame_y + 383 * _ui_scale;
 
     // Обе колонки заканчиваются на одной линии, ниже остаётся место кнопкам.
-    var _bottom_button_height = 30 * _ui_scale;
+    var _bottom_button_height = 44 * _ui_scale;
     var _panels_bottom = _content_bottom - _panel_gap - _bottom_button_height;
 
     var _left_x1 = _frame_x;
@@ -546,8 +574,8 @@ function tablet_draw_animal_card(
         _center_x,
         _frame_y - 6 * _ui_scale,
         "КАРТОЧКА ПИТОМЦА",
-        0.82 * _font_ui,
-        0.88 * _font_ui,
+        CARD_FS_TITLE * _font_ui,
+        CARD_FS_TITLE * _font_ui,
         0
     );
 
@@ -556,8 +584,8 @@ function tablet_draw_animal_card(
         _left_x1,
         _column_title_y,
         "ДАННЫЕ О ЖИВОТНОМ:",
-        0.58 * _font_ui,
-        0.62 * _font_ui,
+        CARD_FS_HEADER * _font_ui,
+        CARD_FS_HEADER * _font_ui,
         0
     );
 
@@ -565,8 +593,8 @@ function tablet_draw_animal_card(
         _right_x1,
         _column_title_y,
         "КАРТА ПАЦИЕНТА:",
-        0.58 * _font_ui,
-        0.62 * _font_ui,
+        CARD_FS_HEADER * _font_ui,
+        CARD_FS_HEADER * _font_ui,
         0
     );
 
@@ -597,10 +625,6 @@ function tablet_draw_animal_card(
         ? string(_condition_value) + "%"
         : "Неизвестно";
 
-    var _reveal_level = variable_instance_exists(_animal, "reveal_level")
-        ? _animal.reveal_level
-        : 0;
-    var _reveal_text = tablet_animal_get_reveal_text(_reveal_level);
 
     var _confirmed = variable_instance_exists(_animal, "diagnosis_confirmed")
         ? _animal.diagnosis_confirmed
@@ -740,53 +764,103 @@ function tablet_draw_animal_card(
     );
     draw_set_alpha(1);
 
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ №289: ПЯТЬ СТРОК ДАННЫХ, СТРОГО ОДНА ПОД ДРУГОЙ
+    //
+    // Что было не так. «Возраст» рисовался на +80, а «Особенность»
+    // на +101, но в РАЗНЫХ колонках: возраст в колонке значений, а
+    // особенность — от левого края панели. При крупном шрифте
+    // пакета 288 строки налезли друг на друга, и кличка со словом
+    // «щенок» оказались в одном месте.
+    //
+    // Теперь порядок задан явно массивом и рисуется циклом с
+    // постоянным шагом: Кличка, Вид, Порода, Возраст, Особенность.
+    // Съезжать нечему: чтобы добавить строку, достаточно добавить
+    // пару в массив.
+    //
+    // Ширина. Ярлык «Особенность:» самый длинный (145 px), а справа
+    // от фото всего 302 px — на длинное значение вроде «Йоркширский
+    // терьер» места не остаётся. Поэтому значение печатается через
+    // ui_text_fit_middle: функция сама ужимает текст под остаток
+    // строки, вместо того чтобы вылезать за край панели.
+    // ═══════════════════════════════════════════════════════════
+
     var _info_text_x = _portrait_frame_x2 + 11 * _ui_scale;
-    var _info_value_x = _info_text_x + 70 * _ui_scale;
 
-    draw_set_color(_text_soft);
-    draw_text_transformed(_info_text_x, _info_y1 + 12 * _ui_scale, "Вид:", 0.46 * _font_ui, 0.50 * _font_ui, 0);
-    draw_set_color(_text);
-    draw_text_transformed(_info_value_x, _info_y1 + 12 * _ui_scale, _species_name, 0.50 * _font_ui, 0.54 * _font_ui, 0);
+    // Колонка значений отступает на ширину самого длинного ярлыка.
+    var _info_value_x = _info_text_x + 74 * _ui_scale;
 
-    draw_set_color(_text_soft);
-    draw_text_transformed(_info_text_x, _info_y1 + 34 * _ui_scale, "Порода:", 0.46 * _font_ui, 0.50 * _font_ui, 0);
-    draw_set_color(_text);
-    draw_text_ext_transformed(
-        _info_value_x,
-        _info_y1 + 34 * _ui_scale,
-        _breed_name,
-        12 * _ui_scale,
-        _info_x2 - _info_value_x - _padding,
-        0.48 * _font_ui,
-        0.52 * _font_ui,
-        0
-    );
+    var _info_rows = [
+        ["Кличка:",      _pet_name,      _blue],
+        ["Вид:",         _species_name,  _text],
+        ["Порода:",      _breed_name,    _text],
+        ["Возраст:",     _pet_age,       _text],
+        ["Особенность:", _feature_name,  _text]
+    ];
 
-    draw_set_color(_text_soft);
-    draw_text_transformed(_info_text_x, _info_y1 + 58 * _ui_scale, "Кличка:", 0.46 * _font_ui, 0.50 * _font_ui, 0);
-    draw_set_color(_blue);
-    draw_text_transformed(_info_value_x, _info_y1 + 58 * _ui_scale, _pet_name, 0.52 * _font_ui, 0.56 * _font_ui, 0);
+    var _info_row_y = _info_y1 + 11 * _ui_scale;
+    var _info_row_step = 21 * _ui_scale;
+    var _info_value_w = _info_x2 - _info_value_x - _padding;
 
-    draw_set_color(_text_soft);
-    draw_text_transformed(_info_text_x, _info_y1 + 80 * _ui_scale, "Возраст:", 0.46 * _font_ui, 0.50 * _font_ui, 0);
-    draw_set_color(_text);
-    draw_text_transformed(_info_value_x, _info_y1 + 80 * _ui_scale, _pet_age, 0.50 * _font_ui, 0.54 * _font_ui, 0);
+    for (var _info_index = 0; _info_index < array_length(_info_rows); _info_index++) {
+        var _info_row = _info_rows[_info_index];
+        var _info_row_cy = _info_row_y + _info_index * _info_row_step;
 
-    draw_set_color(_text_soft);
-    draw_text_ext_transformed(
-        _info_text_x,
-        _info_y1 + 101 * _ui_scale,
-        "Особенность: " + _feature_name,
-        11 * _ui_scale,
-        _info_x2 - _info_text_x - _padding,
-        0.44 * _font_ui,
-        0.48 * _font_ui,
-        0
-    );
+        // Ярлык мельче значения — так глаз цепляется за данные.
+        draw_set_color(_text_soft);
+        draw_set_halign(fa_left);
+        draw_set_valign(fa_middle);
+        draw_text_transformed(
+            _info_text_x,
+            _info_row_cy,
+            _info_row[0],
+            CARD_FS_SMALL * _font_ui,
+            CARD_FS_SMALL * _font_ui,
+            0
+        );
+
+        draw_set_color(_info_row[2]);
+        ui_text_fit_middle(
+            _info_value_x,
+            _info_row_cy,
+            _info_row[1],
+            _info_value_w,
+            CARD_FS_VALUE * _font_ui
+        );
+    }
+
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
 
 
     // ═══════════════════════════════════════════════════════════
-    // 6.5 ЛЕВЫЙ ПРЯМОУГОЛЬНИК 2: МЕДИЦИНСКАЯ ИНФОРМАЦИЯ
+    // 6.5 ЛЕВЫЙ ПРЯМОУГОЛЬНИК 2: СОСТОЯНИЕ, СИМПТОМЫ, ДИАГНОЗ
+    //
+    // ПАКЕТ №289. Панель переставлена сверху вниз:
+    //   1. СОСТОЯНИЕ  — крупно, в самом верху;
+    //   2. СИМПТОМЫ   — список, до пяти строк;
+    //   3. ДИАГНОЗ    — прибит к низу.
+    //
+    // Убрана строка «ОБСЛЕДОВАНИЕ: частично» — она занимала место,
+    // но по сути дублировала то, что и так видно по симптомам и
+    // диагнозу. Убраны и блоки «ПРОВЕДЕНО»/«НАЗНАЧЕНО» из пакета
+    // 288: назначенное лечение показывает правое окно на странице
+    // «Лечение», а здесь на них уже нет места.
+    //
+    // СКОЛЬКО СИМПТОМОВ БЫВАЕТ. Проверено по базе болезней: у 43
+    // болезней из 50 их три, у шести — четыре, максимум пять (у
+    // вирусной инфекции). Скрытые симптомы, которые открывает
+    // case_reveal_hidden_symptoms, берутся из того же списка, так
+    // что потолок остаётся пять.
+    //
+    // Самое длинное название — «Повышенное слюнотечение», строка
+    // «- ...» шириной 213 px при масштабе 1, то есть 355 px при
+    // CARD_FS_VALUE. Панель даёт 438 px, значит переносов нет и
+    // каждый симптом занимает ровно одну строку.
+    //
+    // По высоте: панель 259 px. Состояние, заголовок, пять строк
+    // симптомов и диагноз при межстрочном ×1.1 требуют 254 px —
+    // помещается с запасом 5 px. Межстрочный ×1.2 уже не влезал бы.
     // ═══════════════════════════════════════════════════════════
 
     var _case_x1 = _left_x1;
@@ -797,56 +871,26 @@ function tablet_draw_animal_card(
 
     tablet_animal_draw_panel(_case_x1, _case_y1, _case_x2, _case_y2);
 
-    draw_set_color(_blue);
-    draw_text_ext_transformed(
-        _case_x1 + _padding,
-        _case_y1 + 10 * _ui_scale,
-        "ОБСЛЕДОВАНИЕ: " + _reveal_text,
-        13 * _ui_scale,
-        _case_text_w,
-        0.50 * _font_ui,
-        0.54 * _font_ui,
-        0
-    );
-
-    draw_set_color(_wood_dark);
-    draw_text_transformed(
-        _case_x1 + _padding,
-        _case_y1 + 27 * _ui_scale,
-        "СИМПТОМЫ:",
-        0.52 * _font_ui,
-        0.56 * _font_ui,
-        0
-    );
-
-    draw_set_color(_text_soft);
-    draw_text_ext_transformed(
-        _case_x1 + _padding,
-        _case_y1 + 41 * _ui_scale,
-        _symptom_text,
-        10 * _ui_scale,
-        _case_text_w,
-        0.50 * _font_ui,
-        0.54 * _font_ui,
-        0
-    );
-
-    // Нижний отступ состояния равен общему расстоянию между панелями.
-    // Диагноз расположен сразу над состоянием с таким же визуальным ритмом.
+    // Якоря нижних строк считаются заранее: список симптомов должен
+    // знать, где заканчивается его место.
+    //
+    // ПАКЕТ №290: ДИАГНОЗ В ДВЕ СТРОКИ.
+    //
+    // Проверены все 50 диагнозов из базы. Строкой «ДИАГНОЗ: Название»
+    // не помещались 13 из них — самый длинный «Вирусная энтеритная
+    // инфекция» требовал 622 px при доступных 438.
+    //
+    // Теперь слово «ДИАГНОЗ:» стоит отдельной строкой сверху мелким
+    // шрифтом, а название болезни идёт под ним крупно и во всю ширину
+    // панели. После этого не помещается только одно название из
+    // пятидесяти (та же вирусная энтеритная инфекция, 461 px), и оно
+    // само ужимается на 5% — незаметно на глаз.
     var _condition_y = _case_y2 - 19 * _ui_scale;
-    var _diagnosis_y = _condition_y - 16 * _ui_scale;
+    var _diagnosis_name_y = _case_y2 - 18 * _ui_scale;
+    var _diagnosis_y = _diagnosis_name_y - 12 * _ui_scale;
 
-    draw_set_color(_confirmed ? _red : make_color_rgb(120, 75, 70));
-    draw_text_ext_transformed(
-        _case_x1 + _padding,
-        _diagnosis_y,
-        "ДИАГНОЗ: " + _disease_name,
-        12 * _ui_scale,
-        _case_text_w,
-        0.50 * _font_ui,
-        0.54 * _font_ui,
-        0
-    );
+
+    // ── 1. СОСТОЯНИЕ (вверху, крупно) ──
 
     var _condition_color = make_color_rgb(90, 90, 90);
 
@@ -858,11 +902,14 @@ function tablet_draw_animal_card(
         );
     }
 
+    var _condition_line = "СОСТОЯНИЕ: " + _condition_text;
+    var _condition_top_y = _case_y1 + 10 * _ui_scale;
+
+    // Вспышка от лечения теперь подсвечивает верхнюю строку.
     var _condition_draw_x = _case_x1 + _padding;
     var _condition_target_x = _condition_draw_x + 125 * _ui_scale;
-    var _condition_target_y = _condition_y + 8 * _ui_scale;
-    var _condition_line = "СОСТОЯНИЕ: " + _condition_text;
-    var _condition_scale = 0.54 * _font_ui;
+    var _condition_target_y = _condition_top_y + 8 * _ui_scale;
+    var _condition_scale = CARD_FS_HEADER * _font_ui;
 
     if (_tablet.condition_flash_timer > 0) {
         var _flash_t = _tablet.condition_flash_timer
@@ -875,9 +922,9 @@ function tablet_draw_animal_card(
         draw_set_color(_tablet.condition_flash_color);
         draw_roundrect_ext(
             _condition_draw_x - 4,
-            _condition_y - 2,
-            _condition_draw_x + 145 * _ui_scale,
-            _condition_y + 15 * _ui_scale,
+            _condition_top_y - 2,
+            _condition_draw_x + 175 * _ui_scale,
+            _condition_top_y + 20 * _ui_scale,
             6,
             6,
             false
@@ -887,7 +934,7 @@ function tablet_draw_animal_card(
         draw_set_color(_condition_color);
         draw_text_transformed(
             _condition_draw_x + _shake_x,
-            _condition_y + _shake_y,
+            _condition_top_y + _shake_y,
             _condition_line,
             _condition_scale * _pulse_scale,
             _condition_scale * _pulse_scale,
@@ -897,13 +944,133 @@ function tablet_draw_animal_card(
         draw_set_color(_condition_color);
         draw_text_transformed(
             _condition_draw_x,
-            _condition_y,
+            _condition_top_y,
             _condition_line,
             _condition_scale,
             _condition_scale,
             0
         );
     }
+
+
+    // ── 2. СИМПТОМЫ ──
+
+    var _symptoms_title_y = _condition_top_y + 20 * _ui_scale;
+
+    draw_set_color(_wood_dark);
+    draw_text_transformed(
+        _case_x1 + _padding,
+        _symptoms_title_y,
+        "СИМПТОМЫ:",
+        CARD_FS_LABEL * _font_ui,
+        CARD_FS_LABEL * _font_ui,
+        0
+    );
+
+    var _symptom_list_y = _symptoms_title_y + 14 * _ui_scale;
+    var _symptom_space = (_diagnosis_y - 4 * _ui_scale) - _symptom_list_y;
+
+    // Межстрочный интервал ужимается, если симптомов много: пять
+    // строк должны поместиться между заголовком и диагнозом.
+    var _symptom_count = 0;
+
+    if (
+        variable_instance_exists(_animal, "visible_symptoms")
+        && is_array(_animal.visible_symptoms)
+    ) {
+        _symptom_count = array_length(_animal.visible_symptoms);
+    }
+
+    // Высота самой строки — кегль; между N строками всего N-1
+    // промежутков. Делить всю высоту на N нельзя: последняя
+    // строка свешивалась бы на свою высоту вниз — расчёт давал
+    // переполнение на пяти симптомах.
+    var _symptom_line_h = CARD_FS_VALUE * _font_ui * 12;
+    var _symptom_step = _symptom_line_h * 1.10;
+
+    if (_symptom_count > 1) {
+        _symptom_step = min(
+            _symptom_step,
+            (_symptom_space - _symptom_line_h) / (_symptom_count - 1)
+        );
+    }
+
+    // Страховка на случай, если симптомов когда-нибудь станет
+    // больше пяти. Сейчас по базе потолок ровно пять, и при
+    // пяти строки идут полным шагом. Если в будущем болезни
+    // добавят шестой симптом, шрифт списка чуть уменьшится
+    // вместо того, чтобы последняя строка наехала на диагноз.
+    var _symptom_scale = CARD_FS_VALUE * _font_ui;
+
+    if (_symptom_count > 1) {
+        var _symptom_need = (_symptom_count - 1) * _symptom_step + _symptom_line_h;
+
+        if (_symptom_need > _symptom_space && _symptom_need > 0) {
+            _symptom_scale *= (_symptom_space / _symptom_need);
+            _symptom_step *= (_symptom_space / _symptom_need);
+        }
+    }
+
+    draw_set_color(_text_soft);
+    draw_text_ext_transformed(
+        _case_x1 + _padding,
+        _symptom_list_y,
+        _symptom_text,
+        _symptom_step,
+        _case_text_w / max(0.01, _symptom_scale),
+        _symptom_scale,
+        _symptom_scale,
+        0
+    );
+
+
+    // ── 3. ДИАГНОЗ (внизу, со вспышкой пакета 288) ──
+
+    var _diagnosis_scale = CARD_FS_DIAGNOSIS * _font_ui;
+
+    // Вспышка накрывает обе строки сразу.
+    var _diagnosis_pulse = tablet_card_draw_diagnosis_flash(
+        _case_x1 + _padding,
+        _diagnosis_y,
+        _case_x2 - _padding,
+        _diagnosis_name_y + 16 * _ui_scale,
+        _tablet.card_diagnosis_flash_timer,
+        _tablet.card_diagnosis_flash_timer_max
+    );
+
+    var _diagnosis_color = _confirmed ? _red : make_color_rgb(120, 75, 70);
+
+    // Строка 1: само слово «ДИАГНОЗ:» — мелко, это лишь подпись.
+    draw_set_color(_diagnosis_color);
+    draw_set_halign(fa_left);
+    draw_set_valign(fa_top);
+    draw_text_transformed(
+        _case_x1 + _padding,
+        _diagnosis_y,
+        "ДИАГНОЗ:",
+        CARD_FS_LABEL * _font_ui,
+        CARD_FS_LABEL * _font_ui,
+        0
+    );
+
+    // Строка 2: название болезни — крупно, во всю ширину панели.
+    // Единственное название, которое всё же шире панели, ужимается
+    // ровно под неё, а не обрезается и не переносится.
+    var _diagnosis_name_scale = _diagnosis_scale * _diagnosis_pulse;
+    var _diagnosis_name_need = string_width(_disease_name) * _diagnosis_name_scale;
+
+    if (_diagnosis_name_need > _case_text_w && _diagnosis_name_need > 0) {
+        _diagnosis_name_scale *= (_case_text_w / _diagnosis_name_need);
+    }
+
+    draw_text_transformed(
+        _case_x1 + _padding,
+        _diagnosis_name_y,
+        _disease_name,
+        _diagnosis_name_scale,
+        _diagnosis_name_scale,
+        0
+    );
 
 
     // ═══════════════════════════════════════════════════════════
@@ -977,222 +1144,370 @@ function tablet_draw_animal_card(
 
 
     // ═══════════════════════════════════════════════════════════
-    // 6.7 ПРАВЫЙ ПРЯМОУГОЛЬНИК 1: ОБСЛЕДОВАНИЯ
+    // ═══════════════════════════════════════════════════════════
+    // 6.7 ПРАВАЯ КОЛОНКА: ОДНА ПАНЕЛЬ С ДВУМЯ СТРАНИЦАМИ
+    //
+    // ПАКЕТ №288. Раньше здесь было две панели по половине высоты:
+    // «Обследования» сверху, «Лечение» снизу. Кнопки в них были по
+    // 14–18 пикселей — в такую на телефоне не попасть пальцем.
+    //
+    // Теперь панель одна во всю высоту колонки, а внутри сменяются
+    // страницы. Кнопок столько же, но каждая почти вдвое выше.
+    //
+    // Порядок: сначала считаем данные и решаем, не пора ли листнуть
+    // страницу, потом рисуем. Иначе переворот запаздывал бы на кадр.
     // ═══════════════════════════════════════════════════════════
 
-    var _diagnostics_x1 = _right_x1;
-    var _diagnostics_y1 = _content_top;
-    var _diagnostics_x2 = _right_x2;
-    var _diagnostics_y2 = _diagnostics_y1 + 100 * _ui_scale;
+    var _page_x1 = _right_x1;
+    var _page_y1 = _content_top;
+    var _page_x2 = _right_x2;
+    var _page_y2 = _panels_bottom;
 
-    tablet_animal_draw_panel(
-        _diagnostics_x1,
-        _diagnostics_y1,
-        _diagnostics_x2,
-        _diagnostics_y2
-    );
+    var _case_struct = (
+        variable_instance_exists(_animal, "current_case")
+        && is_struct(_animal.current_case)
+    )
+        ? _animal.current_case
+        : undefined;
 
-    draw_set_color(_wood_dark);
-    draw_text_transformed(
-        _diagnostics_x1 + _padding,
-        _diagnostics_y1 + 8 * _ui_scale,
-        "ОБСЛЕДОВАНИЯ:",
-        0.58 * _font_ui,
-        0.62 * _font_ui,
-        0
-    );
+
+    // ── Списки вариантов ──
 
     var _diagnostic_choices = [];
+    var _choice_list = [];
 
-    if (variable_instance_exists(_animal, "current_case") && is_struct(_animal.current_case)) {
+    if (is_struct(_case_struct)) {
         _diagnostic_choices = case_get_visible_diagnostics(
-            _animal.current_case,
+            _case_struct,
             _therapy_level
         );
-    }
 
-    var _button_x1 = _diagnostics_x1 + _padding;
-    var _button_x2 = _diagnostics_x2 - _padding;
+        if (_doctor_assign_mode) {
+            _choice_list = case_get_visible_treatment(
+                _case_struct,
+                _therapy_level
+            );
 
-    // В панели помещается до четырёх вариантов обследования.
-    var _diagnostic_button_h = 14 * _ui_scale;
-    var _diagnostic_button_gap = 2 * _ui_scale;
-
-    // Эти размеры используются ниже для назначений и процедур.
-    var _small_button_h = 18 * _ui_scale;
-    var _button_gap = 3 * _ui_scale;
-
-    var _diagnostic_y = _diagnostics_y1 + 26 * _ui_scale;
-
-    for (var _diagnostic_index = 0; _diagnostic_index < array_length(_diagnostic_choices); _diagnostic_index++) {
-        var _diagnostic_choice = _diagnostic_choices[_diagnostic_index];
-        var _diagnostic_id = _diagnostic_choice.diagnostic_id;
-        var _diagnostic_is_correct = variable_struct_exists(_diagnostic_choice, "is_correct")
-            ? _diagnostic_choice.is_correct
-            : true;
-        var _diagnostic_name = db_get_diagnostic_name(_diagnostic_id);
-
-        var _diagnostic_button_y1 = _diagnostic_y
-            + _diagnostic_index * (_diagnostic_button_h + _diagnostic_button_gap);
-        var _diagnostic_button_y2 = _diagnostic_button_y1 + _diagnostic_button_h;
-
-        var _diagnostic_hovered = point_in_rectangle(
-            _mouse_x,
-            _mouse_y,
-            _button_x1,
-            _diagnostic_button_y1,
-            _button_x2,
-            _diagnostic_button_y2
-        );
-
-        var _diagnostic_feedback = tablet_animal_diagnostic_feedback_state(
-            _animal.current_case,
-            _diagnostic_id
-        );
-
-        var _diagnostic_can_press = _doctor_assign_mode
-            && _diagnostic_feedback == 0;
-
-        tablet_animal_draw_treatment_button(
-            _button_x1,
-            _diagnostic_button_y1,
-            _button_x2,
-            _diagnostic_button_y2,
-            _diagnostic_name,
-            _diagnostic_hovered,
-            _diagnostic_can_press,
-            _diagnostic_feedback,
-            _font_ui
-        );
-
-        if (
-            _diagnostic_can_press
-            && _tablet.tablet_click_lock <= 0
-            && _diagnostic_hovered
-            && mouse_check_button_pressed(mb_left)
-        ) {
-            _tablet.tablet_click_lock = 5;
-
-            if (_diagnostic_is_correct) {
-                animal_perform_diagnostic(_animal, _diagnostic_id);
-
-                if (instance_exists(obj_UI_HUD)) {
-                    var _hud_diagnostic_ok = instance_find(obj_UI_HUD, 0);
-
-                    if (instance_exists(_hud_diagnostic_ok)) {
-                        with (_hud_diagnostic_ok) {
-                            show_notice(
-                                "ДИАГНОСТИКА",
-                                db_get_diagnostic_name(_diagnostic_id),
-                                room_speed * 2
-                            );
-                        }
-                    }
-                }
-            } else {
-                case_apply_wrong_diagnostic_choice(_animal, _diagnostic_id);
-
-                if (instance_exists(obj_UI_HUD)) {
-                    var _hud_diagnostic_bad = instance_find(obj_UI_HUD, 0);
-
-                    if (instance_exists(_hud_diagnostic_bad)) {
-                        with (_hud_diagnostic_bad) {
-                            show_notice(
-                                "ЛИШНЕЕ ОБСЛЕДОВАНИЕ",
-                                db_get_diagnostic_name(_diagnostic_id),
-                                room_speed * 2
-                            );
-                        }
-                    }
-                }
+            if (!variable_struct_exists(_case_struct, "visit_treatment_feedback_ok_ids")) {
+                _case_struct.visit_treatment_feedback_ok_ids = [];
             }
 
-            return false;
+            if (!variable_struct_exists(_case_struct, "visit_treatment_feedback_bad_ids")) {
+                _case_struct.visit_treatment_feedback_bad_ids = [];
+            }
+
+            if (!variable_struct_exists(_case_struct, "prescribed_treatment_ids")) {
+                _case_struct.prescribed_treatment_ids = [];
+            }
+
+            if (!variable_struct_exists(_case_struct, "visit_prescribed_actions")) {
+                _case_struct.visit_prescribed_actions = [];
+            }
         }
     }
 
+    var _pending_actions = [];
 
-    // ═══════════════════════════════════════════════════════════
-    // 6.8 ПРАВЫЙ ПРЯМОУГОЛЬНИК 2: ЛЕЧЕНИЕ / ПРОЦЕДУРЫ
-    // ═══════════════════════════════════════════════════════════
-
-    var _treatment_x1 = _right_x1;
-    var _treatment_y1 = _diagnostics_y2 + _panel_gap;
-    var _treatment_x2 = _right_x2;
-    var _treatment_y2 = _panels_bottom;
-
-    tablet_animal_draw_panel(
-        _treatment_x1,
-        _treatment_y1,
-        _treatment_x2,
-        _treatment_y2
-    );
-
-    var _treatment_title = "ЛЕЧЕНИЕ:";
-
-    if (_doctor_assign_mode) {
-        _treatment_title = "НАЗНАЧЕНИЯ:";
-    }
-    else if (_procedure_exec_mode) {
-        _treatment_title = "ПРОЦЕДУРЫ:";
+    if (
+        _procedure_exec_mode
+        && is_struct(_case_struct)
+        && variable_struct_exists(_case_struct, "pending_procedure_actions")
+    ) {
+        _pending_actions = _case_struct.pending_procedure_actions;
     }
 
-    draw_set_color(_wood_dark);
-    draw_text_transformed(
-        _treatment_x1 + _padding,
-        _treatment_y1 + 8 * _ui_scale,
-        _treatment_title,
-        0.58 * _font_ui,
-        0.62 * _font_ui,
-        0
+
+    // ═══════════════════════════════════════════════════════════
+    // 6.7.1 СМЕНА ПАЦИЕНТА И АВТОМАТИЧЕСКИЙ ПЕРЕВОРОТ ЛИСТА
+    //
+    // Диагноз подтверждён — правая страница сама переворачивается с
+    // обследований на лечение. Ловим именно ПЕРЕХОД false → true,
+    // иначе анимация запускалась бы каждый кадр.
+    // ═══════════════════════════════════════════════════════════
+
+    if (_tablet.card_page_animal != _animal) {
+        _tablet.card_page_animal = _animal;
+        _tablet.card_page = CARD_PAGE_DIAGNOSTICS;
+        _tablet.card_flip_timer = 0;
+        _tablet.card_diagnosis_flash_timer = 0;
+        _tablet.card_diagnosis_was_confirmed = _confirmed;
+    }
+
+    if (_confirmed && !_tablet.card_diagnosis_was_confirmed) {
+        _tablet.card_flip_timer = _tablet.card_flip_timer_max;
+        _tablet.card_diagnosis_flash_timer = _tablet.card_diagnosis_flash_timer_max;
+        _tablet.card_page = CARD_PAGE_TREATMENT;
+    }
+
+    _tablet.card_diagnosis_was_confirmed = _confirmed;
+
+    // В процедурном режиме обследовать уже нечего — сразу лечение.
+    if (_procedure_exec_mode) {
+        _tablet.card_page = CARD_PAGE_TREATMENT;
+    }
+
+    // Страница лечения открыта, когда есть что на ней показать.
+    var _treatment_unlocked = (
+        _confirmed
+        || _procedure_exec_mode
+        || array_length(_choice_list) > 0
     );
 
-    if (_doctor_assign_mode) {
+    if (!_treatment_unlocked) {
+        _tablet.card_page = CARD_PAGE_DIAGNOSTICS;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    // 6.7.2 ПАНЕЛЬ, ЗАКЛАДКИ И ЭФФЕКТ ПЕРЕВОРОТА
+    // ═══════════════════════════════════════════════════════════
+
+    tablet_animal_draw_panel(_page_x1, _page_y1, _page_x2, _page_y2);
+
+    var _tabs_y1 = _page_y1 + 7 * _ui_scale;
+    var _tabs_y2 = _tabs_y1 + 26 * _ui_scale;
+
+    var _tab_clicked = tablet_card_draw_page_tabs(
+        _page_x1 + _padding,
+        _tabs_y1,
+        _page_x2 - _padding,
+        _tabs_y2,
+        _tablet.card_page,
+        _treatment_unlocked,
+        _mouse_x,
+        _mouse_y,
+        _font_ui
+    );
+
+    if (_tab_clicked >= 0 && _tablet.tablet_click_lock <= 0) {
+        _tablet.tablet_click_lock = 5;
+
+        // Ручное перелистывание тоже показываем переворотом листа.
+        if (_tab_clicked != _tablet.card_page) {
+            _tablet.card_page = _tab_clicked;
+            _tablet.card_flip_timer = _tablet.card_flip_timer_max;
+        }
+
+        return false;
+    }
+
+    // Во время переворота показываем строку уровня терапии только
+    // на странице лечения — она к обследованиям не относится.
+    if (_doctor_assign_mode && _tablet.card_page == CARD_PAGE_TREATMENT) {
         draw_set_color(_blue);
+        draw_set_halign(fa_right);
         draw_text_transformed(
-            _treatment_x2 - 88 * _ui_scale,
-            _treatment_y1 + 10 * _ui_scale,
+            _page_x2 - _padding,
+            _tabs_y2 + 5 * _ui_scale,
             "ТЕРАПИЯ " + string(_therapy_level) + " УР.",
-            0.42 * _font_ui,
-            0.46 * _font_ui,
+            CARD_FS_SMALL * _font_ui,
+            CARD_FS_SMALL * _font_ui,
             0
         );
+        draw_set_halign(fa_left);
     }
 
-    var _treatment_button_x1 = _treatment_x1 + _padding;
-    var _treatment_button_x2 = _treatment_x2 - _padding;
-    // Кнопки начинаются ближе к заголовку «НАЗНАЧЕНИЯ» / «ПРОЦЕДУРЫ».
-    var _treatment_list_y = _treatment_y1 + 26 * _ui_scale;
+    var _list_y1 = _tabs_y2 + 22 * _ui_scale;
+    var _list_y2 = _page_y2 - 8 * _ui_scale;
+    var _list_h = _list_y2 - _list_y1;
+
+    // Множитель ширины: 1 в покое, сжимается к правому краю в анимации.
+    var _flip_factor = tablet_card_flip_width_factor(
+        _tablet.card_flip_timer,
+        _tablet.card_flip_timer_max
+    );
+
+    var _flip_full_x1 = _page_x1 + _padding;
+    var _flip_full_x2 = _page_x2 - _padding;
+    var _flip_full_w = _flip_full_x2 - _flip_full_x1;
+
+    // Лист «складывается» к правому краю панели.
+    var _button_x1 = _flip_full_x2 - _flip_full_w * _flip_factor;
+    var _button_x2 = _flip_full_x2;
+
+    // На середине переворота содержимое почти невидимо — рисовать
+    // кнопки шириной в пару пикселей смысла нет, а клики по ним
+    // были бы случайными. Поэтому в этот момент список пропускаем.
+    var _flip_running = (_tablet.card_flip_timer > 0);
+    var _list_visible = (_flip_factor > 0.25);
+
+    // Пока лист в движении, клики по списку не принимаем.
+    var _clicks_allowed = !_flip_running;
+
+    // Какую страницу показывать: до середины ещё старую, после — новую.
+    var _draw_page = _tablet.card_page;
+
+    if (
+        _flip_running
+        && !tablet_card_flip_shows_new_page(
+            _tablet.card_flip_timer,
+            _tablet.card_flip_timer_max
+        )
+    ) {
+        _draw_page = (_tablet.card_page == CARD_PAGE_TREATMENT)
+            ? CARD_PAGE_DIAGNOSTICS
+            : CARD_PAGE_TREATMENT;
+    }
 
 
     // ═══════════════════════════════════════════════════════════
-    // 6.8.1 ВРАЧ НАЗНАЧАЕТ ЛЕЧЕНИЕ
+    // 6.7.3 СТРАНИЦА «ОБСЛЕДОВАНИЯ»
     // ═══════════════════════════════════════════════════════════
 
-    if (_doctor_assign_mode) {
-        var _choice_list = [];
+    if (_draw_page == CARD_PAGE_DIAGNOSTICS && _list_visible) {
+        var _diagnostic_count = array_length(_diagnostic_choices);
 
-        if (variable_instance_exists(_animal, "current_case") && is_struct(_animal.current_case)) {
-            _choice_list = case_get_visible_treatment(_animal.current_case, _therapy_level);
-
-            if (!variable_struct_exists(_animal.current_case, "visit_treatment_feedback_ok_ids")) {
-                _animal.current_case.visit_treatment_feedback_ok_ids = [];
-            }
-
-            if (!variable_struct_exists(_animal.current_case, "visit_treatment_feedback_bad_ids")) {
-                _animal.current_case.visit_treatment_feedback_bad_ids = [];
-            }
-
-            if (!variable_struct_exists(_animal.current_case, "prescribed_treatment_ids")) {
-                _animal.current_case.prescribed_treatment_ids = [];
-            }
-
-            if (!variable_struct_exists(_animal.current_case, "visit_prescribed_actions")) {
-                _animal.current_case.visit_prescribed_actions = [];
-            }
+        if (_diagnostic_count <= 0) {
+            draw_set_color(_text_soft);
+            draw_set_halign(fa_center);
+            draw_text_ext_transformed(
+                (_button_x1 + _button_x2) * 0.5,
+                _list_y1 + 18 * _ui_scale,
+                "НЕТ ДОСТУПНЫХ ОБСЛЕДОВАНИЙ",
+                15,
+                (_button_x2 - _button_x1) / max(0.01, CARD_FS_LABEL * _font_ui),
+                CARD_FS_LABEL * _font_ui,
+                CARD_FS_LABEL * _font_ui,
+                0
+            );
+            draw_set_halign(fa_left);
         }
 
-        for (var _choice_index = 0; _choice_index < array_length(_choice_list); _choice_index++) {
+        var _diagnostic_gap = 8 * _ui_scale;
+        var _diagnostic_button_h = tablet_card_button_height(
+            _list_h,
+            _diagnostic_count,
+            _diagnostic_gap,
+            _ui_scale
+        );
+
+        for (var _diagnostic_index = 0; _diagnostic_index < _diagnostic_count; _diagnostic_index++) {
+            var _diagnostic_choice = _diagnostic_choices[_diagnostic_index];
+            var _diagnostic_id = _diagnostic_choice.diagnostic_id;
+            var _diagnostic_is_correct = variable_struct_exists(_diagnostic_choice, "is_correct")
+                ? _diagnostic_choice.is_correct
+                : true;
+            var _diagnostic_name = db_get_diagnostic_name(_diagnostic_id);
+
+            var _diagnostic_button_y1 = _list_y1
+                + _diagnostic_index * (_diagnostic_button_h + _diagnostic_gap);
+            var _diagnostic_button_y2 = _diagnostic_button_y1 + _diagnostic_button_h;
+
+            var _diagnostic_hovered = _clicks_allowed
+                && point_in_rectangle(
+                    _mouse_x,
+                    _mouse_y,
+                    _button_x1,
+                    _diagnostic_button_y1,
+                    _button_x2,
+                    _diagnostic_button_y2
+                );
+
+            var _diagnostic_feedback = tablet_animal_diagnostic_feedback_state(
+                _case_struct,
+                _diagnostic_id
+            );
+
+            var _diagnostic_can_press = _doctor_assign_mode
+                && _diagnostic_feedback == 0;
+
+            tablet_card_draw_list_button(
+                _button_x1,
+                _diagnostic_button_y1,
+                _button_x2,
+                _diagnostic_button_y2,
+                _diagnostic_name,
+                _diagnostic_hovered,
+                _diagnostic_can_press,
+                _diagnostic_feedback,
+                _font_ui
+            );
+
+            if (
+                _diagnostic_can_press
+                && _clicks_allowed
+                && _tablet.tablet_click_lock <= 0
+                && _diagnostic_hovered
+                && mouse_check_button_pressed(mb_left)
+            ) {
+                _tablet.tablet_click_lock = 5;
+
+                if (_diagnostic_is_correct) {
+                    animal_perform_diagnostic(_animal, _diagnostic_id);
+
+                    if (instance_exists(obj_UI_HUD)) {
+                        var _hud_diagnostic_ok = instance_find(obj_UI_HUD, 0);
+
+                        if (instance_exists(_hud_diagnostic_ok)) {
+                            with (_hud_diagnostic_ok) {
+                                show_notice(
+                                    "ДИАГНОСТИКА",
+                                    db_get_diagnostic_name(_diagnostic_id),
+                                    room_speed * 2
+                                );
+                            }
+                        }
+                    }
+                } else {
+                    case_apply_wrong_diagnostic_choice(_animal, _diagnostic_id);
+
+                    if (instance_exists(obj_UI_HUD)) {
+                        var _hud_diagnostic_bad = instance_find(obj_UI_HUD, 0);
+
+                        if (instance_exists(_hud_diagnostic_bad)) {
+                            with (_hud_diagnostic_bad) {
+                                show_notice(
+                                    "ЛИШНЕЕ ОБСЛЕДОВАНИЕ",
+                                    db_get_diagnostic_name(_diagnostic_id),
+                                    room_speed * 2
+                                );
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            }
+        }
+    }
+
+
+    // ═══════════════════════════════════════════════════════════
+    // 6.7.4 СТРАНИЦА «ЛЕЧЕНИЕ»: ВРАЧ НАЗНАЧАЕТ
+    // ═══════════════════════════════════════════════════════════
+
+    if (
+        _draw_page == CARD_PAGE_TREATMENT
+        && _list_visible
+        && _doctor_assign_mode
+    ) {
+        var _choice_count = array_length(_choice_list);
+
+        if (_choice_count <= 0) {
+            draw_set_color(_text_soft);
+            draw_set_halign(fa_center);
+            draw_text_ext_transformed(
+                (_button_x1 + _button_x2) * 0.5,
+                _list_y1 + 18 * _ui_scale,
+                "СНАЧАЛА ПОДТВЕРДИТЕ ДИАГНОЗ",
+                15,
+                (_button_x2 - _button_x1) / max(0.01, CARD_FS_LABEL * _font_ui),
+                CARD_FS_LABEL * _font_ui,
+                CARD_FS_LABEL * _font_ui,
+                0
+            );
+            draw_set_halign(fa_left);
+        }
+
+        var _choice_gap = 7 * _ui_scale;
+        var _choice_button_h = tablet_card_button_height(
+            _list_h,
+            _choice_count,
+            _choice_gap,
+            _ui_scale
+        );
+
+        for (var _choice_index = 0; _choice_index < _choice_count; _choice_index++) {
             var _choice = _choice_list[_choice_index];
             var _action_id = _choice.action_id;
             var _is_correct = variable_struct_exists(_choice, "is_correct")
@@ -1200,29 +1515,31 @@ function tablet_draw_animal_card(
                 : true;
             var _action_name = db_get_treatment_action_name(_action_id);
 
-            var _choice_y1 = _treatment_list_y
-                + _choice_index * (_small_button_h + _button_gap);
-            var _choice_y2 = _choice_y1 + _small_button_h;
-            var _choice_hovered = point_in_rectangle(
-                _mouse_x,
-                _mouse_y,
-                _treatment_button_x1,
-                _choice_y1,
-                _treatment_button_x2,
-                _choice_y2
-            );
+            var _choice_y1 = _list_y1
+                + _choice_index * (_choice_button_h + _choice_gap);
+            var _choice_y2 = _choice_y1 + _choice_button_h;
+
+            var _choice_hovered = _clicks_allowed
+                && point_in_rectangle(
+                    _mouse_x,
+                    _mouse_y,
+                    _button_x1,
+                    _choice_y1,
+                    _button_x2,
+                    _choice_y2
+                );
 
             var _feedback_state = tablet_animal_feedback_state(
-                _animal.current_case,
+                _case_struct,
                 _action_id
             );
 
             var _can_press = (_feedback_state == 0);
 
-            tablet_animal_draw_treatment_button(
-                _treatment_button_x1,
+            tablet_card_draw_list_button(
+                _button_x1,
                 _choice_y1,
-                _treatment_button_x2,
+                _button_x2,
                 _choice_y2,
                 _action_name,
                 _choice_hovered,
@@ -1233,6 +1550,7 @@ function tablet_draw_animal_card(
 
             if (
                 _can_press
+                && _clicks_allowed
                 && _tablet.tablet_click_lock <= 0
                 && _choice_hovered
                 && mouse_check_button_pressed(mb_left)
@@ -1250,7 +1568,7 @@ function tablet_draw_animal_card(
 
                     tablet_animal_add_fly_effect(
                         _tablet,
-                        (_treatment_button_x1 + _treatment_button_x2) * 0.5,
+                        (_button_x1 + _button_x2) * 0.5,
                         (_choice_y1 + _choice_y2) * 0.5,
                         _condition_target_x,
                         _condition_target_y,
@@ -1286,7 +1604,7 @@ function tablet_draw_animal_card(
 
                     tablet_animal_add_fly_effect(
                         _tablet,
-                        (_treatment_button_x1 + _treatment_button_x2) * 0.5,
+                        (_button_x1 + _button_x2) * 0.5,
                         (_choice_y1 + _choice_y2) * 0.5,
                         _condition_target_x,
                         _condition_target_y,
@@ -1312,26 +1630,28 @@ function tablet_draw_animal_card(
                 return false;
             }
         }
-
     }
 
 
     // ═══════════════════════════════════════════════════════════
-    // 6.8.2 ИГРОК ВЫПОЛНЯЕТ ПРОЦЕДУРЫ
+    // 6.7.5 СТРАНИЦА «ЛЕЧЕНИЕ»: ИГРОК ВЫПОЛНЯЕТ ПРОЦЕДУРЫ
     // ═══════════════════════════════════════════════════════════
 
-    if (_procedure_exec_mode) {
-        var _pending_actions = [];
+    if (
+        _draw_page == CARD_PAGE_TREATMENT
+        && _list_visible
+        && _procedure_exec_mode
+    ) {
+        var _procedure_count = array_length(_pending_actions);
+        var _procedure_gap = 7 * _ui_scale;
+        var _procedure_button_h = tablet_card_button_height(
+            _list_h,
+            _procedure_count,
+            _procedure_gap,
+            _ui_scale
+        );
 
-        if (
-            variable_instance_exists(_animal, "current_case")
-            && is_struct(_animal.current_case)
-            && variable_struct_exists(_animal.current_case, "pending_procedure_actions")
-        ) {
-            _pending_actions = _animal.current_case.pending_procedure_actions;
-        }
-
-        for (var _procedure_index = 0; _procedure_index < array_length(_pending_actions); _procedure_index++) {
+        for (var _procedure_index = 0; _procedure_index < _procedure_count; _procedure_index++) {
             var _procedure_action_id = _pending_actions[_procedure_index];
             var _procedure_name = db_get_treatment_action_name(_procedure_action_id);
             var _procedure_stock_status = {
@@ -1354,33 +1674,34 @@ function tablet_draw_animal_card(
                 }
             }
 
-            var _procedure_y1 = _treatment_list_y
-                + _procedure_index * (_small_button_h + _button_gap);
-            var _procedure_y2 = _procedure_y1 + _small_button_h;
+            var _procedure_y1 = _list_y1
+                + _procedure_index * (_procedure_button_h + _procedure_gap);
+            var _procedure_y2 = _procedure_y1 + _procedure_button_h;
 
-            var _procedure_hovered = point_in_rectangle(
-                _mouse_x,
-                _mouse_y,
-                _treatment_button_x1,
-                _procedure_y1,
-                _treatment_button_x2,
-                _procedure_y2
-            );
+            var _procedure_hovered = _clicks_allowed
+                && point_in_rectangle(
+                    _mouse_x,
+                    _mouse_y,
+                    _button_x1,
+                    _procedure_y1,
+                    _button_x2,
+                    _procedure_y2
+                );
 
             var _already_done = tablet_animal_action_done_this_visit(
-                _animal.current_case,
+                _case_struct,
                 _procedure_action_id
             );
 
             var _procedure_feedback = tablet_animal_feedback_state(
-                _animal.current_case,
+                _case_struct,
                 _procedure_action_id
             );
 
-            tablet_animal_draw_treatment_button(
-                _treatment_button_x1,
+            tablet_card_draw_list_button(
+                _button_x1,
                 _procedure_y1,
-                _treatment_button_x2,
+                _button_x2,
                 _procedure_y2,
                 _procedure_name,
                 _procedure_hovered,
@@ -1391,6 +1712,7 @@ function tablet_draw_animal_card(
 
             if (
                 !_already_done
+                && _clicks_allowed
                 && _tablet.tablet_click_lock <= 0
                 && _procedure_hovered
                 && mouse_check_button_pressed(mb_left)
@@ -1427,7 +1749,7 @@ function tablet_draw_animal_card(
                 if (_procedure_applied && _condition_gain > 0) {
                     tablet_animal_add_fly_effect(
                         _tablet,
-                        (_treatment_button_x1 + _treatment_button_x2) * 0.5,
+                        (_button_x1 + _button_x2) * 0.5,
                         (_procedure_y1 + _procedure_y2) * 0.5,
                         _condition_target_x,
                         _condition_target_y,
@@ -1453,8 +1775,88 @@ function tablet_draw_animal_card(
                 return false;
             }
         }
-
     }
+
+
+    // ═══════════════════════════════════════════════════════════
+    // 6.7.6 СТРАНИЦА «ЛЕЧЕНИЕ» БЕЗ ПРАВА ПРАВКИ
+    //
+    // Карточка открыта простым тапом, не на приёме. Кнопок нет —
+    // показываем, что уже назначено. Раньше здесь было пусто.
+    // ═══════════════════════════════════════════════════════════
+
+    if (
+        _draw_page == CARD_PAGE_TREATMENT
+        && _list_visible
+        && !_doctor_assign_mode
+        && !_procedure_exec_mode
+    ) {
+        var _passive_ids = [];
+
+        if (
+            is_struct(_case_struct)
+            && variable_struct_exists(_case_struct, "prescribed_treatment_ids")
+        ) {
+            _passive_ids = _case_struct.prescribed_treatment_ids;
+        }
+
+        var _passive_count = array_length(_passive_ids);
+
+        if (_passive_count <= 0) {
+            draw_set_color(_text_soft);
+            draw_set_halign(fa_center);
+            draw_text_ext_transformed(
+                (_button_x1 + _button_x2) * 0.5,
+                _list_y1 + 18 * _ui_scale,
+                "ЛЕЧЕНИЕ ЕЩЁ НЕ НАЗНАЧЕНО",
+                15,
+                (_button_x2 - _button_x1) / max(0.01, CARD_FS_LABEL * _font_ui),
+                CARD_FS_LABEL * _font_ui,
+                CARD_FS_LABEL * _font_ui,
+                0
+            );
+            draw_set_halign(fa_left);
+        }
+
+        var _passive_gap = 7 * _ui_scale;
+        var _passive_h = tablet_card_button_height(
+            _list_h,
+            _passive_count,
+            _passive_gap,
+            _ui_scale
+        );
+
+        for (var _passive_index = 0; _passive_index < _passive_count; _passive_index++) {
+            var _passive_id = _passive_ids[_passive_index];
+            var _passive_y1 = _list_y1
+                + _passive_index * (_passive_h + _passive_gap);
+            var _passive_y2 = _passive_y1 + _passive_h;
+
+            // Наведения и нажатия нет: это справка, а не пульт.
+            tablet_card_draw_list_button(
+                _button_x1,
+                _passive_y1,
+                _button_x2,
+                _passive_y2,
+                db_get_treatment_action_name(_passive_id),
+                false,
+                false,
+                1,
+                _font_ui
+            );
+        }
+    }
+
+
+    // Блик на ребре листа поверх содержимого страницы.
+    tablet_card_draw_flip_edge(
+        _flip_full_x1,
+        _list_y1,
+        _flip_full_x2,
+        _list_y2,
+        _tablet.card_flip_timer,
+        _tablet.card_flip_timer_max
+    );
 
 
     // ═══════════════════════════════════════════════════════════

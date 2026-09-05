@@ -468,16 +468,29 @@ function db_init_treatment_actions() {
     });
     array_push(global.med_db.treatment_action_ids, "treat_cough_syrup");
 
+    // ПАКЕТ №299: ультразвуковая чистка перенесена в операционную.
+    //
+    // Важно, что мало сменить room_id: в операционную пациента
+    // отправляет флаг is_surgery — его читает operating_action_is_surgery,
+    // а через неё вся система операций (сборка бригады, стол, оплата).
+    // room_id смотрит только clinic_case_gate, когда проверяет, есть ли
+    // в клинике нужное помещение. Поэтому проставлены оба поля.
+    //
+    // Раз это теперь операция под наркозом, добавлены анестетик и
+    // профильный навык хирургии, а цена и время подняты до уровня
+    // остальных операций (сравнение: удаление зуба — 200 / 30 мин).
     variable_struct_set(_treat, "treat_dental_cleaning", {
         id : "treat_dental_cleaning",
         name_ru : "Ультразвуковая чистка зубов",
-        type : "procedure",
-        room_id : "room_exam",
-        skill_id : "skill_procedures",
-        price : 80,
-        time_min : 15,
+        type : "surgery",
+        room_id : "room_operating",
+        skill_id : "skill_surgery",
+        is_surgery : true,
+        price : 160,
+        time_min : 25,
         condition_delta : 7,
         required_items : [
+            { item_id : "item_anesthetic", amount : 1 },
             { item_id : "item_dental_paste", amount : 1 }
         ]
     });
@@ -557,21 +570,6 @@ function db_init_treatment_actions() {
         ]
     });
     array_push(global.med_db.treatment_action_ids, "treat_antispasmodic");
-
-    variable_struct_set(_treat, "treat_uroseptic", {
-        id : "treat_uroseptic",
-        name_ru : "Уросептик",
-        type : "therapy",
-        room_id : "room_exam",
-        skill_id : "skill_therapy_diag",
-        price : 50,
-        time_min : 10,
-        condition_delta : 6,
-        required_items : [
-            { item_id : "item_uroseptic", amount : 1 }
-        ]
-    });
-    array_push(global.med_db.treatment_action_ids, "treat_uroseptic");
 
     variable_struct_set(_treat, "treat_laxative", {
         id : "treat_laxative",
@@ -745,7 +743,6 @@ function db_init_treatment_actions() {
         required_items : [
             { item_id : "item_anesthetic", amount : 1 },
             { item_id : "item_surgical_kit", amount : 1 },
-            { item_id : "item_uroseptic", amount : 1 },
             { item_id : "item_iv_solution", amount : 1 }
         ]
     });

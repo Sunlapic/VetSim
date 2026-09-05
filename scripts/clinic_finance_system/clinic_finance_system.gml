@@ -2151,7 +2151,9 @@ function hud_draw_finance_price_panel(_hud) {
     var _tabs = [
         { id : "overview", text : "ОБЗОР" },
         { id : "services", text : "УСЛУГИ" },
-        { id : "medicines", text : "ПРЕПАРАТЫ" }
+        { id : "medicines", text : "ПРЕПАРАТЫ" },
+        // Пакет №287: четвёртая вкладка — история по дням.
+        { id : "history", text : "ИСТОРИЯ" }
     ];
     // Пакет №177: вкладки крупнее, места хватает.
     // Пакет №178: блок вкладок прижат влево и никогда не наезжает на крестик —
@@ -2162,7 +2164,37 @@ function hud_draw_finance_price_panel(_hud) {
     var _tab_w = UI_TAB_W;
     var _tab_gap = UI_TAB_GAP;
 
-    var _tabs_total = 3 * _tab_w + 2 * _tab_gap;
+    // ═══════════════════════════════════════════════════════
+    // ПАКЕТ №287: ЧЕТВЁРТАЯ ВКЛАДКА И ШИРИНА
+    //
+    // Три вкладки по 230 px занимали 718 px и всегда влезали.
+    // Четыре требуют уже 962 px, а вместе с заголовком и крестиком
+    // — около 1530 px. На узком экране последняя вкладка наехала
+    // бы на кнопку закрытия — та перестала бы нажиматься.
+    //
+    // Поэтому ширина вкладки уменьшается, если места не хватает.
+    // Порог 150 px — ниже не опускаемся: кнопка остаётся удобной
+    // для пальца, а ui_draw_tab сам ужимает текст под ширину.
+    // ═══════════════════════════════════════════════════════
+
+    var _tab_count_planned = 4;
+    var _title_right = _x1 + 24
+        + string_width("ФИНАНСЫ И ПРАЙС-ЛИСТ") * UI_FS_TITLE
+        + 30;
+    var _tabs_room = (_x2 - 20 - UI_TAB_H) - _tab_gap - _title_right;
+
+    var _tab_w_fit = floor(
+        (_tabs_room - (_tab_count_planned - 1) * _tab_gap) / _tab_count_planned
+    );
+
+    if (_tab_w_fit < _tab_w) {
+        _tab_w = max(150, _tab_w_fit);
+    }
+
+    // Пакет №287: вкладок стало четыре. Ширина блока считается от их
+    // количества, а не константой — иначе четвёртая наезжала на крестик.
+    var _tab_count = array_length(_tabs);
+    var _tabs_total = _tab_count * _tab_w + (_tab_count - 1) * _tab_gap;
 
     // Пакет №179: зазор до крестика = зазору между кнопками (_tab_gap).
     // Блок вкладок прижимается к кнопке закрытия, промежутки одинаковые:
@@ -2262,6 +2294,19 @@ function hud_draw_finance_price_panel(_hud) {
                 _content_y1 + 8,
                 _content_x2 - 8,
                 _content_y2 - 8,
+                _mouse_x,
+                _mouse_y
+            );
+        break;
+
+        // Пакет №287: история финансов по дням.
+        case "history":
+            finance_ui_draw_history(
+                _hud,
+                _content_x1 + 12,
+                _content_y1 + 12,
+                _content_x2 - 12,
+                _content_y2 - 12,
                 _mouse_x,
                 _mouse_y
             );

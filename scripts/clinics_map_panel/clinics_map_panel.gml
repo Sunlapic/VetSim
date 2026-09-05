@@ -514,18 +514,50 @@ function hud_draw_clinic_card(_hud) {
     // ── ГЛАВНАЯ КНОПКА ──
     if (_clinic.owned) {
 
-        // Переезда пока нет — комнаты 2-6 ещё не собраны. Кнопку
-        // показываем, но честно помечаем как недоступную, а не делаем
-        // вид, что всё работает.
-        var _is_here = (_clinic.id == global.active_clinic);
+        // ═══════════════════════════════════════════════════════
+        // ПАКЕТ №303: «ВЫ ЗДЕСЬ» СЧИТАЕТСЯ ПО РЕАЛЬНОЙ КОМНАТЕ
+        //
+        // Было: _clinic.id == global.active_clinic. Этого мало.
+        // active_clinic — «чья клиника ваша сейчас», и у клиники №1
+        // он равен 1 всегда, даже когда игрок физически стоит в
+        // тестовой комнате room1. Кнопка честно писала «ВЫ УЖЕ
+        // ЗДЕСЬ» и не пускала обратно в собственную клинику.
+        //
+        // Теперь сверяемся с комнатой, в которой игрок находится
+        // на самом деле: room. Совпало — значит правда здесь.
+        //
+        // Заодно снята заглушка «ВОЙТИ (СКОРО)»: переезд появился в
+        // пакете 301, комната клиники №1 собрана в 302.
+        // ═══════════════════════════════════════════════════════
+
+        var _clinic_room = asset_get_index(string(_clinic.room_name));
+
+        var _is_here = (
+            string(_clinic.room_name) != ""
+            && _clinic_room != -1
+            && room == _clinic_room
+        );
+
+        // Комната ещё не построена — войти некуда, и надпись об этом
+        // говорит прямо. Так у клиник 2-6 кнопка остаётся честной.
+        var _room_ready = (
+            string(_clinic.room_name) != ""
+            && _clinic_room != -1
+            && room_exists(_clinic_room)
+        );
+
+        var _main_label = "ВОЙТИ";
+
+        if (_is_here) _main_label = "ВЫ УЖЕ ЗДЕСЬ";
+        else if (!_room_ready) _main_label = "ПОМЕЩЕНИЕ НЕ ГОТОВО";
 
         hud_draw_button(
             _btn.main_x1, _btn.main_y1, _btn.main_x2, _btn.main_y2,
-            _is_here ? "ВЫ УЖЕ ЗДЕСЬ" : "ВОЙТИ (СКОРО)",
+            _main_label,
             false,
-            (!_is_here) && _hud.hover_map_main,
+            (!_is_here) && _room_ready && _hud.hover_map_main,
             _paper, _paper_hi, _paper_act, _line_dark,
-            _is_here ? _text_soft : _text_dark
+            (_is_here || !_room_ready) ? _text_soft : _text_dark
         );
 
         var _sell_check = clinics_can_sell(_clinic);

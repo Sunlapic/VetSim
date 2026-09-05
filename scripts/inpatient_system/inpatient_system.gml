@@ -1082,6 +1082,21 @@ function inpatient_clear_outpatient_prescriptions(_pet) {
     return true;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ПАКЕТ №290: ЭТО ГЛАВНЫЙ ИГРОК ИЛИ NPC?
+//
+// Стационар в нескольких местах ведёт себя по-разному с игроком и
+// с наёмным врачом. Раньше проверка писалась каждый раз заново,
+// теперь она одна.
+// ═══════════════════════════════════════════════════════════════
+
+function object_index_get_is_player(_actor) {
+    if (!instance_exists(_actor)) return false;
+
+    return (_actor.object_index == obj_player);
+}
+
+
 function inpatient_start_admission(_owner, _pet, _escort_doctor) {
     if (!instance_exists(_owner)) return false;
     if (!instance_exists(_pet)) return false;
@@ -2575,12 +2590,43 @@ function inpatient_controller_step(_ward) {
             if (instance_exists(_ward.escort_doctor)) {
                 var _escort = _ward.escort_doctor;
                 _escort.assigned_pet = noone;
-                _escort.doctor_state = "inpatient_escort_return";
-                inpatient_walk_to(
-                    _escort,
-                    _ward.escort_return_x,
-                    _ward.escort_return_y
-                );
+
+                // ═══════════════════════════════════════════════════
+                // ПАКЕТ №290: ИГРОК НЕ ВОЗВРАЩАЕТСЯ К СТОЛУ
+                //
+                // Сопровождение писалось под NPC-врача: довёл пациента
+                // до койки — и топай обратно на своё рабочее место.
+                // Главный игрок попадал в ту же ветку, и его силой
+                // вели назад к столу. Всё это время состояние оставалось
+                // «inpatient_escort_return», то есть занятым, и отдать
+                // игроку другой приказ было нельзя, пока он не дойдёт.
+                //
+                // Хуже того, точка возврата бралась из home_x/home_y, а
+                // у игрока таких переменных нет — подставлялись его
+                // тогдашние координаты, то есть место у стола.
+                //
+                // Теперь игрок, доведя животное до койки, просто
+                // освобождается на месте: он в стационаре, свободен, и
+                // им сразу можно управлять. NPC-врачи возвращаются
+                // как и раньше.
+                // ═══════════════════════════════════════════════════
+                if (object_index_get_is_player(_escort)) {
+                    _ward.escort_doctor = noone;
+
+                    inpatient_stop_actor(_escort);
+
+                    _escort.assigned_owner = noone;
+                    _escort.assigned_table = noone;
+                    _escort.doctor_state = "idle";
+                }
+                else {
+                    _escort.doctor_state = "inpatient_escort_return";
+                    inpatient_walk_to(
+                        _escort,
+                        _ward.escort_return_x,
+                        _ward.escort_return_y
+                    );
+                }
             }
 
             // Пакет №219: после операции лечение уже назначено —

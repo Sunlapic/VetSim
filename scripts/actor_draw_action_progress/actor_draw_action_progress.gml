@@ -67,12 +67,13 @@ function actor_draw_action_progress() {
                     _label    = "ЖДЁТ ПАЦИЕНТА";
                     _has_bar  = false;
                     break;
+                // Пакет №282: табличка «ПОПОЛНЕНИЕ» над ассистентом убрана.
+                // Пустая подпись гасит её целиком — ниже стоит «if (_label == "") exit;».
+                // Сами состояния не тронуты: ассистент ходит на склад
+                // и к шкафам как раньше.
                 case "restock_going_to_storage":
-				 _label    = "ПОПОЛНЕНИЕ";
-                    _has_bar  = false;
-                    break;
                 case "restock_going_to_cabinet":
-                    _label    = "ПОПОЛНЕНИЕ";
+                    _label    = "";
                     _has_bar  = false;
                     break;
                 case "inpatient_waiting_stock":

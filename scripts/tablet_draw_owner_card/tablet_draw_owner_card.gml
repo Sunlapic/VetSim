@@ -170,7 +170,7 @@ function tablet_owner_draw_stat_bar(
     var _bar_w = 70 * _ui_scale;
     var _bar_h = 11 * _ui_scale;
     var _progress_ratio = _progress_clamped / 5;
-    var _font_ui = _ui_scale * 1.30;
+    var _font_ui = _ui_scale * 1.22;
 
     // Название и сразу после него цифра текущего уровня.
     draw_set_color(make_color_rgb(50, 38, 28));
@@ -180,8 +180,8 @@ function tablet_owner_draw_stat_bar(
         _x,
         _y,
         _label + "  " + string(_level_clamped),
-        0.58 * _font_ui,
-        0.62 * _font_ui,
+        CARD_FS_VALUE * _font_ui,
+        CARD_FS_VALUE * _font_ui,
         0
     );
 
@@ -231,8 +231,8 @@ function tablet_owner_draw_stat_bar(
         (_level_clamped >= 10)
             ? "МАКС"
             : string(_progress_clamped) + "/5",
-        0.34 * _font_ui,
-        0.40 * _font_ui,
+        CARD_FS_SMALL * _font_ui,
+        CARD_FS_SMALL * _font_ui,
         0
     );
 
@@ -249,7 +249,7 @@ function tablet_owner_draw_static_stat(
     _percent,
     _ui_scale
 ) {
-    var _font_ui = _ui_scale * 1.30;
+    var _font_ui = _ui_scale * 1.22;
     // Те же координаты и размеры, что у шкал Терпения и Лояльности.
     var _value_x = _x + 150 * _ui_scale;
     var _value_w = 70 * _ui_scale;
@@ -262,8 +262,8 @@ function tablet_owner_draw_static_stat(
         _x,
         _y,
         _label + "  " + string(_level),
-        0.58 * _font_ui,
-        0.62 * _font_ui,
+        CARD_FS_VALUE * _font_ui,
+        CARD_FS_VALUE * _font_ui,
         0
     );
 
@@ -309,8 +309,8 @@ function tablet_owner_draw_static_stat(
         _value_x + _value_w * 0.5,
         _y + 1 + _value_h * 0.5,
         string(_percent) + "%",
-        0.34 * _font_ui,
-        0.40 * _font_ui,
+        CARD_FS_SMALL * _font_ui,
+        CARD_FS_SMALL * _font_ui,
         0
     );
 
@@ -402,6 +402,19 @@ function tablet_owner_draw_button(
     draw_set_color(_wood_dark);
     draw_roundrect_ext(_x1, _y1, _x2, _y2, 10, 10, true);
 
+    // ПАКЕТ №290. Надпись крупнее, как и в карточке питомца.
+    //
+    // Здесь тоже были разные масштабы по ширине и высоте (0.76 и
+    // 0.82) — буквы выходили слегка сплюснутыми. Теперь масштаб
+    // единый, а слишком длинная надпись ужимается под ширину кнопки.
+    var _button_text_scale = 1.12 * _ui_scale;
+    var _button_text_room = (_x2 - _x1) - 24;
+    var _button_text_need = string_width(_label) * _button_text_scale;
+
+    if (_button_text_need > _button_text_room && _button_text_need > 0) {
+        _button_text_scale *= (_button_text_room / _button_text_need);
+    }
+
     draw_set_color(_text_dark);
     draw_set_halign(fa_center);
     draw_set_valign(fa_middle);
@@ -409,8 +422,8 @@ function tablet_owner_draw_button(
         (_x1 + _x2) * 0.5,
         (_y1 + _y2) * 0.5,
         _label,
-        0.76 * _ui_scale,
-        0.82 * _ui_scale,
+        _button_text_scale,
+        _button_text_scale,
         0
     );
 
@@ -453,7 +466,7 @@ function tablet_draw_owner_card(
     // Все расстояния между блоками управляются одной переменной.
     // ═══════════════════════════════════════════════════════════
 
-    var _font_ui = _ui_scale * 1.30;
+    var _font_ui = _ui_scale * 1.22;
     var _panel_gap = 7 * _ui_scale;
     var _padding = 9 * _ui_scale;
 
@@ -500,8 +513,8 @@ function tablet_draw_owner_card(
             (_left_x1 + _left_x2) * 0.5,
             _frame_y - 5 * _ui_scale,
             "СТОИМОСТЬ ПРИЁМА",
-            0.82 * _font_ui,
-            0.88 * _font_ui,
+            CARD_FS_TITLE * _font_ui,
+            CARD_FS_TITLE * _font_ui,
             0
         );
 
@@ -538,8 +551,8 @@ function tablet_draw_owner_card(
         (_left_x1 + _left_x2) * 0.5,
         _frame_y - 5 * _ui_scale,
         "КАРТОЧКА ВЛАДЕЛЬЦА",
-        0.82 * _font_ui,
-        0.88 * _font_ui,
+        CARD_FS_TITLE * _font_ui,
+        CARD_FS_TITLE * _font_ui,
         0
     );
 
@@ -683,8 +696,8 @@ function tablet_draw_owner_card(
         string_upper(_owner_name),
         16 * _ui_scale,
         _owner_text_w,
-        0.68 * _font_ui,
-        0.72 * _font_ui,
+        CARD_FS_OWNER_NAME * _font_ui,
+        CARD_FS_OWNER_NAME * _font_ui,
         0
     );
 
@@ -693,8 +706,8 @@ function tablet_draw_owner_card(
         _owner_text_x,
         _owner_panel_y1 + 42 * _ui_scale,
         "Возраст: " + _owner_age,
-        0.52 * _font_ui,
-        0.56 * _font_ui,
+        CARD_FS_VALUE * _font_ui,
+        CARD_FS_VALUE * _font_ui,
         0
     );
 
@@ -703,10 +716,10 @@ function tablet_draw_owner_card(
         _owner_text_x,
         _owner_panel_y1 + 62 * _ui_scale,
         "Особенность: " + _feature_name,
-        13 * _ui_scale,
-        _owner_text_w,
-        0.48 * _font_ui,
-        0.52 * _font_ui,
+        16 * _ui_scale,
+        _owner_text_w / max(0.01, CARD_FS_LABEL * _font_ui),
+        CARD_FS_LABEL * _font_ui,
+        CARD_FS_LABEL * _font_ui,
         0
     );
 
@@ -715,10 +728,10 @@ function tablet_draw_owner_card(
         _owner_text_x,
         _owner_panel_y1 + 88 * _ui_scale,
         "СТАТУС: " + tablet_owner_get_status(_owner),
-        13 * _ui_scale,
-        _owner_text_w,
-        0.46 * _font_ui,
-        0.50 * _font_ui,
+        16 * _ui_scale,
+        _owner_text_w / max(0.01, CARD_FS_LABEL * _font_ui),
+        CARD_FS_LABEL * _font_ui,
+        CARD_FS_LABEL * _font_ui,
         0
     );
 
@@ -744,8 +757,8 @@ function tablet_draw_owner_card(
         _stats_panel_x1 + _padding,
         _stats_panel_y1 + 10 * _ui_scale,
         "ХАРАКТЕРИСТИКИ:",
-        0.62 * _font_ui,
-        0.66 * _font_ui,
+        CARD_FS_SECTION * _font_ui,
+        CARD_FS_SECTION * _font_ui,
         0
     );
 
@@ -868,7 +881,7 @@ function tablet_draw_owner_card(
     var _pet_panel_x1 = _right_x1;
     var _pet_panel_y1 = _content_top;
     var _pet_panel_x2 = _right_x2;
-    var _pet_panel_y2 = _pet_panel_y1 + 100 * _ui_scale;
+    var _pet_panel_y2 = _pet_panel_y1 + 116 * _ui_scale;
 
     tablet_owner_draw_panel(
         _pet_panel_x1,
@@ -878,32 +891,32 @@ function tablet_draw_owner_card(
     );
 
     var _pet_text_x = _pet_panel_x1 + _padding;
-    var _pet_value_x = _pet_text_x + 70 * _ui_scale;
+    var _pet_value_x = _pet_text_x + 88 * _ui_scale;
 
     draw_set_color(_wood_dark);
     draw_text_transformed(
         _pet_text_x,
         _pet_panel_y1 + 8 * _ui_scale,
         "ПИТОМЦЫ:",
-        0.62 * _font_ui,
-        0.66 * _font_ui,
+        CARD_FS_SECTION * _font_ui,
+        CARD_FS_SECTION * _font_ui,
         0
     );
 
     draw_set_color(_text_soft);
-    draw_text_transformed(_pet_text_x, _pet_panel_y1 + 23 * _ui_scale, "Вид:", 0.48 * _font_ui, 0.52 * _font_ui, 0);
+    draw_text_transformed(_pet_text_x, _pet_panel_y1 + 28 * _ui_scale, "Вид:", CARD_FS_LABEL * _font_ui, CARD_FS_LABEL * _font_ui, 0);
     draw_set_color(_text);
-    draw_text_transformed(_pet_value_x, _pet_panel_y1 + 23 * _ui_scale, _species_name, 0.52 * _font_ui, 0.56 * _font_ui, 0);
+    draw_text_transformed(_pet_value_x, _pet_panel_y1 + 28 * _ui_scale, _species_name, CARD_FS_VALUE * _font_ui, CARD_FS_VALUE * _font_ui, 0);
 
     draw_set_color(_text_soft);
-    draw_text_transformed(_pet_text_x, _pet_panel_y1 + 45 * _ui_scale, "Кличка:", 0.48 * _font_ui, 0.52 * _font_ui, 0);
+    draw_text_transformed(_pet_text_x, _pet_panel_y1 + 54 * _ui_scale, "Кличка:", CARD_FS_LABEL * _font_ui, CARD_FS_LABEL * _font_ui, 0);
     draw_set_color(_blue);
-    draw_text_transformed(_pet_value_x, _pet_panel_y1 + 45 * _ui_scale, _pet_name, 0.54 * _font_ui, 0.58 * _font_ui, 0);
+    draw_text_transformed(_pet_value_x, _pet_panel_y1 + 54 * _ui_scale, _pet_name, CARD_FS_VALUE * _font_ui, CARD_FS_VALUE * _font_ui, 0);
 
     draw_set_color(_text_soft);
-    draw_text_transformed(_pet_text_x, _pet_panel_y1 + 67 * _ui_scale, "Возраст:", 0.48 * _font_ui, 0.52 * _font_ui, 0);
+    draw_text_transformed(_pet_text_x, _pet_panel_y1 + 80 * _ui_scale, "Возраст:", CARD_FS_LABEL * _font_ui, CARD_FS_LABEL * _font_ui, 0);
     draw_set_color(_text);
-    draw_text_transformed(_pet_value_x, _pet_panel_y1 + 67 * _ui_scale, _pet_age, 0.52 * _font_ui, 0.56 * _font_ui, 0);
+    draw_text_transformed(_pet_value_x, _pet_panel_y1 + 80 * _ui_scale, _pet_age, CARD_FS_VALUE * _font_ui, CARD_FS_VALUE * _font_ui, 0);
 
 
     // ═══════════════════════════════════════════════════════════
@@ -911,8 +924,18 @@ function tablet_draw_owner_card(
     // Внизу оставлена область ровно под две кнопки.
     // ═══════════════════════════════════════════════════════════
 
-    var _button_height = 30 * _ui_scale;
-    var _button_area_height = _button_height * 2 + _panel_gap;
+    // ПАКЕТ №290: кнопка выше, как в карточке питомца.
+    var _button_height = 44 * _ui_scale;
+
+    // ПАКЕТ №294: под кнопки резервируется ОДИН слот, а не два.
+    //
+    // Раньше здесь закладывалось место под две кнопки, хотя вторая
+    // никогда не рисуется — слот держали «под будущую кнопку».
+    // После увеличения шрифта из-за этого запаса в панели причины
+    // оставалось место всего на 2 строки, а список симптомов бывает
+    // до пяти (см. пакет 289). Освобождённый слот отдан тексту:
+    // теперь помещаются все пять строк.
+    var _button_area_height = _button_height + _panel_gap;
 
     var _case_panel_x1 = _right_x1;
     var _case_panel_y1 = _pet_panel_y2 + _panel_gap;
@@ -932,43 +955,43 @@ function tablet_draw_owner_card(
         _case_panel_x1 + _padding,
         _case_panel_y1 + 9 * _ui_scale,
         "ПРИЧИНА ОБРАЩЕНИЯ:",
-        0.54 * _font_ui,
-        0.58 * _font_ui,
+        CARD_FS_SECTION * _font_ui,
+        CARD_FS_SECTION * _font_ui,
         0
     );
 
     draw_set_color(_text_soft);
     draw_text_ext_transformed(
         _case_panel_x1 + _padding,
-        _case_panel_y1 + 19 * _ui_scale,
+        _case_panel_y1 + 32 * _ui_scale,
         tablet_owner_get_reason_list(_pet, _pet_problem),
-        7 * _ui_scale,
-        _case_text_w,
-        0.58 * _font_ui,
-        0.62 * _font_ui,
+        CARD_FS_VALUE * _font_ui * 13,
+        _case_text_w / max(0.01, CARD_FS_VALUE * _font_ui),
+        CARD_FS_VALUE * _font_ui,
+        CARD_FS_VALUE * _font_ui,
         0
     );
 
     // Состояние всегда прижато к нижней части четвёртого прямоугольника.
-    var _condition_y = _case_panel_y2 - 28 * _ui_scale;
+    var _condition_y = _case_panel_y2 - 32 * _ui_scale;
 
     draw_set_color(_wood_dark);
     draw_text_transformed(
         _case_panel_x1 + _padding,
         _condition_y,
         "СОСТОЯНИЕ:",
-        0.52 * _font_ui,
-        0.56 * _font_ui,
+        CARD_FS_VALUE * _font_ui,
+        CARD_FS_VALUE * _font_ui,
         0
     );
 
     draw_set_color(_blue);
     draw_text_transformed(
-        _case_panel_x1 + _padding + 100 * _ui_scale,
+        _case_panel_x1 + _padding + 124 * _ui_scale,
         _condition_y,
         _pet_condition,
-        0.52 * _font_ui,
-        0.56 * _font_ui,
+        CARD_FS_VALUE * _font_ui,
+        CARD_FS_VALUE * _font_ui,
         0
     );
 
@@ -1063,7 +1086,10 @@ function tablet_draw_owner_card(
     // свободным под будущую дополнительную кнопку владельца.
     if (_button_label != "") {
         var _button_x1 = _right_x1;
-        var _button_y1 = _case_panel_y2 + _panel_gap;
+
+        // ПАКЕТ №294: кнопка опущена на полшага вниз, чтобы её низ
+        // встал вровень с нижним краем левого блока характеристик.
+        var _button_y1 = _case_panel_y2 + _panel_gap * 2;
         var _button_x2 = _right_x2;
         var _button_y2 = _button_y1 + _button_height;
 

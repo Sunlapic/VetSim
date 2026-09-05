@@ -34,6 +34,38 @@ if (!variable_instance_exists(id, "restock_stuck_y")) restock_stuck_y = y;
 if (!variable_instance_exists(id, "restock_stuck_timer")) restock_stuck_timer = 0;
 if (!variable_instance_exists(id, "restock_stuck_repaths")) restock_stuck_repaths = 0;
 
+// ═══════════════════════════════════════════════════════════════
+// ПАКЕТ №297: АНТИБУКСОВКА НА ПУТИ К ВЛАДЕЛЬЦУ И К СВОЕЙ ТОЧКЕ
+//
+// Симптом: ассистент шёл с владельцем выполнять назначения, его
+// прижало (игрок стоял у стола), и он замер недалеко от стола.
+// Владелец с животным зависли навсегда.
+//
+// Почему никто не спас:
+//
+//   1. Маршрут строится ОДИН раз, в момент входа в состояние
+//      (_safe_walk). Если ассистента сбило с пути или путь
+//      закончился раньше цели — повторять маршрут некому, а
+//      условие перехода дальше требует расстояния <= 10 пикселей.
+//
+//   2. Сторож зависаний в par_staff (Step_1) ловит только состояния
+//      "idle" и "returning". Ходовые "going_to_owner" и
+//      "going_to_assistant_point" он не проверяет вовсе.
+//
+//   3. Страховка владельца (пакет 276) тоже молчит: она срабатывает,
+//      только если владельца никто не держит. А ассистент всё это
+//      время держал assigned_owner — формально «работа идёт».
+//
+// Ниже добавлен собственный таймер: если ассистент не приближается
+// к цели, маршрут перестраивается, а после трёх неудач задача
+// сбрасывается — тогда владельца подхватит кто-то другой.
+// ═══════════════════════════════════════════════════════════════
+
+if (!variable_instance_exists(id, "walk_stuck_timer")) walk_stuck_timer = 0;
+if (!variable_instance_exists(id, "walk_stuck_best")) walk_stuck_best = 999999;
+if (!variable_instance_exists(id, "walk_stuck_repaths")) walk_stuck_repaths = 0;
+if (!variable_instance_exists(id, "walk_stuck_state")) walk_stuck_state = "";
+
 assistant_extra_skills_init(id);
 assistant_recalc_restock_stats(id);
 
@@ -117,6 +149,64 @@ var _safe_walk = function(_target_x, _target_y) {
     restock_actual_y = _path_target_y;
 
     return _path_built;
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// 2.5 ПАКЕТ №297: КОНТРОЛЬ ПРОДВИЖЕНИЯ К ЦЕЛИ
+//
+// Возвращает: 0 — всё в порядке, 1 — пора перестроить маршрут,
+// 2 — задачу пора бросить (три перестроения не помогли).
+// Вызывается только из ходовых состояний.
+//
+// Логика: запоминаем лучшее достигнутое расстояние до цели. Пока
+// ассистент приближается — таймер сбрасывается. Если 4 секунды нет
+// улучшения хотя бы на 4 пикселя, считаем, что он забуксовал, и
+// строим маршрут заново.
+// ═══════════════════════════════════════════════════════════════
+
+var _walk_progress_failed = function(_target_x, _target_y, _state_name) {
+    // Смена состояния — счётчики начинаем заново.
+    if (walk_stuck_state != _state_name) {
+        walk_stuck_state = _state_name;
+        walk_stuck_timer = 0;
+        walk_stuck_best = 999999;
+        walk_stuck_repaths = 0;
+    }
+
+    var _distance = point_distance(x, y, _target_x, _target_y);
+
+    // Приблизились — всё хорошо, сбрасываем таймер.
+    if (_distance < walk_stuck_best - 4) {
+        walk_stuck_best = _distance;
+        walk_stuck_timer = 0;
+
+        return 0;
+    }
+
+    walk_stuck_timer += 1;
+
+    if (walk_stuck_timer < room_speed * 4) return 0;
+
+    walk_stuck_timer = 0;
+    walk_stuck_repaths += 1;
+
+    // Три попытки не помогли — пусть задачу возьмёт кто-то другой.
+    if (walk_stuck_repaths >= 3) {
+        walk_stuck_state = "";
+        walk_stuck_best = 999999;
+        walk_stuck_repaths = 0;
+
+        return 2;
+    }
+
+    // Пора перестроить маршрут: сетка могла обновиться, а тот, кто
+    // загораживал дорогу, — отойти. Сам вызов _safe_walk делается в
+    // месте использования: обращаться к чужой локальной функции
+    // изнутри этой опасно — в GML это зависит от замыкания.
+    walk_stuck_best = 999999;
+
+    return 1;
 };
 
 
@@ -535,6 +625,23 @@ switch (assistant_state) {
             break;
         }
 
+        // ПАКЕТ №297: не приближается к владельцу — перестроить путь,
+        // после трёх неудач отпустить задачу.
+        var _owner_walk = _walk_progress_failed(
+            assigned_owner.x + 28,
+            assigned_owner.y,
+            "going_to_owner"
+        );
+
+        if (_owner_walk == 2) {
+            assistant_reset_procedure();
+            break;
+        }
+
+        if (_owner_walk == 1) {
+            _safe_walk(assigned_owner.x + 28, assigned_owner.y);
+        }
+
         if (point_distance(x, y, assigned_owner.x, assigned_owner.y) <= 40) {
             with (assigned_owner) {
                 assigned_doctor = other.id;
@@ -641,6 +748,26 @@ switch (assistant_state) {
         ) {
             assistant_reset_procedure();
             break;
+        }
+
+        // ПАКЕТ №297: та же защита на пути к своей рабочей точке.
+        //
+        // Здесь допуск перехода всего 10 пикселей, а конец пути
+        // mp_grid_path ложится в центр клетки сетки (16 px), поэтому
+        // застрять в паре шагов от цели особенно легко.
+        var _point_walk = _walk_progress_failed(
+            assistant_target_x,
+            assistant_target_y,
+            "going_to_assistant_point"
+        );
+
+        if (_point_walk == 2) {
+            assistant_reset_procedure();
+            break;
+        }
+
+        if (_point_walk == 1) {
+            _safe_walk(assistant_target_x, assistant_target_y);
         }
 
         if (point_distance(x, y, assistant_target_x, assistant_target_y) <= 10) {

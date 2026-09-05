@@ -224,7 +224,7 @@ function db_init_disease_links() {
 
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_rhinitis", diagnostic_id : "diag_physical_exam", required_to_confirm : true,  priority : 1, unlocks_reveal_level : 1 });
 
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_rhinitis", action_id : "treat_nose_drops", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Капли в нос 3-5 дней.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_rhinitis", action_id : "treat_nose_drops", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Капли в нос 3-5 дней.", repeat_until_recovered : true, per_visit_limit : 1 });
 
     array_push(global.med_db.disease_skills, { disease_id : "disease_rhinitis", skill_id : "skill_therapy_diag", min_level : 1, importance : "main" });
 
@@ -235,7 +235,7 @@ function db_init_disease_links() {
 
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_fleas", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
 
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_fleas", action_id : "treat_flea_treatment", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Однократная обработка от блох.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_fleas", action_id : "treat_flea_treatment", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Однократная обработка от блох.", repeat_until_recovered : true, per_visit_limit : 1 });
 
     array_push(global.med_db.disease_skills, { disease_id : "disease_fleas", skill_id : "skill_therapy_diag", min_level : 1, importance : "main" });
 
@@ -247,7 +247,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_otitis", diagnostic_id : "diag_physical_exam", required_to_confirm : true,  priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_otitis", diagnostic_id : "diag_otoscope",     required_to_confirm : false, priority : 2, unlocks_reveal_level : 2 });
 
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_otitis", action_id : "treat_ear_drops", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Ушные капли курсом 7 дней.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_otitis", action_id : "treat_ear_drops", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Ушные капли курсом 7 дней.", repeat_until_recovered : true, per_visit_limit : 1 });
 
     array_push(global.med_db.disease_skills, { disease_id : "disease_otitis", skill_id : "skill_therapy_diag", min_level : 2, importance : "main" });
 
@@ -258,7 +258,7 @@ function db_init_disease_links() {
 
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_conjunctivitis", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
 
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_conjunctivitis", action_id : "treat_eye_drops", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Глазные капли курсом 5-7 дней.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_conjunctivitis", action_id : "treat_eye_drops", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Глазные капли курсом 5-7 дней.", repeat_until_recovered : true, per_visit_limit : 1 });
 
     array_push(global.med_db.disease_skills, { disease_id : "disease_conjunctivitis", skill_id : "skill_therapy_diag", min_level : 1, importance : "main" });
 
@@ -270,7 +270,7 @@ function db_init_disease_links() {
 
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_wound", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
 
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_wound", action_id : "treat_wound_surgery", count : 1, days : 1, reveal_level : 3, required : true, severity_or_condition : "any", notes : "Операция: хирургическая обработка раны.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_wound", action_id : "treat_wound_surgery", count : 1, days : 1, reveal_level : 3, required : true, severity_or_condition : "any", notes : "Операция: хирургическая обработка раны.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_wound", action_id : "treat_painkiller", count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Обезболивающее до заживления.", repeat_until_recovered : true,  per_visit_limit : 1 });
 
     array_push(global.med_db.disease_skills, { disease_id : "disease_wound", skill_id : "skill_procedures", min_level : 3, importance : "main" });
@@ -285,7 +285,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_infection", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_infection", diagnostic_id : "diag_blood_test",    required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
 
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_infection", action_id : "treat_antibiotic",  count : 1, days : 1, reveal_level : 2, required : true,  severity_or_condition : "any", notes : "Антибиотик широкого спектра.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_infection", action_id : "treat_antibiotic",  count : 1, days : 1, reveal_level : 2, required : true,  severity_or_condition : "any", notes : "Антибиотик широкого спектра.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_infection", action_id : "treat_antipyretic", count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Жаропонижающее при температуре.", repeat_until_recovered : true,  per_visit_limit : 1 });
 
     array_push(global.med_db.disease_skills, { disease_id : "disease_infection", skill_id : "skill_therapy_diag", min_level : 3, importance : "main" });
@@ -349,7 +349,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_gastritis", symptom_id : "symptom_abdominal_pain",weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_gastritis", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_gastritis", diagnostic_id : "diag_endoscopy",     required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_gastritis", action_id : "treat_gastroprotector", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Защита слизистой желудка.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_gastritis", action_id : "treat_gastroprotector", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Защита слизистой желудка.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_gastritis", action_id : "treat_antiemetic",      count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Снимает рвоту.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_gastritis", action_id : "treat_diet_feed",      count : 1, days : 1, reveal_level : 2, required : true, severity_or_condition : "any", notes : "Щадящая диета.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_gastritis", skill_id : "skill_therapy_diag", min_level : 2, importance : "main" });
@@ -564,7 +564,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_hot_spot", symptom_id : "symptom_restlessness", weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_hot_spot", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_hot_spot", action_id : "treat_antiseptic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Обработка мокнущего пятна.", repeat_until_recovered : false, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_hot_spot", action_id : "treat_antibiotic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Антибиотик от инфекции.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_hot_spot", action_id : "treat_antibiotic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Антибиотик от инфекции.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_hot_spot", action_id : "treat_skin_cream", count : 1, days : 1, reveal_level : 2, required : false, severity_or_condition : "any", notes : "Заживление кожи.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_hot_spot", skill_id : "skill_therapy_diag", min_level : 4, importance : "main" });
 
@@ -594,7 +594,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_ticks", symptom_id : "symptom_restlessness",  weight : 3, visible_on_start : true  });
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_ticks", symptom_id : "symptom_itching",       weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_ticks", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_ticks", action_id : "treat_antiparasitic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Снятие клещей и обработка.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_ticks", action_id : "treat_antiparasitic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Снятие клещей и обработка.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_ticks", skill_id : "skill_therapy_diag", min_level : 2, importance : "main" });
 
     // ── ЛЕПТОСПИРОЗ ──
@@ -637,7 +637,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_helminthiasis", symptom_id : "symptom_mucus_stool", weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_helminthiasis", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_helminthiasis", diagnostic_id : "diag_fecal_test",    required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_helminthiasis", action_id : "treat_anthelminthic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Дегельминтизация.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_helminthiasis", action_id : "treat_anthelminthic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Дегельминтизация.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_helminthiasis", action_id : "treat_probiotic",    count : 1, days : 1, reveal_level : 2, required : false, severity_or_condition : "any", notes : "Восстановление микрофлоры.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_helminthiasis", skill_id : "skill_therapy_diag", min_level : 3, importance : "main" });
 
@@ -670,7 +670,14 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_tartar", symptom_id : "symptom_gum_redness", weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_tartar", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_tartar", diagnostic_id : "diag_dental_exam",   required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_tartar", action_id : "treat_dental_cleaning", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Ультразвуковая чистка.", repeat_until_recovered : false, per_visit_limit : 1 });
+    // ПАКЕТ №299: чистка стала операцией под наркозом, поэтому повтор
+    // до выздоровления снят — все операции в проекте разовые
+    // (цистотомия, остеосинтез, удаление зуба). Иначе животное возили
+    // бы на наркоз снова и снова. Флаг повтора, выданный в пакете 298,
+    // перенесён на антисептическую обработку: она и добирает состояние
+    // до 100% амбулаторно, уже после операции.
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_tartar", action_id : "treat_dental_cleaning", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Ультразвуковая чистка (операционная).", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_tartar", action_id : "treat_antiseptic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Обработка дёсен после чистки.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_tartar", skill_id : "skill_procedures", min_level : 3, importance : "main" });
 
     // ── ГИНГИВИТ ──
@@ -707,8 +714,12 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_cystitis", symptom_id : "symptom_bloody_urine",  weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_cystitis", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_cystitis", diagnostic_id : "diag_urinalysis",    required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_uroseptic",     count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Уросептик курсом.", repeat_until_recovered : true, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_antispasmodic", count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Снимает спазм.", repeat_until_recovered : false, per_visit_limit : 1 });
+    // ПАКЕТ №299: цистит лечится антибиотиком и спазмолитиком.
+    // Уросептик убран из игры полностью. Антибиотик стал основным
+    // средством и повторяется до выздоровления, спазмолитик из
+    // необязательного стал обязательной частью курса.
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_antibiotic",    count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Антибиотик курсом.", repeat_until_recovered : true, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_antispasmodic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Снимает спазм.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_cystitis", skill_id : "skill_therapy_diag", min_level : 4, importance : "main" });
 
     // ── МОЧЕКАМЕННАЯ БОЛЕЗНЬ ──
@@ -720,7 +731,6 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_cystotomy", count : 1, days : 1, reveal_level : 3, required : true, severity_or_condition : "any", notes : "Операция: цистотомия (удаление камней).", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_antispasmodic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Снимает боль.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_diet_feed",     count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Спецдиета растворяет камни.", repeat_until_recovered : true, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_uroseptic",    count : 1, days : 1, reveal_level : 2, required : false, severity_or_condition : "any", notes : "Профилактика инфекции.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_urolithiasis", skill_id : "skill_therapy_diag", min_level : 6, importance : "main" });
 
     // ── ЗАПОР ──
@@ -728,7 +738,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_constipation", symptom_id : "symptom_straining",     weight : 3, visible_on_start : true  });
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_constipation", symptom_id : "symptom_abdominal_pain", weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_constipation", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_constipation", action_id : "treat_laxative",  count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Слабительное.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_constipation", action_id : "treat_laxative",  count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Слабительное.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_constipation", action_id : "treat_diet_feed", count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Клетчатка в рационе.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_constipation", skill_id : "skill_procedures", min_level : 2, importance : "main" });
 
@@ -737,7 +747,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_anal_glands", symptom_id : "symptom_restlessness", weight : 3, visible_on_start : true  });
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_anal_glands", symptom_id : "symptom_pain",         weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_anal_glands", diagnostic_id : "diag_physical_exam", required_to_confirm : true, priority : 1, unlocks_reveal_level : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_anal_glands", action_id : "treat_antiseptic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Обработка и чистка желёз.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_anal_glands", action_id : "treat_antiseptic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Обработка и чистка желёз.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_anal_glands", action_id : "treat_painkiller", count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Снятие боли.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_anal_glands", skill_id : "skill_procedures", min_level : 2, importance : "main" });
 }

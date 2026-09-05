@@ -85,6 +85,23 @@ function ui_hud_modal_panel_open() {
 
     if (_hud.staff_panel_open) return true;
     if (_hud.clinic_panel_open) return true;
+
+    // ── ПАКЕТ №306: ПАНЕЛЬ КАРТЫ КЛИНИК ──
+    //
+    // Панель появилась в пакете 280, но в список модальных окон её
+    // тогда не внесли. Из-за этого клики проходили НАСКВОЗЬ: тык по
+    // карте открывал карточку сотрудника, стоящего под ней, а игрок
+    // уходил к точке под панелью.
+    //
+    // Это центральная точка блокировки: её результат obj_Render кладёт
+    // в global.ui_block_world_click, а мир и камера смотрят уже на
+    // него. Достаточно добавить панель сюда.
+    if (
+        variable_instance_exists(_hud, "map_panel_open")
+        && _hud.map_panel_open
+    ) {
+        return true;
+    }
     if (_hud.clients_panel_open) return true;
     if (_hud.finance_panel_open) return true;
     if (_hud.hiring_panel_open) return true;

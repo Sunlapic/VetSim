@@ -304,14 +304,6 @@ function db_init_items() {
     });
     array_push(global.item_ids, "item_antispasmodic");
 
-    variable_struct_set(_db, "item_uroseptic", {
-        id : "item_uroseptic",
-        name_ru : "Уросептик",
-        buy_price : 45,
-        unit_ru : "таб."
-    });
-    array_push(global.item_ids, "item_uroseptic");
-
     variable_struct_set(_db, "item_laxative", {
         id : "item_laxative",
         name_ru : "Слабительное",

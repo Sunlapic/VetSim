@@ -584,6 +584,17 @@ function save_build_wards() {
 
         if (!instance_exists(_ward)) continue;
 
+        // ПАКЕТ №309: объект мог быть создан, но его Create ещё не
+        // отработал — тогда ни phase, ни patient не существует, и
+        // прямое чтение роняет игру. Такое случается, когда
+        // сохранение вызывается в момент смены комнаты: GameMaker
+        // создаёт объекты по очереди, а CleanUp приходит ко всем
+        // сразу.
+        //
+        // Койка без phase заведомо пустая — пропускаем её молча.
+        if (!variable_instance_exists(_ward, "phase")) continue;
+        if (!variable_instance_exists(_ward, "patient")) continue;
+
         // Пустые койки не пишем: при загрузке они и так пустые.
         if (_ward.phase == "empty") continue;
         if (!instance_exists(_ward.patient)) continue;
@@ -1073,6 +1084,36 @@ function save_build_data() {
             save_global("inventory_main", {})
         ),
 
+        // ── ПАКЕТ 301: СЕТЬ КЛИНИК ──
+        //
+        // clinics хранит, какие клиники куплены, clinic_state — карманы
+        // с персоналом и складом каждой, active_clinic — где игрок.
+        //
+        // Раньше global.clinics не сохранялся вовсе: после загрузки
+        // купленные клиники снова становились чужими.
+        //
+        // save_deep_copy, а не save_copy_struct: внутри clinics массив
+        // структур, а внутри clinic_state — массивы снимков персонала.
+        // Поверхностная копия потеряла бы вложенные массивы.
+        clinics : save_deep_copy(
+            save_global("clinics", [])
+        ),
+        clinic_state : save_deep_copy(
+            save_global("clinic_state", {})
+        ),
+        active_clinic : save_global("active_clinic", 1),
+
+        // ── ПАКЕТ 287: история финансов по дням ──
+        //
+        // Массив плоских структур, до 30 штук. Вложенных
+        // массивов внутри нет, поэтому save_copy_struct здесь не
+        // нужен — finance_history_to_save сама собирает копию.
+        //
+        // SAVE_FORMAT_VERSION НЕ поднимается: старые сохранения
+        // без этого ключа грузятся как раньше и просто дают
+        // пустую историю.
+        finance_history : finance_history_to_save(),
+
         // ── ПАКЕТ 275: шкафы в кабинетах ──
         //
         // Раньше сохранялся только главный склад. Шкафы кабинетов —
@@ -1141,6 +1182,33 @@ function save_build_data() {
             slot : _cab.exam_slot_id,
             inventory : save_copy_struct(_cab.storage_inventory)
         });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №305: ПЕРСОНАЛ СОХРАНЯЕТСЯ ПО КЛИНИКАМ
+    //
+    // Список _data.staff ниже — общий на всю игру: в него попадают
+    // все, кто СЕЙЧАС в комнате. Пока клиника была одна, это работало.
+    //
+    // С сетью клиник получилось так: автосохранение застаёт игрока,
+    // например, в тестовой клинике №4, кладёт в staff девять её
+    // сотрудников — и при следующей загрузке они появлялись в любой
+    // клинике, куда бы игрок ни приехал. Карманы клиник (clinic_state)
+    // сохранялись отдельно и правильно, но общий staff их перекрывал:
+    // загрузка сначала сносит весь персонал, а потом разворачивает
+    // именно этот список.
+    //
+    // Решение: перед сборкой сохранения сворачиваем текущую клинику в
+    // её карман. Тогда clinic_state содержит актуальный состав ВСЕХ
+    // клиник, включая ту, в которой игрок стоит прямо сейчас.
+    //
+    // Сам _data.staff оставлен и продолжает писаться. Он нужен для
+    // двух вещей: совместимости со старыми сохранениями (формат не
+    // поднимаем) и как состав текущей комнаты при загрузке.
+    // ═══════════════════════════════════════════════════════════════
+
+    if (script_exists(asset_get_index("clinic_network_store_current"))) {
+        clinic_network_store_current();
     }
 
     // Весь персонал клиники, кроме игрока и кандидатов.
@@ -1401,10 +1469,130 @@ function vetsim_load() {
     }
 
     // ── склад ──
+    // ── ПАКЕТ 301: сеть клиник ──
+    //
+    // Восстанавливаем ДО персонала и склада: clinic_network_restore
+    // ниже по цепочке опирается на active_clinic, а карманы клиник
+    // должны быть на месте раньше, чем кто-то в них полезет.
+    var _clinics = save_field(_data, "clinics", undefined);
+
+    if (is_array(_clinics) && array_length(_clinics) > 0) {
+        global.clinics = save_deep_copy(_clinics);
+    }
+
+    var _clinic_state = save_field(_data, "clinic_state", undefined);
+
+    if (is_struct(_clinic_state)) {
+        global.clinic_state = save_deep_copy(_clinic_state);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №307: ЛЕЧЕНИЕ СТАРЫХ ИСПОРЧЕННЫХ СОХРАНЕНИЙ
+    //
+    // До пакета 306 игра при запуске в тестовой комнате считала её
+    // персонал штатом клиники №1 и складывала девять тестовых
+    // сотрудников в её карман. Такие сохранения уже существуют, и
+    // одной правкой механики их не вылечить: испорченные данные
+    // лежат в файле.
+    //
+    // Признак порчи простой и надёжный: у клиники, которую игрок
+    // никогда не покупал (owned = false), в кармане не может быть
+    // персонала. И у клиники №1 в самом начале игры штата быть не
+    // должно — игрок нанимает всех сам.
+    //
+    // Поэтому: карманы НЕ купленных клиник очищаются. Это безопасно —
+    // в купленную клинику персонал попадает только после визита туда.
+    // ═══════════════════════════════════════════════════════════════
+
+    if (
+        variable_global_exists("clinic_state")
+        && is_struct(global.clinic_state)
+        && variable_global_exists("clinics")
+        && is_array(global.clinics)
+    ) {
+        for (var _c = 0; _c < array_length(global.clinics); _c++) {
+            var _clinic_ref = global.clinics[_c];
+
+            if (!is_struct(_clinic_ref)) continue;
+            if (_clinic_ref.owned) continue;
+
+            var _dirty_key = "clinic_" + string(_clinic_ref.id);
+
+            if (!variable_struct_exists(global.clinic_state, _dirty_key)) {
+                continue;
+            }
+
+            var _dirty = variable_struct_get(
+                global.clinic_state,
+                _dirty_key
+            );
+
+            if (
+                is_struct(_dirty)
+                && variable_struct_exists(_dirty, "staff")
+                && is_array(_dirty.staff)
+                && array_length(_dirty.staff) > 0
+            ) {
+                show_debug_message(
+                    "[SAVE] Клиника " + string(_clinic_ref.id)
+                    + " не куплена, но в кармане "
+                    + string(array_length(_dirty.staff))
+                    + " сотрудников — очищено."
+                );
+
+                _dirty.staff = [];
+                _dirty.visited = false;
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №307: КОМНАТА ГЛАВНЕЕ СОХРАНЁННОГО НОМЕРА
+    //
+    // Здесь стояло безусловное присваивание из сейва, и оно ломало всё
+    // то, что пакет 306 чинил парой шагов раньше.
+    //
+    // Порядок при запуске такой: Room Start вызывает clinic_sync_active
+    // и ставит верный номер по открытой комнате, а потом Alarm 1
+    // загружает сохранение и перезатирает его старым значением.
+    // Игрок стоит в комнате клиники №4, а игра считает, что он в №1 —
+    // и достаёт персонал не из того кармана.
+    //
+    // Загрузка комнату не меняет (room_goto в ней нет — проверено),
+    // поэтому источником правды должна быть именно комната. Значение
+    // из сейва берётся только если комната ничьей клинике не
+    // принадлежит.
+    // ═══════════════════════════════════════════════════════════════
+
+    var _room_clinic = 0;
+
+    if (script_exists(asset_get_index("clinic_room_owner"))) {
+        _room_clinic = clinic_room_owner();
+    }
+
+    if (_room_clinic > 0) {
+        global.active_clinic = _room_clinic;
+    }
+    else {
+        global.active_clinic = save_field(_data, "active_clinic", 1);
+    }
+
     var _inventory = save_field(_data, "inventory_main", undefined);
 
     if (is_struct(_inventory)) {
         global.inventory_main = save_copy_struct(_inventory);
+    }
+
+    // ── ПАКЕТ 287: история финансов ──
+    //
+    // Массив читается через save_restore_array_asis: элементы —
+    // структуры с числами, глубокое восстановление не нужно.
+    // Сама finance_history_from_save фильтрует мусор и обрезает
+    // длину до 30 дней, так что чужой формат её не сломает.
+    var _fin_history = save_field(_data, "finance_history", undefined);
+
+    if (is_array(_fin_history)) {
+        finance_history_from_save(_fin_history);
     }
 
     // ── ПАКЕТ 275: шкафы в кабинетах ──
@@ -1471,9 +1659,62 @@ function vetsim_load() {
         }
     }
 
-    var _staff_list = save_field(_data, "staff", []);
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №305: БЕРЁМ ПЕРСОНАЛ ИЗ КАРМАНА ТЕКУЩЕЙ КЛИНИКИ
+    //
+    // Раньше здесь безусловно разворачивался общий список staff —
+    // и в клинику приходили сотрудники той клиники, где игрока застало
+    // автосохранение.
+    //
+    // Теперь сначала смотрим в карман клиники, в которой игрок сейчас
+    // (active_clinic восстановлен выше по коду). Если карман есть и
+    // непустой — берём персонал оттуда.
+    //
+    // Общий список остаётся запасным путём: для старых сохранений,
+    // где карманов ещё не было, и для случая, когда карман пуст.
+    // ═══════════════════════════════════════════════════════════════
 
-    if (is_array(_staff_list)) {
+    var _staff_list = save_field(_data, "staff", []);
+    var _staff_from_pocket = false;
+
+    if (
+        variable_global_exists("clinic_state")
+        && is_struct(global.clinic_state)
+    ) {
+        var _active_id = variable_global_exists("active_clinic")
+            ? global.active_clinic
+            : 1;
+
+        var _pocket_key = "clinic_" + string(_active_id);
+
+        if (variable_struct_exists(global.clinic_state, _pocket_key)) {
+            var _pocket = variable_struct_get(
+                global.clinic_state,
+                _pocket_key
+            );
+
+            if (
+                is_struct(_pocket)
+                && variable_struct_exists(_pocket, "staff")
+                && is_array(_pocket.staff)
+                && array_length(_pocket.staff) > 0
+            ) {
+                for (var _p = 0; _p < array_length(_pocket.staff); _p++) {
+                    save_staff_restore(_pocket.staff[_p]);
+                }
+
+                _staff_from_pocket = true;
+
+                show_debug_message(
+                    "[SAVE] Персонал взят из кармана клиники "
+                    + string(_active_id)
+                    + ": " + string(array_length(_pocket.staff))
+                );
+            }
+        }
+    }
+
+    if (!_staff_from_pocket && is_array(_staff_list)) {
         for (var _s = 0; _s < array_length(_staff_list); _s++) {
             save_staff_restore(_staff_list[_s]);
         }

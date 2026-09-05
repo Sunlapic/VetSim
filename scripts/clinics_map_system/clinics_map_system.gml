@@ -30,6 +30,15 @@ function clinics_init() {
     // Поле room пока пустое: комнаты 2-6 ещё не собраны в IDE,
     // поэтому храним имя строкой и разрешаем его позже.
     global.clinics = [
+        // ПАКЕТ №302: клиника №1 открывается в собранной комнате
+        // rm_clinic. Имя было прописано здесь заранее (пакет 280), но
+        // самой комнаты в проекте не существовало — теперь она есть.
+        //
+        // room1 из игрового цикла выведена: она остаётся тестовой
+        // площадкой и открывается отладочной клавишей R (см.
+        // obj_Render -> Step). Стартовая комната проекта тоже должна
+        // быть переключена на rm_clinic — это делается в IDE, в
+        // настройках Room Order, см. README пакета.
         {
             id : 1,
             name : "Каморка на окраине",
@@ -75,10 +84,18 @@ function clinics_init() {
             unlock_note : "Нужен врач с навыком 8 (главврач)",
             reputation : 0
         },
+        // ПАКЕТ №304: временно указывает на room1 — бывшую тестовую
+        // комнату. Она подходит по составу лучше прочих: три смотровых
+        // кабинета, четыре койки стационара и операционная, а по данным
+        // у клиники №4 как раз beds 6 и has_operating true.
+        //
+        // Это временно. Когда для клиники №4 соберут собственную
+        // комнату, здесь меняется одна строка room_name, и room1 снова
+        // становится чистым полигоном.
         {
             id : 4,
             name : "Клиника у парка",
-            room_name : "",
+            room_name : "Room1",
             owned : false,
             price : 50000,
             map_x : 0.66,
@@ -257,6 +274,12 @@ function clinics_buy(_clinic_id) {
     global.clinic_money -= _clinic.price;
     _clinic.owned = true;
 
+    // ПАКЕТ 301: заводим карман под персонал и склад новой клиники.
+    // Пустой: сотрудников туда игрок нанимает сам, приехав на место.
+    if (script_exists(asset_get_index("clinic_state_get"))) {
+        clinic_state_get(_clinic.id);
+    }
+
     return true;
 }
 
@@ -275,6 +298,23 @@ function clinics_sell(_clinic_id) {
 
     global.clinic_money += clinics_sell_price(_clinic);
     _clinic.owned = false;
+
+    // ПАКЕТ 301: карман очищаем. Иначе персонал проданной клиники
+    // остался бы в памяти и продолжал приносить доход «на бумаге».
+    if (
+        variable_global_exists("clinic_state")
+        && is_struct(global.clinic_state)
+    ) {
+        var _key = "clinic_" + string(_clinic.id);
+
+        if (variable_struct_exists(global.clinic_state, _key)) {
+            variable_struct_set(global.clinic_state, _key, {
+                staff : [],
+                inventory : {},
+                visited : false
+            });
+        }
+    }
 
     return true;
 }

@@ -22,9 +22,37 @@
 var _skip_save = variable_global_exists("save_skip_on_exit")
     && global.save_skip_on_exit;
 
+// ═══════════════════════════════════════════════════════════════
+// ПАКЕТ №309: НЕ СОХРАНЯТЬ ПРИ СМЕНЕ КОМНАТЫ
+//
+// CleanUp вызывается в двух совершенно разных случаях: при выходе из
+// игры и при переходе в другую комнату. Сохранять нужно только в
+// первом.
+//
+// Во втором это опасно. Объекты комнаты создаются по очереди, и
+// obj_Render может оказаться раньше коек стационара: у части
+// obj_inpatient_controller событие Create ещё не выполнялось,
+// переменной phase не существует, а save_build_wards её читает.
+// Игра падала с «Variable obj_inpatient_controller.phase not set».
+//
+// Отличить один случай от другого автоматически нельзя: в обоих
+// CleanUp выглядит одинаково. Поэтому используется явный флаг
+// global.clinic_room_transition — его поднимают перед каждым
+// room_goto и снимают в Room Start новой комнаты.
+//
+// Сохранение при переезде между клиниками не теряется: персонал и
+// склад сворачиваются в карман клиники в clinics_enter (пакет 301),
+// а полное сохранение произойдёт при выходе из игры или в новый день.
+// ═══════════════════════════════════════════════════════════════
+
+var _room_change = (
+    variable_global_exists("clinic_room_transition")
+    && global.clinic_room_transition
+);
+
 var _save_fn = asset_get_index("vetsim_save");
 
-if (!_skip_save && _save_fn != -1 && script_exists(_save_fn)) {
+if (!_skip_save && !_room_change && _save_fn != -1 && script_exists(_save_fn)) {
     vetsim_save();
 }
 
