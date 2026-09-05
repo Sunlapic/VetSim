@@ -108,6 +108,27 @@ function admin_add_skill_xp(_actor, _skill_index, _amount, _show_popup = true) {
         _actor.skill_level[_skill_index] > _old_level
     );
 
+    // ═══════════════════════════════════════════════════════════
+    // ВСПЛЫВАЮЩАЯ НАДПИСЬ ОБ ОПЫТЕ
+    //
+    // У администратора свой цикл начисления, отдельный от общей
+    // функции secondary_skill_add_xp, поэтому вставка нужна и здесь.
+    // Навыка два: Регистрация и Касса — теперь видно, за что именно
+    // администратор получает опыт.
+    // ═══════════════════════════════════════════════════════════
+
+    var _float_amount = max(0, floor(_amount));
+
+    if (_float_amount > 0) {
+        var _float_names = ["Регистрация", "Касса"];
+
+        float_text_skill_xp(
+            _actor,
+            _float_names[_skill_index],
+            _float_amount
+        );
+    }
+
     if (_level_up && _show_popup && instance_exists(obj_UI_HUD)) {
         var _hud = instance_find(obj_UI_HUD, 0);
         var _skill_names = ["РЕГИСТРАЦИЯ", "КАССА"];

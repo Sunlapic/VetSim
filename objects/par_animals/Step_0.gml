@@ -94,6 +94,143 @@ switch (state) {
         is_walking = false;
         image_speed = 0;
         image_index = 0;
+
+        // ═══════════════════════════════════════════════════════════
+        // ПАКЕТ 277 (задача 4): СТРАХОВКА ОТ ЗАВИСАНИЯ НА СТОЛЕ
+        //
+        // Это состояние полностью пассивно: животное ждёт, пока его
+        // уведёт кто-то снаружи. У персонала есть антизависатель, у
+        // владельца — страховка из пакета 276, а у животных не было
+        // ничего.
+        //
+        // Сейчас все штатные пути (оплата, уход домой, стационар)
+        // уводят питомца сами. Но защита держится на том, что каждый
+        // такой путь не забудет это сделать. Один забытый путь — и
+        // животное остаётся на столе навсегда.
+        //
+        // ИСПРАВЛЕНО ПОСЛЕ ПРОВЕРКИ В ИГРЕ: первая версия выгоняла
+        // пациентов из стационара и с операции. Разбор — ниже.
+        // ═══════════════════════════════════════════════════════════
+
+        if (!variable_instance_exists(id, "exam_orphan_timer")) {
+            exam_orphan_timer = 0;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // ИСПРАВЛЕНИЕ: СНАЧАЛА ПРОВЕРЯЕМ, НЕ ЛЕЧИМСЯ ЛИ МЫ
+        //
+        // Первая версия этой страховки выгоняла пациентов из
+        // стационара и с операции. Причина: при госпитализации игра
+        // НАМЕРЕННО рвёт связь животного с владельцем
+        // (_pet.my_owner = noone) и отправляет владельца домой — чтобы
+        // его удаление не утащило за собой пациента.
+        //
+        // Для страховки это выглядело как «животное брошено», и она
+        // добросовестно уводила его на выход. Отсюда и сбежавшие
+        // из стационара, и уходящие с операции.
+        //
+        // Поэтому теперь сначала спрашиваем у самих систем, числится
+        // ли животное за койкой или операционной. Отсутствие владельца
+        // само по себе больше НЕ считается признаком брошенности.
+        // ═══════════════════════════════════════════════════════════
+
+        var _pet_in_treatment = false;
+
+        // Лежит в стационаре?
+        for (var _ward_index = 0; _ward_index < instance_number(obj_inpatient_controller); _ward_index++) {
+            var _ward_check = instance_find(obj_inpatient_controller, _ward_index);
+
+            if (
+                instance_exists(_ward_check)
+                && variable_instance_exists(_ward_check, "patient")
+                && _ward_check.patient == id
+            ) {
+                _pet_in_treatment = true;
+                break;
+            }
+        }
+
+        // На операции или в послеоперационной?
+        if (!_pet_in_treatment) {
+            for (var _or_index = 0; _or_index < instance_number(obj_operating_controller); _or_index++) {
+                var _or_check = instance_find(obj_operating_controller, _or_index);
+
+                if (
+                    instance_exists(_or_check)
+                    && variable_instance_exists(_or_check, "or_pet")
+                    && _or_check.or_pet == id
+                ) {
+                    _pet_in_treatment = true;
+                    break;
+                }
+            }
+        }
+
+        // Флаг самой операции.
+        if (
+            variable_instance_exists(id, "or_in_surgery")
+            && or_in_surgery
+        ) {
+            _pet_in_treatment = true;
+        }
+
+        // Лежим на стационарном или операционном столе.
+        if (
+            !_pet_in_treatment
+            && variable_instance_exists(id, "assigned_table")
+            && instance_exists(assigned_table)
+        ) {
+            var _table_object = assigned_table.object_index;
+
+            if (
+                _table_object == obj_inpatient_table
+                || _table_object == obj_operating_table
+            ) {
+                _pet_in_treatment = true;
+            }
+        }
+
+        var _pet_orphaned = false;
+
+        // Признак брошенности теперь один: владелец ЕСТЬ, но он ушёл
+        // заниматься своими делами, а мы всё ещё стоим на приёме.
+        // Случай «владельца нет вовсе» намеренно НЕ трогаем: это и
+        // есть штатная госпитализация.
+        if (
+            !_pet_in_treatment
+            && instance_exists(my_owner)
+            && variable_instance_exists(my_owner, "state")
+        ) {
+            _pet_orphaned = (
+                my_owner.state == "leaving_clinic"
+                || my_owner.state == "paying"
+                || my_owner.state == "in_queue"
+                || my_owner.state == "waiting"
+            );
+        }
+
+        if (_pet_orphaned) {
+            exam_orphan_timer += 1;
+
+            // 5 секунд запаса, как у владельца в пакете 276.
+            if (exam_orphan_timer >= room_speed * 5) {
+                exam_orphan_timer = 0;
+
+                assigned_doctor = noone;
+                assigned_table = noone;
+
+                // Только «иду за владельцем» — он существует, это
+                // проверено выше. Ветку «ухожу из клиники сам» я убрал:
+                // именно она выгоняла пациентов стационара, а без
+                // владельца животное теперь и не считается брошенным.
+                state = "follow_owner";
+                follow_offset_x = 30;
+                follow_offset_y = 20;
+            }
+        }
+        else {
+            exam_orphan_timer = 0;
+        }
     break;
 
     case "leaving_clinic":
@@ -107,6 +244,33 @@ switch (state) {
 // ─────────────────────────────────────────────
 // 6. ОБНОВЛЕНИЕ ВОЗРАСТА И СОСТОЯНИЯ
 // ─────────────────────────────────────────────
+
+// ═════════════════════════════════════════════════════════════════
+// СТРАХОВКА РАЗМЕРА (добавлено после «огромной собаки в палате»)
+//
+// Размер животного пересчитывается ниже, но только внутри ветки
+// «если владелец существует». У пациента стационара владельца
+// намеренно нет — значит, размер ему не назначит никто, и он
+// останется равным 1, то есть спрайт во всю величину.
+//
+// Здесь только аварийный случай: масштаб явно не задан (близок к 1
+// или к нулю). Нормальные значения — 0.2 / 0.4 / 0.6 / 0.9, поэтому
+// живого животного эта проверка не касается.
+// ═════════════════════════════════════════════════════════════════
+if (image_xscale >= 0.99 || image_xscale <= 0.01) {
+
+    var _fix_scale = 0.6;
+
+    if (pet_age_days < 30)       _fix_scale = 0.2;
+    else if (pet_age_days < 60)  _fix_scale = 0.4;
+    else if (pet_age_days < 365) _fix_scale = 0.6;
+    else                         _fix_scale = 0.9;
+
+    // Знак сохраняем: он отвечает за разворот животного.
+    image_xscale = (image_xscale < 0) ? -_fix_scale : _fix_scale;
+    image_yscale = _fix_scale;
+}
+
 if (instance_exists(my_owner)) {
 
     if (variable_instance_exists(my_owner, "pet_birth_day")) {

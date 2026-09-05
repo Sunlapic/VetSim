@@ -76,6 +76,27 @@ function secondary_skill_add_xp(
 
     var _level_up = (_levels[_skill_index] > _old_level);
 
+    // ═══════════════════════════════════════════════════════════
+    // ВСПЛЫВАЮЩАЯ НАДПИСЬ ОБ ОПЫТЕ
+    //
+    // Эта функция — общая точка начисления для ассистента, админа
+    // и самого игрока, поэтому одной вставки хватает на всех троих.
+    //
+    // Начисление могло быть съедено потолком навыка (десятый
+    // уровень), в этом случае надпись не нужна — её отсеет
+    // проверка на ноль внутри float_text_skill_xp.
+    // ═══════════════════════════════════════════════════════════
+
+    var _float_amount = max(0, floor(_amount));
+
+    if (_float_amount > 0) {
+        var _float_name = (_skill_index < array_length(_skill_names))
+            ? _skill_names[_skill_index]
+            : "Навык";
+
+        float_text_skill_xp(_actor, _float_name, _float_amount);
+    }
+
     if (_level_up && _show_notice && instance_exists(obj_UI_HUD)) {
         var _hud = instance_find(obj_UI_HUD, 0);
         var _actor_name = variable_instance_exists(_actor, "char_name")

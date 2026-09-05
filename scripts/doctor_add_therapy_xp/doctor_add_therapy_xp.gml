@@ -266,6 +266,28 @@ function doctor_add_skill_xp(
 
     var _new_level = _actor.skills[_skill_index];
 
+    // ═══════════════════════════════════════════════════════════
+    // ВСПЛЫВАЮЩАЯ НАДПИСЬ ОБ ОПЫТЕ
+    //
+    // Показываем КАЖДОЕ начисление, а не только повышение уровня.
+    // Раньше игрок видел сообщение лишь в момент нового уровня и
+    // не понимал, что навык вообще растёт и какой именно.
+    //
+    // Надпись привязана к самому врачу, поэтому летит над тем, кто
+    // опыт и получил. Условие _show_notice намеренно НЕ проверяем:
+    // им отключают всплывающее окно HUD при массовых начислениях,
+    // а лёгкая надпись над головой нужна как раз в этих случаях.
+    // ═══════════════════════════════════════════════════════════
+
+    if (_actual_reward > 0) {
+        var _float_names = doctor_get_skill_names();
+        var _float_name = (_skill_index < array_length(_float_names))
+            ? _float_names[_skill_index]
+            : "Навык";
+
+        float_text_skill_xp(_actor, _float_name, _actual_reward);
+    }
+
     if (_show_notice && _new_level > _old_level && instance_exists(obj_UI_HUD)) {
         var _hud = instance_find(obj_UI_HUD, 0);
         var _names = doctor_get_skill_names();
