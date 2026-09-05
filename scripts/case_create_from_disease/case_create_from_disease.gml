@@ -3,24 +3,84 @@ function case_create_from_disease(_disease_id, _species_id) {
         return undefined;
     }
 
-    var _severity_level = irandom_range(1, 4);
+    // ═══════════════════════════════════════════════════════════════
+    // ТЯЖЕСТЬ СЛУЧАЯ
+    //
+    // Было: тяжесть выбиралась чистым irandom_range(1, 4) — по 25% на
+    // каждую, без всякой связи с болезнью. Из-за этого блохи могли
+    // приехать критическими, а заворот желудка — лёгким.
+    //
+    // Стало: тяжесть привязана к сложности болезни. Поле difficulty
+    // уже есть у всех 50 болезней в db_init_diseases, придумывать
+    // ничего не пришлось — берём готовое.
+    //
+    // Случайность сохранена, но в разумных пределах: болезнь задаёт
+    // ОПОРНУЮ тяжесть, а разброс сдвигает её максимум на шаг в любую
+    // сторону. Ринит останется лёгким или средним, но критическим уже
+    // не станет; сепсис не придёт лёгким.
+    // ═══════════════════════════════════════════════════════════════
+
+    // Читаем через variable_struct_get — так сделано во всём проекте
+    // (clinic_case_gate, handbook_system и другие).
+    var _disease_ref = variable_struct_get(global.med_db.diseases, _disease_id);
+
+    var _difficulty = 5;
+
+    if (is_struct(_disease_ref) && variable_struct_exists(_disease_ref, "difficulty")) {
+        _difficulty = clamp(_disease_ref.difficulty, 1, 10);
+    }
+
+    // difficulty 2-3 → лёгкое, 4-5 → среднее, 6-7 → тяжёлое, 8+ → критическое.
+    var _severity_base = 1;
+
+    if (_difficulty >= 8)      _severity_base = 4;
+    else if (_difficulty >= 6) _severity_base = 3;
+    else if (_difficulty >= 4) _severity_base = 2;
+    else                       _severity_base = 1;
+
+    // Разброс на один шаг. Веса подобраны так, чтобы опорная тяжесть
+    // оставалась самой частой: примерно 20% легче, 60% как задумано,
+    // 20% тяжелее.
+    var _roll = irandom_range(1, 10);
+    var _shift = 0;
+
+    if (_roll <= 2)      _shift = -1;
+    else if (_roll >= 9) _shift = 1;
+
+    var _severity_level = clamp(_severity_base + _shift, 1, 4);
+
     var _severity_name_ru = "Среднее";
     var _base_condition = 70;
+
+    // ═══════════════════════════════════════════════════════════════
+    // СТАРТОВОЕ СОСТОЯНИЕ
+    //
+    // Главное изменение: ПОТОЛОК 85 вместо 100.
+    //
+    // Раньше лёгкий случай давал irandom_range(80, 100) — то есть
+    // животное могло приехать уже стопроцентно здоровым, примерно
+    // один визит из восьмидесяти. Теперь выше 85 состояние на входе
+    // не поднимается никогда, при любой тяжести.
+    //
+    // Запас в 15% — это гарантия, что даже самый лёгкий случай
+    // требует работы: одна процедура ассистента даёт +5...+8, значит
+    // до сотни без него не дотянуть.
+    // ═══════════════════════════════════════════════════════════════
 
     switch (_severity_level) {
         case 1:
             _severity_name_ru = "Лёгкое";
-            _base_condition = irandom_range(80, 100);
+            _base_condition = irandom_range(72, 85);
         break;
 
         case 2:
             _severity_name_ru = "Среднее";
-            _base_condition = irandom_range(60, 79);
+            _base_condition = irandom_range(58, 71);
         break;
 
         case 3:
             _severity_name_ru = "Тяжёлое";
-            _base_condition = irandom_range(40, 59);
+            _base_condition = irandom_range(40, 57);
         break;
 
         case 4:
