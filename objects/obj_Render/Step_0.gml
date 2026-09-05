@@ -443,7 +443,15 @@ else {
 // 3. DEBUG: ПРИНУДИТЕЛЬНО ПОЗВАТЬ КАНДИДАТА
 // ═══════════════════════════════════════════════════════════════
 
-if (keyboard_check_pressed(ord("N"))) {
+// ПАКЕТ 277 (задача 2): отладка только при включённом режиме отладки.
+// Клавиша работала в обычной игре — на ПК-сборке любой игрок мог
+// случайно перескочить день. Флаг global.vetsim_debug_mode задаётся
+// в obj_Render -> Create, перед релизом его достаточно снять там.
+if (
+    variable_global_exists("vetsim_debug_mode")
+    && global.vetsim_debug_mode
+    && keyboard_check_pressed(ord("N"))
+) {
     if (
         global.clinic_hiring_open
         && global.current_candidate == noone
@@ -457,7 +465,14 @@ if (keyboard_check_pressed(ord("N"))) {
 // 3.5 DEBUG: КНОПКА W — +15 000 ДЕНЕГ (пакет №114)
 // ═══════════════════════════════════════════════════════════════
 
-if (keyboard_check_pressed(ord("W"))) {
+// ПАКЕТ 277 (задача 2): +15 000 денег — только в режиме отладки.
+// Это самый опасный чит: одна случайная W ломала всю экономику
+// партии. Теперь клавиша мертва, пока не включён vetsim_debug_mode.
+if (
+    variable_global_exists("vetsim_debug_mode")
+    && global.vetsim_debug_mode
+    && keyboard_check_pressed(ord("W"))
+) {
     global.clinic_money += 15000;
 
     if (instance_exists(obj_UI_HUD)) {

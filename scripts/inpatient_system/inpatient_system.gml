@@ -1119,6 +1119,10 @@ function inpatient_start_admission(_owner, _pet, _escort_doctor) {
     _ward.next_treatment_minute = -1;
     _ward.stock_retry_timer = 0;
 
+    // ПАКЕТ 277 (задача 3): счётчики ожидания препарата.
+    _ward.stock_wait_ticks = 0;
+    _ward.stock_wait_notice_ticks = 0;
+
     inpatient_remove_owner_from_clinic_queues(_owner);
 
     // Освобождаем обычный смотровой стол.
@@ -2972,6 +2976,14 @@ function inpatient_controller_step(_ward) {
                     _assistant.action_progress_active = false;
                     _ward.phase = "waiting_stock";
                     _ward.stock_retry_timer = room_speed * 2;
+
+                    // ПАКЕТ 277 (задача 3): счётчик ожидания препарата.
+                    // Раньше палата могла ждать вечно: койка занята,
+                    // ассистент стационара выключен из работы, а
+                    // сообщение показывалось ровно один раз.
+                    _ward.stock_wait_ticks = 0;
+                    _ward.stock_wait_notice_ticks = 0;
+
                     _ward.missing_item_id = _result.missing_item_id;
                     _ward.missing_item_name = _result.missing_item_name;
 
@@ -3042,6 +3054,8 @@ function inpatient_controller_step(_ward) {
                 _ward.next_treatment_minute = inpatient_now_absolute_minute();
                 _ward.missing_item_id = "";
                 _ward.missing_item_name = "";
+                _ward.stock_wait_ticks = 0;
+                _ward.stock_wait_notice_ticks = 0;
 
                 for (var _waiting_assistant_index = 0; _waiting_assistant_index < instance_number(obj_staff_assistant); _waiting_assistant_index++) {
                     var _waiting_assistant = instance_find(
@@ -3060,6 +3074,113 @@ function inpatient_controller_step(_ward) {
                 }
             } else {
                 _ward.stock_retry_timer = room_speed * 2;
+
+                // ═══════════════════════════════════════════════════
+                // ПАКЕТ 277 (задача 3): ПРЕДЕЛ ОЖИДАНИЯ ПРЕПАРАТА
+                //
+                // Палата опрашивает шкаф каждые 2 секунды и сама
+                // продолжит лечение, как только препарат появится —
+                // этот путь оставлен как есть, он правильный.
+                //
+                // Добавлено только то, чего не было: напоминание и
+                // предел. Иначе койка занималась навсегда, а игрок
+                // через полчаса уже не помнил, почему.
+                // ═══════════════════════════════════════════════════
+
+                if (!variable_struct_exists(_ward, "stock_wait_ticks")) {
+                    _ward.stock_wait_ticks = 0;
+                }
+
+                if (!variable_struct_exists(_ward, "stock_wait_notice_ticks")) {
+                    _ward.stock_wait_notice_ticks = 0;
+                }
+
+                // Сюда попадаем раз в 2 секунды.
+                _ward.stock_wait_ticks += 1;
+                _ward.stock_wait_notice_ticks += 1;
+
+                // Напоминание раз в минуту реального времени (30 x 2 сек).
+                if (_ward.stock_wait_notice_ticks >= 30) {
+                    _ward.stock_wait_notice_ticks = 0;
+
+                    if (instance_exists(obj_UI_HUD)) {
+                        var _remind_hud = instance_find(obj_UI_HUD, 0);
+
+                        if (
+                            instance_exists(_remind_hud)
+                            && variable_instance_exists(_remind_hud, "show_notice")
+                        ) {
+                            var _remind_name = string(_ward.missing_item_name);
+
+                            with (_remind_hud) {
+                                show_notice(
+                                    "СТАЦИОНАР ЖДЁТ",
+                                    "Нужен " + _remind_name + ". ЗАКУПИТЕ!",
+                                    room_speed * 3
+                                );
+                            }
+                        }
+                    }
+                }
+
+                // Предел — 5 минут реального времени (150 x 2 сек).
+                // Пациент выписывается недолеченным и придёт повторно.
+                if (_ward.stock_wait_ticks >= 150) {
+                    _ward.stock_wait_ticks = 0;
+                    _ward.stock_wait_notice_ticks = 0;
+
+                    if (
+                        instance_exists(_ward.patient)
+                        && variable_instance_exists(_ward.patient, "current_case")
+                        && is_struct(_ward.patient.current_case)
+                    ) {
+                        _ward.patient.current_case.needs_followup = true;
+                    }
+
+                    if (instance_exists(obj_UI_HUD)) {
+                        var _stop_hud = instance_find(obj_UI_HUD, 0);
+
+                        if (
+                            instance_exists(_stop_hud)
+                            && variable_instance_exists(_stop_hud, "show_notice")
+                        ) {
+                            var _stop_name = string(_ward.missing_item_name);
+
+                            with (_stop_hud) {
+                                show_notice(
+                                    "СТАЦИОНАР: ВЫПИСКА",
+                                    "Так и не было: "
+                                        + _stop_name
+                                        + ". Пациента выписывают, придёт повторно.",
+                                    room_speed * 5
+                                );
+                            }
+                        }
+                    }
+
+                    // Освобождаем ассистента, который ждал препарат.
+                    for (var _free_index = 0; _free_index < instance_number(obj_staff_assistant); _free_index++) {
+                        var _free_assistant = instance_find(
+                            obj_staff_assistant,
+                            _free_index
+                        );
+
+                        if (
+                            instance_exists(_free_assistant)
+                            && _free_assistant.assistant_state == "inpatient_waiting_stock"
+                        ) {
+                            _free_assistant.assistant_state = "inpatient_available";
+                            _free_assistant.inpatient_missing_item_name = "";
+                        }
+                    }
+
+                    _ward.missing_item_id = "";
+                    _ward.missing_item_name = "";
+
+                    // "recovered" — штатный путь выписки: палата сама
+                    // вызовет владельца и освободит койку.
+                    _ward.phase = "recovered";
+                }
             }
         }
     }

@@ -103,7 +103,13 @@ if (
 // Перед релизом удалить или спрятать за global.vetsim_debug_mode.
 // ═══════════════════════════════════════════════════════════════
 
-if (keyboard_check_pressed(ord("Q"))) {
+// ПАКЕТ 277 (задача 2): +10 баллов клиники — только в режиме отладки.
+// В комментарии выше это и было указано как задача «перед релизом».
+if (
+    variable_global_exists("vetsim_debug_mode")
+    && global.vetsim_debug_mode
+    && keyboard_check_pressed(ord("Q"))
+) {
     clinic_upgrade_init();
 
     global.clinic_points += 10;
