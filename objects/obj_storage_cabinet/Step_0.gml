@@ -47,6 +47,14 @@ if (!_cabinet_inited) {
             storage_inventory = {};
         }
 
+        // ПАКЕТ 275: если содержимое шкафа пришло из сохранения,
+        // стартовый запас не досыпаем. Иначе загруженный пустой шкаф
+        // (игрок сознательно всё вынес) снова наполнялся бы тройками.
+        var _from_save = (
+            variable_instance_exists(id, "_cabinet_from_save")
+            && _cabinet_from_save
+        );
+
         // Стартовый запас по 3 единицы создаётся только в пустой ячейке.
         for (
             var _item_index = 0;
@@ -55,7 +63,7 @@ if (!_cabinet_inited) {
         ) {
             var _item_id = global.item_ids[_item_index];
 
-            if (inventory_get_amount(storage_inventory, _item_id) == 0) {
+            if (!_from_save && inventory_get_amount(storage_inventory, _item_id) == 0) {
                 inventory_add_amount(
                     storage_inventory,
                     _item_id,

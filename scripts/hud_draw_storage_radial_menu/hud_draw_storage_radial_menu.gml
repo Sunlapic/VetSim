@@ -47,68 +47,22 @@ function hud_draw_storage_radial_menu(_hud) {
             item_id : ""
         });
 
-        if (!_is_cabinet) {
-            var _hands_compatible = global.player_carry_item == "";
-            var _shown = 0;
-
-            for (var _item_index = 0; _item_index < array_length(global.item_ids); _item_index++) {
-                var _item_id = global.item_ids[_item_index];
-                var _available = inventory_get_amount(global.inventory_main, _item_id);
-                if (_available <= 0) continue;
-
-                var _item_name = variable_struct_get(global.item_db, _item_id).name_ru;
-                var _can_take = _hands_compatible
-                    || global.player_carry_item == _item_id;
-
-                array_push(_all_items, {
-                    label : _item_name,
-                    action : "take",
-                    item_id : _item_id,
-                    enabled : _can_take,
-                    quantity : _available
-                });
-                _shown += 1;
-            }
-
-            if (!_hands_compatible && _shown == 0) {
-                array_push(_all_items, {
-                    label : "- руки заняты -",
-                    action : "none",
-                    enabled : false,
-                    quantity : 0,
-                    item_id : ""
-                });
-            }
-        }
-        else if (
-            global.player_carry_item != ""
-            && global.player_carry_qty > 0
-        ) {
-            var _carried_name = variable_struct_exists(global.item_db, global.player_carry_item)
-                ? variable_struct_get(global.item_db, global.player_carry_item).name_ru
-                : "препарат";
-
-            array_push(_all_items, {
-                label : "ПОЛОЖИТЬ "
-                    + _carried_name
-                    + " "
-                    + string(global.player_carry_qty)
-                    + " шт.",
-                action : "put",
-                enabled : true,
-                quantity : global.player_carry_qty,
-                item_id : global.player_carry_item
-            });
-        }
-        else {
-            array_push(_all_items, {
-                label : "- нечего класть -",
-                action : "none",
-                enabled : false,
-                quantity : 0,
-                item_id : ""
-            });
-        }
+        // ═══════════════════════════════════════════════════════════
+        // ПАКЕТ 275: ПЕРЕНОС ПРЕПАРАТОВ ИГРОКОМ УБРАН
+        //
+        // Здесь строились пункты «взять» (у главного склада) и
+        // «ПОЛОЖИТЬ …» (у шкафа), плюс заглушки «- руки заняты -» и
+        // «- нечего класть -». Механика убрана по просьбе: препараты
+        // по кабинетам разносят только ассистенты через restock.
+        //
+        // Пункт «открыть» остаётся — смотреть содержимое склада и
+        // шкафов по-прежнему нужно.
+        //
+        // global.player_carry_item / player_carry_qty намеренно НЕ
+        // удалены из obj_Render -> Create: на них смотрят
+        // par_staff -> Draw (спрайт с коробкой) и obj_player -> Step.
+        // Переменные просто всегда пустые, и те ветки не срабатывают.
+        // ═══════════════════════════════════════════════════════════
 
         var _max_visible = 4;
         var _scrollable_count = max(0, array_length(_all_items) - 1);
@@ -285,72 +239,12 @@ function hud_draw_storage_radial_menu(_hud) {
                     }
                 break;
 
-                case "take":
-                    if (
-                        global.player_carry_item != ""
-                        && global.player_carry_item != _selected.item_id
-                    ) {
-                        show_notice("ЗАНЯТО", "Сначала положи то, что несёшь", _fps * 2);
-                        break;
-                    }
-
-                    var _available_now = inventory_get_amount(global.inventory_main, _selected.item_id);
-                    var _space = global.PLAYER_CARRY_MAX
-                        - ((global.player_carry_item == _selected.item_id) ? global.player_carry_qty : 0);
-                    var _take_amount = min(_space, _available_now);
-
-                    if (_take_amount <= 0) {
-                        show_notice("РУКИ ПОЛНЫЕ", "Уже несёшь максимум", _fps * 2);
-                        break;
-                    }
-
-                    inventory_remove_amount(global.inventory_main, _selected.item_id, _take_amount);
-                    global.player_carry_item = _selected.item_id;
-                    global.player_carry_qty += _take_amount;
-                    show_notice("В РУКАХ", item_get_name(_selected.item_id) + " " + string(global.player_carry_qty) + " шт.", _fps * 2);
-                    global.menu_scroll_offset = 0;
-                break;
-
-                case "put":
-                    if (!_is_cabinet) break;
-                    if (global.player_carry_item == "" || global.player_carry_qty <= 0) break;
-
-                    if (
-                        !variable_instance_exists(_target, "storage_inventory")
-                        || !is_struct(_target.storage_inventory)
-                    ) {
-                        _target.storage_inventory = {};
-                    }
-
-                    var _put_id = global.player_carry_item;
-                    var _cabinet_space = global.RESTOCK_MAX
-                        - inventory_get_amount(_target.storage_inventory, _put_id);
-                    var _put_amount = min(global.player_carry_qty, max(0, _cabinet_space));
-
-                    if (_put_amount <= 0) {
-                        show_notice("ШКАФ ПОЛОН", "Препарат больше не помещается", _fps * 2);
-                        break;
-                    }
-
-                    inventory_add_amount(_target.storage_inventory, _put_id, _put_amount);
-                    global.player_carry_qty -= _put_amount;
-
-                    if (instance_exists(obj_player)) {
-                        var _player = instance_find(obj_player, 0);
-                        player_add_assistant_skill_xp(_player, 1, 2, true);
-
-                        with (_player) {
-                            add_xp_log("+2 ПОПОЛНЕНИЕ");
-                        }
-                    }
-
-                    if (global.player_carry_qty <= 0) {
-                        global.player_carry_item = "";
-                        global.player_carry_qty = 0;
-                    }
-
-                    show_notice("ПОЛОЖИЛ", item_get_name(_put_id) + " +" + string(_put_amount) + " шт.", _fps * 2);
-                break;
+                // ПАКЕТ 275: ветки "take" и "put" удалены вместе с
+                // пунктами меню — игрок больше не переносит препараты
+                // руками. Разносят только ассистенты (система restock).
+                //
+                // Заодно ушло начисление опыта ассистента игроку за
+                // «положил в шкаф»: такого действия больше нет.
             }
         }
 

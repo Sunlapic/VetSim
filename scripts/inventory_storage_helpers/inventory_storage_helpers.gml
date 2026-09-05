@@ -173,7 +173,39 @@ function storage_prepare_and_consume_items_for_action(_slot_id, _action_id) {
 // 4. СРОЧНОЕ ЗАДАНИЕ НА ПОПОЛНЕНИЕ
 // ═══════════════════════════════════════════════════════════════
 
+/// @function storage_cabinet_room_open(_cabinet)
+/// @description ПАКЕТ 275: открыт ли кабинет, которому принадлежит шкаф.
+///
+/// Проверка вынесена в отдельную функцию, потому что нужна в двух
+/// местах: плановом сканере restock_scan_needs и срочной заявке
+/// restock_request_urgent.
+///
+/// Опирается на готовую clinic_room_is_open из clinic_rooms_system.
+/// Если её вдруг нет (скрипт не подключён) — считаем кабинет открытым,
+/// чтобы не остановить пополнение вообще.
+function storage_cabinet_room_open(_cabinet) {
+    if (!instance_exists(_cabinet)) return false;
+    if (!variable_instance_exists(_cabinet, "exam_slot_id")) return true;
+
+    var _slot = _cabinet.exam_slot_id;
+
+    // Слот не настроен — такой шкаф и так не используется.
+    if (_slot <= 0) return true;
+
+    var _fn = asset_get_index("clinic_room_is_open");
+
+    if (_fn == -1 || !script_exists(_fn)) return true;
+
+    return clinic_room_is_open(_slot);
+}
+
+
 function restock_request_urgent(_cabinet, _item_id, _needed_amount) {
+    // ПАКЕТ 275: в закрытый кабинет заявок не создаём — ни срочных,
+    // ни плановых. Возвращаем false, как и остальные отказы этой
+    // функции (голый return отдал бы undefined).
+    if (!storage_cabinet_room_open(_cabinet)) return false;
+
     if (!instance_exists(_cabinet)) return false;
     if (_item_id == "" || _needed_amount <= 0) return false;
 
@@ -259,6 +291,14 @@ function restock_scan_needs() {
             continue;
         }
 
+        // ПАКЕТ 275: кабинет закрыли (или задание осталось от сейва,
+        // сделанного до этого пакета) — снимаем задание, чтобы
+        // ассистент не пошёл в невидимый шкаф.
+        if (!storage_cabinet_room_open(_job.target_cabinet)) {
+            array_delete(global.restock_jobs, _clean_index, 1);
+            continue;
+        }
+
         if (_has_procedure_patients && _job.priority < 1000) {
             array_delete(global.restock_jobs, _clean_index, 1);
         }
@@ -274,6 +314,14 @@ function restock_scan_needs() {
         if (!instance_exists(_cabinet)) continue;
         if (!variable_instance_exists(_cabinet, "storage_inventory")) continue;
         if (!is_struct(_cabinet.storage_inventory)) continue;
+
+        // ПАКЕТ 275: шкаф в НЕОТКРЫТОМ кабинете пропускаем.
+        //
+        // Мебель закрытых кабинетов в комнате уже стоит, но не видна
+        // игроку. Ассистенты всё равно носили туда препараты — со
+        // стороны это выглядело как «ушёл в стену и стоит». Заодно
+        // впустую тратился склад.
+        if (!storage_cabinet_room_open(_cabinet)) continue;
 
         for (var _item_index = 0; _item_index < array_length(global.item_ids); _item_index++) {
             var _item_id = global.item_ids[_item_index];
