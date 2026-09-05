@@ -139,6 +139,93 @@ switch (state) {
         image_speed = 0;
         image_index = 0;
         is_walking = false;
+
+        // ═══════════════════════════════════════════════════════════
+        // ПАКЕТ 276: СТРАХОВКА ОТ ЗАВИСАНИЯ У СТОЛА
+        //
+        // Владелец мог остаться в "in_exam" навсегда: персонал сбросил
+        // свою задачу (кончился препарат, сработал антизависатель в
+        // par_staff, ушла смена), стол освободился, а владелец так и
+        // стоял у стола — из этого состояния нет выхода по таймеру.
+        //
+        // Триггер намеренно узкий: стол ЕСТЬ, но он больше не считает
+        // нас своим клиентом. Это значит, что персонал ушёл, а нас
+        // забыли. Если стола нет вовсе (assigned_table == noone) —
+        // это стационар или операционная, туда не лезем.
+        // ═══════════════════════════════════════════════════════════
+
+        if (!variable_instance_exists(id, "exam_orphan_timer")) {
+            exam_orphan_timer = 0;
+        }
+
+        var _orphaned = (
+            instance_exists(assigned_table)
+            && assigned_table.assigned_owner != id
+        );
+
+        // Кто-то из персонала всё ещё занимается нами — не сироты.
+        //
+        // Проверяем циклом, а не через with: внутри with нельзя
+        // присвоить локальную переменную вызывающего через other,
+        // локальные var там не видны.
+        if (_orphaned) {
+            var _staff_count = instance_number(par_staff);
+
+            for (var _staff_index = 0; _staff_index < _staff_count; _staff_index++) {
+                var _staff = instance_find(par_staff, _staff_index);
+
+                if (
+                    instance_exists(_staff)
+                    && variable_instance_exists(_staff, "assigned_owner")
+                    && _staff.assigned_owner == id
+                ) {
+                    _orphaned = false;
+                    break;
+                }
+            }
+        }
+
+        // Игрок тоже может вести приём.
+        if (_orphaned && instance_exists(obj_player)) {
+            var _player_inst = instance_find(obj_player, 0);
+
+            if (
+                instance_exists(_player_inst)
+                && variable_instance_exists(_player_inst, "assigned_owner")
+                && _player_inst.assigned_owner == id
+            ) {
+                _orphaned = false;
+            }
+        }
+
+        if (_orphaned) {
+            exam_orphan_timer += 1;
+
+            // 5 секунд запаса: за это время нормальная передача
+            // пациента между врачом и ассистентом успевает пройти.
+            if (exam_orphan_timer >= room_speed * 5) {
+                exam_orphan_timer = 0;
+
+                assigned_doctor = noone;
+                assigned_table = noone;
+
+                // Есть что оплатить — идём платить, иначе просто домой.
+                var _has_bill = (
+                    variable_instance_exists(id, "pending_payment_total")
+                    && pending_payment_total > 0
+                );
+
+                if (_has_bill && instance_exists(obj_reception_desk)) {
+                    reception_enqueue_priority_payment(id);
+                }
+                else {
+                    owner_start_leaving(id);
+                }
+            }
+        }
+        else {
+            exam_orphan_timer = 0;
+        }
     break;
 
     case "leaving_clinic":

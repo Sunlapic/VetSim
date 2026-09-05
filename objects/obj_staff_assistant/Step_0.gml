@@ -821,6 +821,57 @@ switch (assistant_state) {
                     action_progress_active = false;
                     action_progress_label = "ЖДЁТ ПРЕПАРАТ";
 
+                    // ═══════════════════════════════════════════════
+                    // ПАКЕТ 276: ЛИМИТ ОЖИДАНИЯ ПРЕПАРАТА
+                    //
+                    // Раньше здесь не было выхода: препарат кончился и
+                    // на складе, и в шкафу, взять его неоткуда, а
+                    // procedure_timer просто взводился заново. Шкала
+                    // набиралась и сбрасывалась бесконечно.
+                    //
+                    // Теперь ждём ограниченное число попыток. Одна
+                    // попытка — 2 секунды, 10 попыток — примерно 20
+                    // секунд. Этого хватает, если игрок закупается
+                    // прямо сейчас, и не вешает приём навсегда.
+                    // ═══════════════════════════════════════════════
+
+                    if (procedure_retry >= 10) {
+                        // Отпускаем пациента с повторным визитом:
+                        // ровно так же игра поступает, когда для
+                        // операции не нашлось места в стационаре.
+                        if (instance_exists(assigned_owner)) {
+                            assigned_owner.visit_followup_planned = true;
+                            assigned_owner.visit_followup_days = 1;
+                            assigned_owner.visit_followup_reason =
+                                "Не было препарата: "
+                                + item_get_name(_missing_item);
+                        }
+
+                        if (instance_exists(obj_UI_HUD)) {
+                            var _stop_name = item_get_name(_missing_item);
+
+                            with (obj_UI_HUD) {
+                                show_notice(
+                                    "ПРИЁМ ПРЕРВАН",
+                                    "Нет препарата: "
+                                        + _stop_name
+                                        + ". Пациент придёт повторно.",
+                                    room_speed * 4
+                                );
+                            }
+                        }
+
+                        // Визит закрывается по уже сделанным процедурам:
+                        // владелец идёт платить и уходит, стол
+                        // освобождается. Это существующая функция,
+                        // она же чистит assigned_* у стола и пациента.
+                        procedure_retry = 0;
+                        procedure_was_interrupted_by_restock = false;
+
+                        assistant_finish_procedure_visit();
+                        break;
+                    }
+
                     if (
                         procedure_retry == 1
                         || procedure_retry mod 10 == 0
