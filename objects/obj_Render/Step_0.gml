@@ -1173,6 +1173,32 @@ if (render_last_day != global.game_day) {
     // «наступил новый день», отдельный таймер не нужен.
     if (script_exists(asset_get_index("clinic_network_daily_income"))) {
         clinic_network_daily_income();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ №320: КТО ХОЧЕТ ПРИБАВКУ
+    //
+    // Раз в день смотрим, кто заметно вырос в навыках с момента найма
+    // и получает меньше, чем стоит. Такой сотрудник поднимает вопрос
+    // о зарплате.
+    //
+    // Проверка здесь же, где начисление дохода: это готовая ветка
+    // «наступил новый день», отдельный таймер не нужен.
+    // ═══════════════════════════════════════════════════════════
+
+    if (script_exists(asset_get_index("staff_salary_daily_check"))) {
+        var _raise_asked = staff_salary_daily_check();
+
+        if (_raise_asked > 0 && instance_exists(obj_UI_HUD)) {
+            with (instance_find(obj_UI_HUD, 0)) {
+                show_notice(
+                    "РАЗГОВОР О ЗАРПЛАТЕ",
+                    string(_raise_asked)
+                    + " сотр. просит прибавку — откройте карточку",
+                    room_speed * 5
+                );
+            }
+        }
     }
 
     followup_spawn_cooldown = 0;

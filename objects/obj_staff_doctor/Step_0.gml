@@ -440,8 +440,23 @@ switch (doctor_state) {
                 }
                 _case.confirmed = true;
                 _case.case_status = "diagnosed";
-                if (variable_global_exists("daily_stats")) {
+                // ПАКЕТ №318: считаем через общую функцию.
+                //
+                // Она защищена от повторов: если тот же случай потом
+                // подтвердит игрок дополнительным обследованием,
+                // второго плюса не будет.
+                if (script_exists(asset_get_index("daily_stats_count_diagnosis"))) {
+                    daily_stats_count_diagnosis(_case);
+                }
+                else if (variable_global_exists("daily_stats")) {
                     global.daily_stats.new_diagnosed += 1;
+                }
+
+                // ПАКЕТ №318: приём проведён — отдельный счётчик.
+                // Строка «Принято пациентов» раньше показывала оплаты,
+                // из-за чего не сходилась с числом диагнозов.
+                if (script_exists(asset_get_index("daily_stats_count_exam"))) {
+                    daily_stats_count_exam(_case);
                 }
                 // Пакет №67: вместо фиктивного id "doctor_exam" логируем
                 // настоящий первичный осмотр. case_add_diagnostic защищён

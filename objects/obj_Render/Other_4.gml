@@ -29,6 +29,46 @@ global.clinic_room_transition = false;
 
 
 // ═══════════════════════════════════════════════════════════════
+// ПАКЕТ №317: ЗАКРЕПИТЬ КАБИНЕТЫ ЗА КЛИНИКОЙ ПРИ ПЕРВОМ ВХОДЕ
+//
+// Карман клиники заполняется, когда из неё уезжают. Но в самую
+// первую клинику игрок приезжает, ни разу её не покидав — значит
+// карман пуст, и построенное там нигде не записано.
+//
+// Пока это не мешало: состояние жило в общих global. Но теперь
+// кабинеты у каждой клиники свои, и без этой строчки первая клиника
+// теряла бы покупки при возвращении из второй.
+//
+// clinic_state_get создаёт карман, если его нет; поля rooms и
+// upgrades заполняются здесь же, если ещё пустые.
+// ═══════════════════════════════════════════════════════════════
+
+if (script_exists(asset_get_index("clinic_state_get"))) {
+    var _here = variable_global_exists("active_clinic")
+        ? global.active_clinic
+        : 1;
+
+    var _here_state = clinic_state_get(_here);
+
+    if (!is_struct(_here_state.rooms)) {
+        _here_state.rooms = save_copy_struct(
+            variable_global_exists("clinic_rooms_open")
+                ? global.clinic_rooms_open
+                : {}
+        );
+    }
+
+    if (!is_struct(_here_state.upgrades)) {
+        _here_state.upgrades = save_copy_struct(
+            variable_global_exists("clinic_upgrades")
+                ? global.clinic_upgrades
+                : {}
+        );
+    }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 // ПАКЕТ №301: ПЕРСОНАЛ И СКЛАД ЭТОЙ КЛИНИКИ
 //
 // Флаг ставит clinics_enter перед room_goto. Разворачивать персонал

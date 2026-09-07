@@ -905,7 +905,12 @@ switch (assistant_state) {
                 procedure_retry = 0;
 
                 if (variable_global_exists("daily_stats")) {
-                    global.daily_stats.procedures_done += 1;
+                    // ПАКЕТ №318: счётчик убран отсюда.
+                    //
+                    // Процедуры теперь считаются внутри
+                    // case_apply_treatment_action — она вызывается и
+                    // ассистентом, и игроком. Если оставить строку
+                    // здесь, работа ассистента считалась бы дважды.
                 }
 
                 staff_spend_energy(5);

@@ -40,119 +40,99 @@ if (_show_wait_bar) {
 
 
     // ═══════════════════════════════════════════════════════════
-    // 3. РАЗМЕР И ПОЛОЖЕНИЕ
-    // Панель стала значительно ниже, поэтому соседние шкалы не перекрываются.
+
+    // ═══════════════════════════════════════════════════════════
+    // 3. ЦВЕТ ПО ТИПУ ВИЗИТА
+    //
+    // ПАКЕТ №312. Раньше здесь была бумажная панель со словом
+    // «ОЖИДАНИЕ»: рамка, фон, тень и текст — 96 пикселей в ширину.
+    // Когда владельцы садились в ряд по горизонтали, эти панели
+    // налезали друг на друга.
+    //
+    // Теперь ни панели, ни надписи — только цветная полоска. Зачем
+    // пришёл клиент, читается по цвету:
+    //
+    //   зелёная — на приём к врачу
+    //   синяя   — на назначения (процедуры)
+    //
+    // service_queue_type проставляется при создании визита
+    // (spawn_owner_from_record) и уже используется в карточке
+    // владельца, так что признак надёжный.
     // ═══════════════════════════════════════════════════════════
 
-    var _bar_width = 82;
-    var _bar_height = 12;
-    var _padding_x = 7;
-    var _padding_y = 4;
+    var _queue_type = variable_instance_exists(id, "service_queue_type")
+        ? string(service_queue_type)
+        : "doctor";
 
-    var _panel_width = _bar_width + _padding_x * 2;
-    var _panel_height = _bar_height + _padding_y * 2;
+    var _bar_color = (_queue_type == "procedure")
+        ? make_color_rgb(74, 118, 168)   // синий — назначения
+        : make_color_rgb(76, 140, 88);   // зелёный — приём
 
-    var _panel_x1 = x - _panel_width * 0.5;
-    var _panel_y1 = y - 170;
-    var _panel_x2 = _panel_x1 + _panel_width;
-    var _panel_y2 = _panel_y1 + _panel_height;
 
-    var _bar_x1 = _panel_x1 + _padding_x;
-    var _bar_y1 = _panel_y1 + _padding_y;
+    // ═══════════════════════════════════════════════════════════
+    // 4. МАЛЕНЬКАЯ ПОЛОСКА НАД ГОЛОВОЙ
+    //
+    // Ширина 44 пикселя против прежних 96 — вдвое уже, поэтому
+    // сидящие рядом клиенты больше не перекрывают друг друга.
+    //
+    // Ни фона, ни рамки, ни тени: рисуется только сама заливка.
+    // Она укорачивается по мере того, как у клиента кончается
+    // терпение.
+    //
+    // Высота 5 пикселей — почти как у шкалы кандидата (там 6),
+    // чтобы элементы интерфейса смотрелись одинаково.
+    //
+    // Смещение −142 по вертикали: спрайт человека около 130
+    // пикселей от точки y, значит полоска встаёт чуть выше
+    // макушки, не задевая её.
+    // ═══════════════════════════════════════════════════════════
+
+    var _bar_width = 44;
+    var _bar_height = 5;
+
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ №321: ПОПРАВКА ДЛЯ СИДЯЩИХ
+    //
+    // Полоска центруется по точке x и висит на −142 от y. Для идущего
+    // человека это ровно над макушкой, а у сидящего в очереди она
+    // уезжала вправо и вверх.
+    //
+    // Причина в спрайте. spr_human_FR_sit того же размера 400x400 и с
+    // тем же origin, что и spr_human_FR_walk, но сама фигура внутри
+    // кадра нарисована ниже и левее: сидящий человек занимает другое
+    // место в квадрате. Точка x/y при этом не меняется, поэтому
+    // полоска оставалась там, где была бы у стоящего.
+    //
+    // Замерил по скриншоту: полоска уходила вправо на 64-94 пикселя и
+    // висела на 114 пикселей выше макушки. Отсюда поправка ниже.
+    //
+    // Сидит ли человек, определяет par_visitors → Step End, флагом
+    // _owner_sitting — берём готовый признак, а не гадаем по спрайту.
+    // ═══════════════════════════════════════════════════════════
+
+    var _bar_offset_x = 0;
+    var _bar_offset_y = -142;
+
+    var _is_sitting = (
+        variable_instance_exists(id, "_owner_sitting")
+        && _owner_sitting
+    );
+
+    if (_is_sitting) {
+        _bar_offset_x = -30;
+        _bar_offset_y = -82;
+    }
+
+    var _bar_x1 = x + _bar_offset_x - _bar_width * 0.5;
+    var _bar_y1 = y + _bar_offset_y;
     var _bar_x2 = _bar_x1 + _bar_width;
     var _bar_y2 = _bar_y1 + _bar_height;
 
-
-    // ═══════════════════════════════════════════════════════════
-    // 4. КОМПАКТНАЯ БУМАЖНАЯ РАМКА
-    // ═══════════════════════════════════════════════════════════
-
-    var _wood_dark = make_color_rgb(74, 49, 31);
-    var _wood_light = make_color_rgb(150, 107, 73);
-    var _paper = make_color_rgb(242, 232, 214);
-    var _line_dark = make_color_rgb(58, 39, 24);
-    var _bar_background = make_color_rgb(200, 184, 160);
-
-    // Тень.
-    draw_set_alpha(0.16);
-    draw_set_color(c_black);
-    draw_roundrect_ext(
-        _panel_x1 + 2,
-        _panel_y1 + 3,
-        _panel_x2 + 2,
-        _panel_y2 + 3,
-        7,
-        7,
-        false
-    );
-    draw_set_alpha(1);
-
-    // Двойная рамка.
-    draw_set_color(_wood_dark);
-    draw_roundrect_ext(
-        _panel_x1,
-        _panel_y1,
-        _panel_x2,
-        _panel_y2,
-        7,
-        7,
-        false
-    );
-
-    draw_set_color(_wood_light);
-    draw_roundrect_ext(
-        _panel_x1 + 2,
-        _panel_y1 + 2,
-        _panel_x2 - 2,
-        _panel_y2 - 2,
-        5,
-        5,
-        false
-    );
-
-    draw_set_color(_paper);
-    draw_roundrect_ext(
-        _panel_x1 + 4,
-        _panel_y1 + 4,
-        _panel_x2 - 4,
-        _panel_y2 - 4,
-        4,
-        4,
-        false
-    );
-
-    draw_set_color(_line_dark);
-    draw_roundrect_ext(
-        _panel_x1,
-        _panel_y1,
-        _panel_x2,
-        _panel_y2,
-        7,
-        7,
-        true
-    );
-
-
-    // ═══════════════════════════════════════════════════════════
-    // 5. УБЫВАЮЩАЯ ПОЛОСКА
-    // ═══════════════════════════════════════════════════════════
-
-    draw_set_color(_bar_background);
-    draw_roundrect_ext(
-        _bar_x1,
-        _bar_y1,
-        _bar_x2,
-        _bar_y2,
-        2,
-        2,
-        false
-    );
-
     if (_ratio > 0.01) {
-        var _fill_x2 = _bar_x1
-            + (_bar_x2 - _bar_x1) * _ratio;
+        var _fill_x2 = _bar_x1 + (_bar_x2 - _bar_x1) * _ratio;
 
         draw_set_color(_bar_color);
+        draw_set_alpha(1);
         draw_roundrect_ext(
             _bar_x1,
             _bar_y1,
@@ -163,39 +143,6 @@ if (_show_wait_bar) {
             false
         );
     }
-
-    draw_set_color(_line_dark);
-    draw_roundrect_ext(
-        _bar_x1,
-        _bar_y1,
-        _bar_x2,
-        _bar_y2,
-        2,
-        2,
-        true
-    );
-
-
-    // ═══════════════════════════════════════════════════════════
-    // 6. ТЕКСТ ВНУТРИ ШКАЛЫ
-    // ═══════════════════════════════════════════════════════════
-
-    if (font_exists(fnt_main)) {
-        draw_set_font(fnt_main);
-    }
-
-    draw_set_halign(fa_center);
-    draw_set_valign(fa_middle);
-    draw_set_color(make_color_rgb(50, 38, 28));
-
-    draw_text_transformed(
-        (_bar_x1 + _bar_x2) * 0.5,
-        (_bar_y1 + _bar_y2) * 0.5,
-        "ОЖИДАНИЕ",
-        0.42,
-        0.48,
-        0
-    );
 }
 
 

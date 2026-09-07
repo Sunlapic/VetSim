@@ -46,7 +46,29 @@ function case_add_diagnostic(_case, _diag_id) {
             _case.reveal_level = max(_case.reveal_level, _link.unlocks_reveal_level);
 
             if (_link.required_to_confirm) {
+                var _was_confirmed = (
+                    variable_struct_exists(_case, "confirmed")
+                    && _case.confirmed
+                );
+
                 _case.confirmed = true;
+
+                // ПАКЕТ №318: диагноз игрока попадает в итоги дня.
+                //
+                // Раньше счётчик new_diagnosed увеличивался ТОЛЬКО в
+                // obj_staff_doctor — то есть считались диагнозы
+                // NPC-врачей. Игрок ставит диагноз здесь, через
+                // обследование, и его работа в статистику не попадала:
+                // в итогах дня стояло меньше, чем на самом деле.
+                //
+                // Считаем в момент, когда случай ВПЕРВЫЕ подтверждён.
+                // Повторные обследования того же пациента счётчик не
+                // трогают — за это отвечает флаг внутри функции.
+                if (!_was_confirmed) {
+                    if (script_exists(asset_get_index("daily_stats_count_diagnosis"))) {
+                        daily_stats_count_diagnosis(_case);
+                    }
+                }
             }
         }
     }

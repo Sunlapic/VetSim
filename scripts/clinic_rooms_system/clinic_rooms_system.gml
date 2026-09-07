@@ -9,13 +9,31 @@
 // Кабинет 1 открыт всегда. Кабинеты 2 и 3 открываются за деньги.
 // ═══════════════════════════════════════════════════════════════
 
+/// @function clinic_rooms_reset_default()
+/// @description Стартовый набор помещений для НОВОЙ клиники.
+///
+/// ПАКЕТ №317. Раньше global.clinic_rooms_open была одна на всю сеть:
+/// кабинет, купленный в тестовой клинике, открывался и в маленькой.
+/// Теперь каждая клиника хранит своё состояние в кармане
+/// (clinic_state), а эта функция задаёт, с чего клиника начинает.
+///
+/// Открыт только первый кабинет. Койки и операционная не трогаются:
+/// их наличие определяется объектами в комнате, а покупка пишет
+/// отдельные ключи "bed_N" и "operating".
+function clinic_rooms_reset_default() {
+    global.clinic_rooms_open = {};
+
+    variable_struct_set(global.clinic_rooms_open, "1", true);
+    variable_struct_set(global.clinic_rooms_open, "2", false);
+    variable_struct_set(global.clinic_rooms_open, "3", false);
+
+    return true;
+}
+
+
 function clinic_rooms_init() {
     if (!variable_global_exists("clinic_rooms_open")) {
-        global.clinic_rooms_open = {};
-
-        variable_struct_set(global.clinic_rooms_open, "1", true);
-        variable_struct_set(global.clinic_rooms_open, "2", false);
-        variable_struct_set(global.clinic_rooms_open, "3", false);
+        clinic_rooms_reset_default();
     }
 }
 

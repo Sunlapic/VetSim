@@ -58,7 +58,20 @@ function clinic_state_get(_clinic_id) {
         variable_struct_set(global.clinic_state, _key, {
             staff : [],
             inventory : {},
-            visited : false
+            visited : false,
+
+            // ПАКЕТ №317: что построено именно в ЭТОЙ клинике.
+            //
+            // global.clinic_rooms_open и global.clinic_upgrades — одна
+            // структура на всю сеть. Из-за этого второй кабинет,
+            // купленный в тестовой клинике, открывался и в маленькой:
+            // покупка писала в общий список.
+            //
+            // undefined, а не {} — это признак «клинику ещё ни разу не
+            // сворачивали». При первом визите в неё кладётся текущее
+            // состояние, а не пустышка, иначе купленное пропало бы.
+            rooms : undefined,
+            upgrades : undefined
         });
     }
 
@@ -186,6 +199,23 @@ function clinic_network_store_current() {
             : {}
     );
 
+    // ── ПАКЕТ №317: построенные кабинеты и апгрейды ──
+    //
+    // Копируем, а не присваиваем ссылкой: иначе покупка кабинета в
+    // новой клинике меняла бы запись старой — это одна структура в
+    // памяти. Та же причина, по которой копируется склад.
+    _state.rooms = save_copy_struct(
+        variable_global_exists("clinic_rooms_open")
+            ? global.clinic_rooms_open
+            : {}
+    );
+
+    _state.upgrades = save_copy_struct(
+        variable_global_exists("clinic_upgrades")
+            ? global.clinic_upgrades
+            : {}
+    );
+
     _state.visited = true;
 
     show_debug_message(
@@ -213,6 +243,30 @@ function clinic_network_restore(_clinic_id) {
     // Первый визит: склад пустой, наполнять его — задача обычной
     // закупки. Не копируем сюда чужой инвентарь.
     global.inventory_main = save_copy_struct(_state.inventory);
+
+    // ── ПАКЕТ №317: КАБИНЕТЫ И АПГРЕЙДЫ ЭТОЙ КЛИНИКИ ──
+    //
+    // Если карман пустой (undefined) — клинику ещё ни разу не
+    // сворачивали. Тогда НИЧЕГО не трогаем: пусть остаётся то, что
+    // уже стоит в global. Для новой клиники это стартовый набор из
+    // clinic_rooms_init, для первой — её собственное состояние.
+    //
+    // Подменять на {} нельзя: у клиники пропали бы все покупки.
+    if (is_struct(_state.rooms)) {
+        global.clinic_rooms_open = save_copy_struct(_state.rooms);
+    }
+    else if (script_exists(asset_get_index("clinic_rooms_reset_default"))) {
+        // Клиника новая — начинаем со стартового набора, а не с того,
+        // что было построено в предыдущей.
+        clinic_rooms_reset_default();
+    }
+
+    if (is_struct(_state.upgrades)) {
+        global.clinic_upgrades = save_copy_struct(_state.upgrades);
+    }
+    else {
+        global.clinic_upgrades = {};
+    }
 
     // ── ПЕРВЫЙ ВИЗИТ: ПРИНИМАЕМ ПЕРСОНАЛ ИЗ РЕДАКТОРА ──
     //

@@ -13,14 +13,22 @@
 // 1. РАЗМЕРЫ (все настраиваемые)
 // ═══════════════════════════════════════════════════════════════
 
-function storage_shelf_cell_w() { return 75; }   // ширина шкафчика
-function storage_shelf_cell_h() { return 60; }   // высота шкафчика (−40%)
-function storage_shelf_cols() { return 12; }     // шкафчиков в ряду
-function storage_shelf_rows() { return 4; }      // рядов
-function storage_shelf_gap_x() { return 8; }
-function storage_shelf_gap_y() { return 10; }
-function storage_shelf_pad() { return 22; }      // рамка корпуса
-function storage_shelf_box() { return 4; }       // сторона коробочки
+// ПАКЕТ №311: размеры берутся из storage_shelf_layout
+// (скрипт storage_visible_items) и зависят от величины клиники.
+//
+// Было жёстко 12x4 по 75x60 — стеллаж 1032x314 пикселей. В
+// комнате с одним кабинетом это полкомнаты. Теперь в
+// маленькой клинике 7x6 по 36x28 — 292x204, площадь меньше
+// в 5.4 раза. Вся геометрия ниже и зона клика — производные
+// от этих чисел, поэтому больше менять ничего не нужно.
+function storage_shelf_cell_w() { return storage_layout_value("cell_w", 75); }
+function storage_shelf_cell_h() { return storage_layout_value("cell_h", 60); }
+function storage_shelf_cols() { return storage_layout_value("cols", 12); }
+function storage_shelf_rows() { return storage_layout_value("rows", 4); }
+function storage_shelf_gap_x() { return storage_layout_value("gap_x", 8); }
+function storage_shelf_gap_y() { return storage_layout_value("gap_y", 10); }
+function storage_shelf_pad() { return storage_layout_value("pad", 22); }
+function storage_shelf_box() { return storage_layout_value("box", 4); }
 function storage_shelf_box_gap() { return 2; }   // отступ коробочек
 function storage_shelf_box_cols() { return 10; } // коробочек в ряду
 function storage_shelf_box_rows() { return 5; }  // рядов
@@ -31,7 +39,10 @@ function storage_shelf_box_max() {
         * storage_shelf_box_rows()
         * storage_shelf_box_layers();
 }
-function storage_shelf_label_scale() { return 0.52; } // масштаб подписи (подобран пользователем)
+// ПАКЕТ №311: подпись уменьшается вместе со стеллажом.
+// Значение 0.52 для большой клиники подобрано пользователем
+// и сохранено как есть.
+function storage_shelf_label_scale() { return storage_layout_value("label_scale", 0.52); }
 function storage_shelf_depth() { return 30; }     // глубина КОРПУСА (×3)
 function storage_shelf_cell_depth() { return 18; } // глубина УГЛУБЛЕНИЯ
 function storage_shelf_box_depth() { return 4; }   // глубина самой коробочки
@@ -412,7 +423,13 @@ function storage_draw_main_shelf_unit(_st) {
 
     var _ids = [];
 
-    if (
+    // ПАКЕТ №311: берём только те препараты, что нужны этой
+    // клинике. Без операционной наркоз, хирургический набор
+    // и паста для ЧЗ-чистки не показываются вовсе.
+    if (script_exists(asset_get_index("storage_visible_item_ids"))) {
+        _ids = storage_visible_item_ids();
+    }
+    else if (
         variable_global_exists("item_ids")
         && is_array(global.item_ids)
     ) {

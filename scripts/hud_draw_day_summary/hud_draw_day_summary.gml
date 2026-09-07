@@ -79,10 +79,21 @@ function hud_draw_day_summary(_hud) {
             { label : "Закупка препаратов:", value : "$" + string(_purchases), color : _red },
             { label : "Зарплата персонала:", value : "$" + string(_salary), color : _red },
             { label : "Расходы всего:", value : "$" + string(_spent_total), color : _red },
-            { label : "Принято пациентов:", value : string(global.daily_stats.paid_visits), color : _text_dark },
-            { label : "Поставлено диагнозов:", value : string(global.daily_stats.new_diagnosed), color : _text_dark },
-            { label : "Процедур выполнено:", value : string(global.daily_stats.procedures_done), color : _text_dark },
-            { label : "Записано на повтор:", value : string(global.daily_stats.followups_scheduled), color : _text_dark },
+            // ПАКЕТ №318: «Принято пациентов» теперь показывает
+            // проведённые приёмы, а не оплаты.
+            //
+            // Раньше здесь стоял paid_visits — счётчик ОПЛАТ на
+            // стойке. Из-за этого цифра не сходилась с диагнозами:
+            // пациент, который ещё лечится и заплатит завтра, в неё не
+            // попадал, а тот, кто пришёл только заплатить за прошлый
+            // визит, попадал.
+            //
+            // Оплаты не потерялись — они ниже отдельной строкой.
+            { label : "Принято пациентов:", value : string(daily_stats_value("exams_done")), color : _text_dark },
+            { label : "Оплатили визит:", value : string(daily_stats_value("paid_visits")), color : _text_dark },
+            { label : "Поставлено диагнозов:", value : string(daily_stats_value("new_diagnosed")), color : _text_dark },
+            { label : "Процедур выполнено:", value : string(daily_stats_value("procedures_done")), color : _text_dark },
+            { label : "Записано на повтор:", value : string(daily_stats_value("followups_scheduled")), color : _text_dark },
             { label : "Репутация клиники:", value : _reputation_text, color : _gold }
         ];
 

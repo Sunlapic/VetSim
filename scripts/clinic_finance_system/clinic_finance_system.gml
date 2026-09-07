@@ -1283,7 +1283,28 @@ function finance_payroll_add_object(_object_type, _lines) {
         if (!instance_exists(_staff)) continue;
         if (_staff.object_index != _object_type) continue;
 
-        var _salary = finance_refresh_staff_salary(_staff);
+        // ПАКЕТ №320: оклад НЕ пересчитывается при выплате.
+        //
+        // Здесь стоял finance_refresh_staff_salary — он заново считал
+        // зарплату по текущим навыкам, каждую полночь. Из-за этого
+        // обучать сотрудника было невыгодно: он сам себе поднимал
+        // оклад, и нанять новичка выходило дешевле, чем растить
+        // своего.
+        //
+        // Теперь платим то, о чём договорились при найме. Оклад
+        // меняется только через согласованную прибавку
+        // (staff_salary_system).
+        staff_salary_init(_staff);
+
+        var _salary = variable_instance_exists(_staff, "salary")
+            ? _staff.salary
+            : 0;
+
+        // Страховка для сотрудников из старых сохранений, у которых
+        // оклад не проставлен: считаем один раз и запоминаем.
+        if (_salary <= 0) {
+            _salary = finance_refresh_staff_salary(_staff);
+        }
 
         array_push(_lines, {
             staff : _staff,

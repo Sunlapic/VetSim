@@ -1176,26 +1176,17 @@ function inpatient_start_admission(_owner, _pet, _escort_doctor) {
         exam_table_y = _ward.pet_table_point.y;
         state = "going_to_exam_floor";
 
-        path_end();
-        speed = 0;
-        is_walking = false;
-
-        if (mp_grid_path(
-            global.ai_grid,
-            my_path,
-            x,
-            y,
-            exam_floor_x,
-            exam_floor_y,
-            true
-        )) {
-            path_set_kind(my_path, 1);
-            path_start(my_path, p_move_speed, path_action_stop, true);
-            is_walking = true;
-        } else {
-            move_towards_point(exam_floor_x, exam_floor_y, p_move_speed);
-            is_walking = true;
-        }
+        // ПАКЕТ №323: путь строится через animal_walk_to.
+        //
+        // Здесь стоял mp_grid_path с запасной веткой
+        // move_towards_point — она ведёт по ПРЯМОЙ, мимо стен. Именно
+        // так собака и шла с приёма в стационар насквозь.
+        //
+        // Срабатывало это регулярно: путь не строится, когда сама цель
+        // стоит на закрытой клетке, а точка пола у койки лежит вплотную
+        // к мебели. Теперь, если в саму точку дороги нет, ищется
+        // ближайшая проходимая клетка рядом.
+        animal_walk_to(id, exam_floor_x, exam_floor_y);
     }
 
     // Сразу отвязываем животное, поэтому Cleanup владельца не удалит
@@ -1212,26 +1203,9 @@ function inpatient_start_admission(_owner, _pet, _escort_doctor) {
         leave_target_x = global.clinic_exit_x;
         leave_target_y = global.clinic_exit_y;
 
-        path_end();
-        speed = 0;
-        is_walking = false;
-
-        if (mp_grid_path(
-            global.ai_grid,
-            my_path,
-            x,
-            y,
-            leave_target_x,
-            leave_target_y,
-            true
-        )) {
-            path_set_kind(my_path, 1);
-            path_start(my_path, p_move_speed, path_action_stop, true);
-            is_walking = true;
-        } else {
-            move_towards_point(leave_target_x, leave_target_y, p_move_speed);
-            is_walking = true;
-        }
+        // ПАКЕТ №323: та же замена, что и выше — уход из клиники
+        // тоже шёл по прямой, если путь к выходу не построился.
+        animal_walk_to(id, leave_target_x, leave_target_y);
     }
 
     if (instance_exists(_escort_doctor)) {
@@ -1440,7 +1414,46 @@ function inpatient_auto_assign_post_surgery(_ward) {
 
     _pet.current_case.pending_procedure_actions = _actions;
 
-    if (array_length(_ward_actions) <= 0) return false;
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №322: ПАЛАТА НЕ ДОЛЖНА ЗАВИСАТЬ БЕЗ НАЗНАЧЕНИЙ
+    //
+    // Строкой выше из списка вычеркнуты хирургические действия — их
+    // делает операционная, а не ассистент у койки. Но у раны, ради
+    // которой и была операция, лечение ТОЛЬКО хирургическое. После
+    // фильтра список пустеет, и функция уходила через return false.
+    //
+    // Последствий было два, и оба вы видели:
+    //
+    //   1. Лечение не назначено — в карточке пациента пусто.
+    //
+    //   2. Фаза палаты не сменилась на "waiting_cycle" и осталась
+    //      "waiting_doctor". А inpatient_any_bed_needs_doctor()
+    //      считает такую койку требующей врача, и врач стационара
+    //      разворачивается на полпути к стулу — каждый шаг заново.
+    //      Со стороны это выглядит как дёрганье на месте.
+    //
+    // Теперь пустой список — не ошибка, а нормальный исход: операция
+    // сделана, добавлять нечего. Палата переходит в наблюдение и
+    // отпускает врача.
+    // ═══════════════════════════════════════════════════════════════
+
+    if (array_length(_ward_actions) <= 0) {
+        _ward.treatment_actions = [];
+        _ward.prescriptions_assigned = true;
+        _ward.cycle_action_index = 0;
+        _ward.cycle_active = false;
+
+        // Следующая проверка не раньше чем через час игрового времени:
+        // пациент просто лежит и восстанавливается.
+        _ward.next_treatment_minute = inpatient_now_absolute_minute() + 60;
+        _ward.phase = "waiting_cycle";
+
+        show_debug_message(
+            "[INPATIENT] После операции назначений нет — наблюдение."
+        );
+
+        return true;
+    }
 
     _ward.treatment_actions = _ward_actions;
     _ward.prescriptions_assigned = true;
@@ -2983,7 +2996,17 @@ function inpatient_controller_step(_ward) {
                         variable_global_exists("daily_stats")
                         && variable_struct_exists(global.daily_stats, "procedures_done")
                     ) {
-                        global.daily_stats.procedures_done += 1;
+                        // ПАКЕТ №318: счёт процедур переехал в
+                        // case_apply_treatment_action, но стационар
+                        // лечит своей функцией и туда не заходит —
+                        // поэтому здесь счётчик остаётся, только через
+                        // общую точку.
+                        if (script_exists(asset_get_index("daily_stats_count_procedure"))) {
+                            daily_stats_count_procedure();
+                        }
+                        else {
+                            global.daily_stats.procedures_done += 1;
+                        }
                     }
 
                     _assistant.staff_spend_energy(3);

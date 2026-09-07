@@ -17,6 +17,31 @@ if (_picked_role == "doctor") {
     doctor_ensure_inpatient_skill(id, true);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ПАКЕТ №319: ПОТОЛОК НАВЫКОВ ПО РЕПУТАЦИИ
+//
+// В безвестную клинику сильные специалисты не идут. Пока репутация
+// низкая, приходят новички; растёт имя клиники — растёт и уровень
+// тех, кто стучится в дверь.
+//
+//     0-20   -> максимум 1
+//     20-30  -> максимум 2
+//     30-40  -> максимум 3
+//     дальше каждые 10 пунктов +1, при 100 и выше — 10
+//
+// Вызов стоит ЗДЕСЬ, а не внутри staff_apply_role, хотя навыки
+// генерируются там. Причина: ту же функцию вызывают стартовые
+// сотрудники, расставленные в комнате (obj_staff_doctor,
+// obj_staff_assistant, obj_staff_admin). Обрежь я навыки в общем
+// месте — игрок начинал бы партию с командой новичков.
+//
+// Здесь же обрезаются только кандидаты, приходящие на найм.
+// ═══════════════════════════════════════════════════════════════
+
+if (script_exists(asset_get_index("candidate_apply_skill_cap"))) {
+    candidate_apply_skill_cap(id);
+}
+
 portrait_x = 150;
 portrait_y = 50;
 portrait_zoom = 1;
@@ -136,6 +161,21 @@ resolve_hire = function() {
         stat_energy = min(other.stat_energy, energy_max);
         character_trait = other.character_trait;
         salary = other.salary_expected;
+
+        // ПАКЕТ №320: запоминаем, с какими навыками человек пришёл.
+        //
+        // По этой отметке считается, насколько он вырос, и когда ему
+        // пора просить прибавку. Сравнивать текущую зарплату с
+        // расчётной ненадёжно: формулу расчёта мы правим, а отметка
+        // найма — факт.
+        hire_skill_sum = other.skills_sum;
+        staff_loyalty = 100;
+        raise_refusals = 0;
+        raise_pending = false;
+        raise_amount = 0;
+        raise_check_day = variable_global_exists("game_day")
+            ? global.game_day
+            : 0;
 
         hair_color = other.hair_color;
         my_hair = other.my_hair;

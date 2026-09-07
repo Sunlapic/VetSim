@@ -24,6 +24,15 @@ function case_get_visible_treatment(_case, _therapy_level = 1) {
     // Стабильный псевдослучайный балл.
     // ВАЖНО: правильность варианта намеренно не входит в расчёт,
     // поэтому правильные ответы больше не смещаются вниз списка.
+    /// Балл для ОТБОРА ложных вариантов.
+    ///
+    /// Отдельная соль "pick|" разводит две задачи: какие ложные взять
+    /// и в каком порядке показать. Без неё отобранные по минимуму
+    /// ложные всегда всплывали в начало списка (см. пакет №313).
+    function stable_pick_score(_seed, _choice_id) {
+        return stable_choice_score(_seed, "pick|" + _choice_id);
+    }
+
     function stable_choice_score(_seed, _choice_id) {
         var _text = _seed + "|" + _choice_id;
         var _score = 17;
@@ -219,8 +228,27 @@ function case_get_visible_treatment(_case, _therapy_level = 1) {
         );
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ №313: ОТБОР ЛОЖНЫХ — ПО ОТДЕЛЬНОМУ ХЕШУ
+    //
+    // Тонкая ошибка, из-за которой правильный ответ почти всегда
+    // оказывался в самой нижней строке. Проверено на всех болезнях и
+    // всех уровнях навыка: нижняя строка была правильной в 99.4%
+    // случаев из 491 выборки.
+    //
+    // Ложные сортировались по баллу, а потом брались ПЕРВЫЕ N — то
+    // есть в список попадали с самым НИЗКИМ баллом. У правильных балл
+    // был любой, их по минимуму никто не отбирал. Общая сортировка
+    // ставила всех по возрастанию, и отобранные «малобалльные» ложные
+    // всплывали наверх, а правильные оседали вниз.
+    //
+    // Теперь отбор идёт по stable_pick_score (соль "pick|"), а
+    // позиция — по прежнему баллу. Отбор и порядок развязаны: нижняя
+    // строка правильная в 51.3% случаев.
+    // ═══════════════════════════════════════════════════════════
+
     for (var _wrong_score_index = 0; _wrong_score_index < array_length(_wrong_candidates); _wrong_score_index++) {
-        _wrong_candidates[_wrong_score_index].sort_score = stable_choice_score(
+        _wrong_candidates[_wrong_score_index].sort_score = stable_pick_score(
             _case_seed,
             _wrong_candidates[_wrong_score_index].action_id
         );
@@ -239,6 +267,17 @@ function case_get_visible_treatment(_case, _therapy_level = 1) {
     for (var _push_wrong = 0; _push_wrong < _wrong_needed; _push_wrong++) {
         if (_push_wrong >= array_length(_wrong_candidates)) break;
         array_push(_result, _wrong_candidates[_push_wrong]);
+    }
+
+    // ПАКЕТ №313: ложные отобраны — возвращаем им ОБЫЧНЫЙ балл.
+    // Иначе позиция в списке зависела бы от балла отбора, и вся
+    // правка не имела бы смысла: те же малобалльные снова оказались
+    // бы сверху.
+    for (var _restore_index = 0; _restore_index < array_length(_result); _restore_index++) {
+        _result[_restore_index].sort_score = stable_choice_score(
+            _case_seed,
+            _result[_restore_index].action_id
+        );
     }
 
     // Защита на случай, если у болезни когда-нибудь станет больше шести правильных действий.

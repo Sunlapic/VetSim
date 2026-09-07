@@ -1476,26 +1476,14 @@ function operating_owner_to_waiting(_ctrl) {
 
         var _spot = global.wait_spots[_spot_index];
 
+        // ПАКЕТ №323: через animal_walk_to — с поиском обходной
+        // клетки, если точка занята мебелью.
+        // ПАКЕТ №323: путь животного к операционному столу.
         path_end();
         speed = 0;
         is_walking = false;
 
-        if (mp_grid_path(
-            global.ai_grid,
-            my_path,
-            x,
-            y,
-            _spot.x,
-            _spot.y,
-            true
-        )) {
-            path_set_kind(my_path, 1);
-            path_start(my_path, p_move_speed, path_action_stop, true);
-            is_walking = true;
-        } else {
-            move_towards_point(_spot.x, _spot.y, p_move_speed);
-            is_walking = true;
-        }
+        animal_walk_to(id, _spot.x, _spot.y);
     }
 }
 
@@ -1574,22 +1562,7 @@ function operating_send_pet_to_table(_ctrl) {
         speed = 0;
         is_walking = false;
 
-        if (mp_grid_path(
-            global.ai_grid,
-            my_path,
-            x,
-            y,
-            exam_floor_x,
-            exam_floor_y,
-            true
-        )) {
-            path_set_kind(my_path, 1);
-            path_start(my_path, p_move_speed, path_action_stop, true);
-            is_walking = true;
-        } else {
-            move_towards_point(exam_floor_x, exam_floor_y, p_move_speed);
-            is_walking = true;
-        }
+        animal_walk_to(id, exam_floor_x, exam_floor_y);
     }
 
     return true;
@@ -2218,6 +2191,35 @@ function operating_send_pet_back_to_ward(_ctrl) {
     // Операционный стол свободен в любом случае.
     operating_table_free(_ctrl);
 
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №322: ВРАЧИ ОСВОБОЖДАЮТСЯ ДО ВСЕХ ПРОВЕРОК
+    //
+    // Отпуск хирурга и анестезиолога стоял в САМОМ КОНЦЕ этой
+    // функции. А ниже несколько досрочных return: нет палаты, нет
+    // койки, нет точек пациента. Любой из них — и врачи остаются
+    // занятыми навсегда.
+    //
+    // Ассистент при этом отпускается в другом месте
+    // (operating_finish_return, по таймеру), и оно срабатывает
+    // независимо. Отсюда картина, которую видит игрок: ассистент и
+    // анестезиолог сидят, а хирург стоит у стола.
+    //
+    // Операция закончена — врачи свободны, что бы дальше ни
+    // случилось с перевозкой пациента. Логичнее отпускать их здесь.
+    //
+    // Пакеты 218, 286 и 292 чинили ТРИ ДРУГИЕ причины того же
+    // симптома (членство в бригаде, висящие ссылки assigned_pet,
+    // отсутствие стульев). Те правки остаются в силе — эта
+    // четвёртая и, судя по всему, последняя: она про то, что до
+    // прежних исправлений просто не доходило выполнение.
+    // ═══════════════════════════════════════════════════════════════
+
+    operating_send_home(_ctrl.or_surgeon, "doctor");
+    operating_send_home(_ctrl.or_anesthetist, "doctor");
+
+    _ctrl.or_surgeon = noone;
+    _ctrl.or_anesthetist = noone;
+
     if (!instance_exists(_ward)) return false;
 
     inpatient_refresh_room_links(_ward);
@@ -2263,26 +2265,12 @@ function operating_send_pet_back_to_ward(_ctrl) {
 
         path_end();
         speed = 0;
+        // ПАКЕТ №323: возврат животного в палату.
         hspeed = 0;
         vspeed = 0;
         is_walking = false;
 
-        if (mp_grid_path(
-            global.ai_grid,
-            my_path,
-            x,
-            y,
-            exam_floor_x,
-            exam_floor_y,
-            true
-        )) {
-            path_set_kind(my_path, 1);
-            path_start(my_path, p_move_speed, path_action_stop, true);
-            is_walking = true;
-        } else {
-            move_towards_point(exam_floor_x, exam_floor_y, p_move_speed);
-            is_walking = true;
-        }
+        animal_walk_to(id, exam_floor_x, exam_floor_y);
     }
 
     // Ассистент провожает пациента до койки.
@@ -2300,17 +2288,12 @@ function operating_send_pet_back_to_ward(_ctrl) {
         );
     }
 
-    // Врачи свободны сразу.
-    operating_send_home(_ctrl.or_surgeon, "doctor");
-    operating_send_home(_ctrl.or_anesthetist, "doctor");
-
-    // Пакет №218: врачи больше не нужны контроллеру до конца цикла,
-    // поэтому членство в бригаде снимается СРАЗУ. Раньше ссылки
-    // or_surgeon/or_anesthetist жили до конца фазы «returning», и
-    // operating_seat_actor считала их участниками операции — хирург
-    // вечно стоял у стола, хотя уже был свободен.
-    _ctrl.or_surgeon = noone;
-    _ctrl.or_anesthetist = noone;
+    // ПАКЕТ №322: отпуск врачей переехал в начало функции.
+    //
+    // Здесь он не срабатывал, если выше отработал досрочный return
+    // (нет палаты, нет койки, нет точек). Смысл правки пакета №218 —
+    // снимать членство в бригаде сразу — сохранён, просто теперь это
+    // происходит гарантированно.
 
     return true;
 }
@@ -2396,9 +2379,24 @@ function operating_controller_step(_ctrl) {
         );
     }
 
-    if (instance_exists(_table)) {
-        _ctrl.depth = _table.depth - 5;
-    }
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №324: ЗДЕСЬ ГЛУБИНА БОЛЬШЕ НЕ ТРОГАЕТСЯ
+    //
+    // Стояло `_ctrl.depth = _table.depth - 5;` — остаток от старой
+    // версии, когда шторку привязывали к столу. Строка выполняется
+    // ПОЗЖЕ правильного расчёта (несколькими десятками строк выше) и
+    // молча перетирала его.
+    //
+    // Числа: стол на y = 2162 даёт depth = -2162.9. Животное на столе
+    // берёт depth = assigned_table.depth - 1 = -2163.9 (par_animals,
+    // блок 7). Правильный расчёт ставил контроллеру -2165.9 — перед
+    // животным. А эта строка ставила -2167.9, то есть ЗА животным:
+    // в GameMaker меньшая глубина рисуется позже, ближе к зрителю.
+    //
+    // Отсюда и симптом: собака поверх шторки. Пакеты 272 и 293
+    // правили сам расчёт и геометрию полотна — верно, но результат
+    // затирался вот этой строкой.
+    // ═══════════════════════════════════════════════════════════════
 
     // ── Фаза: ассистент идёт за пациентом в стационар ──
     if (_ctrl.or_phase == "escort") {
@@ -3261,8 +3259,47 @@ function operating_draw_surgery_screen(_ctrl) {
     // уже и не выходит за края стола.
     // ═══════════════════════════════════════════════════════════
 
-    var _w = max(120, _table.sprite_width * 0.573);
-    var _h = max(70, _table.sprite_height * 0.64);
+    // ── ПАКЕТ №324: РАЗМЕР ПОЛОТНА — ПО ЖИВОТНОМУ ──
+    //
+    // Раньше считалось от размеров стола: 0.573 ширины и 0.64 высоты.
+    // Стол один на всех, а пациенты разные — от щенка до крупной
+    // собаки. В итоге над щенком висело полотно втрое больше него:
+    // на скриншоте 233x158 пикселей шторки против 110x95 собаки.
+    //
+    // Теперь размер берётся от самого пациента, с запасом: +30% по
+    // ширине и +35% по высоте. Полотно закрывает животное целиком, но
+    // не превращается в занавес во весь стол. Для крупной собаки оно
+    // вырастет само.
+    //
+    // Границы на случай странных спрайтов: не меньше 90x70 и не
+    // больше самого стола.
+
+    var _pet_w = 150;
+    var _pet_h = 130;
+
+    if (
+        instance_exists(_ctrl.or_pet)
+        && sprite_exists(_ctrl.or_pet.sprite_index)
+    ) {
+        _pet_w = sprite_get_width(_ctrl.or_pet.sprite_index)
+            * abs(_ctrl.or_pet.image_xscale);
+
+        _pet_h = sprite_get_height(_ctrl.or_pet.sprite_index)
+            * abs(_ctrl.or_pet.image_yscale);
+    }
+
+    // Коэффициенты 0.95 и 0.80, а не «с запасом больше единицы».
+    //
+    // Причина: спрайт животного — квадрат 300x300, и сама собака
+    // занимает в нём примерно две трети, остальное пустые поля.
+    // Умножать габарит кадра на 1.3 значит рисовать полотно вдвое
+    // больше зверя. Проверено на щенке со скриншота: при 1.3 полотно
+    // выходило шире прежнего, хотя задача была уменьшить.
+    //
+    // 0.95 ширины кадра и 0.80 высоты дают полотно, которое накрывает
+    // животное с небольшим запасом по бокам и не тянется во весь стол.
+    var _w = clamp(_pet_w * 0.95, 90, _table.sprite_width);
+    var _h = clamp(_pet_h * 0.80, 70, _table.sprite_height);
 
     // Центр полотна по горизонтали — по животному, если оно уже на
     // столе; иначе, как раньше, по столу.

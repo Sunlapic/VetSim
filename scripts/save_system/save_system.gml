@@ -259,6 +259,18 @@ function save_staff_snapshot(_staff) {
         stat_loyalty : real(save_inst_field(_staff, "stat_loyalty", 75)),
         salary : real(save_inst_field(_staff, "salary", 0)),
 
+        // ── ПАКЕТ 320: договорённости по зарплате ──
+        //
+        // hire_skill_sum — навыки на момент найма, по ним считается
+        // рост. Без сохранения сотрудник после загрузки «забывал»,
+        // сколько он вырос, и просил прибавку заново.
+        hire_skill_sum : real(save_inst_field(_staff, "hire_skill_sum", 0)),
+        staff_loyalty : real(save_inst_field(_staff, "staff_loyalty", 100)),
+        raise_refusals : real(save_inst_field(_staff, "raise_refusals", 0)),
+        raise_pending : save_inst_field(_staff, "raise_pending", false),
+        raise_amount : real(save_inst_field(_staff, "raise_amount", 0)),
+        raise_check_day : real(save_inst_field(_staff, "raise_check_day", 0)),
+
         // ── рабочее место ──
         workplace_id : string(save_inst_field(_staff, "workplace_id", "reception")),
 
@@ -381,6 +393,25 @@ function save_staff_restore(_data) {
         loyalty = save_field(_data, "loyalty", 75);
         stat_loyalty = save_field(_data, "stat_loyalty", 75);
         salary = save_field(_data, "salary", 0);
+
+        // ПАКЕТ 320: договорённости по зарплате.
+        //
+        // Для старых сохранений hire_skill_sum придёт нулём — тогда
+        // берём текущие навыки, иначе сотрудник сразу решит, что вырос
+        // на весь свой уровень, и потребует прибавку в первый же день.
+        hire_skill_sum = save_field(_data, "hire_skill_sum", 0);
+
+        if (hire_skill_sum <= 0) {
+            hire_skill_sum = variable_instance_exists(id, "skills_sum")
+                ? skills_sum
+                : 0;
+        }
+
+        staff_loyalty = save_field(_data, "staff_loyalty", 100);
+        raise_refusals = save_field(_data, "raise_refusals", 0);
+        raise_pending = save_field(_data, "raise_pending", false);
+        raise_amount = save_field(_data, "raise_amount", 0);
+        raise_check_day = save_field(_data, "raise_check_day", 0);
 
         workplace_id = string(save_field(_data, "workplace_id", "reception"));
         workplace_pending = "";
@@ -1575,6 +1606,62 @@ function vetsim_load() {
     }
     else {
         global.active_clinic = save_field(_data, "active_clinic", 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №317: КАБИНЕТЫ ТОЙ КЛИНИКИ, ГДЕ ИГРОК
+    //
+    // Выше clinic_rooms_open и clinic_upgrades уже восстановлены из
+    // сохранения — но это общая запись, состояние клиники, в которой
+    // игра сохранялась. А игрок может стоять в другой.
+    //
+    // Теперь у каждой клиники свои кабинеты, они лежат в её кармане
+    // (clinic_state). Карман восстановлен парой строк выше, номер
+    // клиники определён только что — самое время подменить общие
+    // значения на местные.
+    //
+    // Порядок здесь важен и проверен: rooms грузятся на строке ~1462,
+    // clinic_state на ~1486, active_clinic — тут. Раньше этого места
+    // подменять было нечем.
+    // ═══════════════════════════════════════════════════════════════
+
+    if (
+        variable_global_exists("clinic_state")
+        && is_struct(global.clinic_state)
+    ) {
+        var _rooms_key = "clinic_" + string(global.active_clinic);
+
+        if (variable_struct_exists(global.clinic_state, _rooms_key)) {
+            var _here_pocket = variable_struct_get(
+                global.clinic_state,
+                _rooms_key
+            );
+
+            if (
+                is_struct(_here_pocket)
+                && variable_struct_exists(_here_pocket, "rooms")
+                && is_struct(_here_pocket.rooms)
+            ) {
+                global.clinic_rooms_open = save_copy_struct(
+                    _here_pocket.rooms
+                );
+
+                show_debug_message(
+                    "[SAVE] Кабинеты взяты из кармана клиники "
+                    + string(global.active_clinic)
+                );
+            }
+
+            if (
+                is_struct(_here_pocket)
+                && variable_struct_exists(_here_pocket, "upgrades")
+                && is_struct(_here_pocket.upgrades)
+            ) {
+                global.clinic_upgrades = save_copy_struct(
+                    _here_pocket.upgrades
+                );
+            }
+        }
     }
 
     var _inventory = save_field(_data, "inventory_main", undefined);

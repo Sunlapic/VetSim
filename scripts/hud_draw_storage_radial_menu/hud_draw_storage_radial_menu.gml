@@ -227,15 +227,22 @@ function hud_draw_storage_radial_menu(_hud) {
                     finance_panel_open = false;
                     clinic_subtab = "storage";
 
+                    // ПАКЕТ №313: уведомление «Открыт склад» убрано.
+                    //
+                    // Оно ничего не сообщало: игрок сам только что нажал
+                    // «открыть», и панель склада тут же появляется перед
+                    // ним. Зато карточка падала в левый угол при каждом
+                    // открытии и мешала.
+                    //
+                    // Сам выбор области склада остался — он нужен панели,
+                    // чтобы понимать, главный это склад или шкаф.
                     if (_is_cabinet) {
                         storage_scope_selected = "cab_" + string(_target);
                         storage_scope_selected_inst = _target;
-                        show_notice("СКЛАД", "Открыт " + (variable_instance_exists(_target, "storage_name_ru") ? _target.storage_name_ru : "шкаф"), _fps);
                     }
                     else {
                         storage_scope_selected = "main";
                         storage_scope_selected_inst = noone;
-                        show_notice("СКЛАД", "Открыт склад", _fps);
                     }
                 break;
 

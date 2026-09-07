@@ -234,5 +234,20 @@ function case_apply_treatment_action(_animal_id, _action_id) {
     _animal_id.condition = _case.condition;
     animal_apply_case(_animal_id, _case);
 
+    // ПАКЕТ №318: процедура засчитывается в итоги дня.
+    //
+    // Счётчик procedures_done стоял только в obj_staff_assistant и в
+    // стационаре. Лечение, которое игрок делает руками из карточки
+    // пациента, проходит через эту функцию — и в статистику не
+    // попадало.
+    //
+    // Здесь считается ЛЮБОЕ применённое лечение, независимо от того,
+    // кто его выполнил. Ассистент тоже вызывает эту функцию, поэтому
+    // его собственный счётчик в Step убран — иначе вышел бы двойной
+    // учёт.
+    if (script_exists(asset_get_index("daily_stats_count_procedure"))) {
+        daily_stats_count_procedure();
+    }
+
     return true;
 }

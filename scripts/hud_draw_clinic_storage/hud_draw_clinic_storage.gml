@@ -488,7 +488,11 @@ function hud_draw_clinic_storage(_hud) {
         // до самого низа колонки.
         var _shortage_y = _right_y2 - 6;
 
-        if (array_length(global.item_ids) > 0) {
+        // ПАКЕТ №311: в закупке показываем только те препараты, что
+        // нужны этой клинике. Без операционной наркоз, хирургический
+        // набор и паста для УЗ-чистки не предлагаются — покупать их
+        // некуда и незачем.
+        if (array_length(storage_purchase_item_ids()) > 0) {
             // Пакет №71: скидка аптеки на закупку препаратов.
             var _pharmacy_discount = clinic_get_pharmacy_discount_percent();
             // ═══════════════════════════════════════════════════
@@ -540,7 +544,7 @@ function hud_draw_clinic_storage(_hud) {
             );
             var _items_max_scroll = max(
                 0,
-                array_length(global.item_ids) - _items_visible
+                array_length(storage_purchase_item_ids()) - _items_visible
             );
             storage_items_scroll = clamp(storage_items_scroll, 0, _items_max_scroll);
 
@@ -596,9 +600,9 @@ function hud_draw_clinic_storage(_hud) {
 
             for (var _item_vis = 0; _item_vis < _items_visible + 1; _item_vis++) {
                 var _item_index = storage_items_scroll + _item_vis;
-                if (_item_index >= array_length(global.item_ids)) break;
+                if (_item_index >= array_length(storage_purchase_item_ids())) break;
 
-                var _item_id = global.item_ids[_item_index];
+                var _item_id = storage_purchase_item_ids()[_item_index];
                 var _item_data = variable_struct_get(global.item_db, _item_id);
                 var _item_y = _items_view_top + _item_vis * _item_row_height;
                 var _quantity = inventory_get_amount(_selected_inventory, _item_id);
@@ -747,7 +751,7 @@ function hud_draw_clinic_storage(_hud) {
                 storage_items_scroll,
                 _items_max_scroll,
                 _items_visible,
-                array_length(global.item_ids)
+                array_length(storage_purchase_item_ids())
             );
         }
 
