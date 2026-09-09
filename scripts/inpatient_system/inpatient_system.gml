@@ -242,11 +242,38 @@ function inpatient_refresh_room_links(_ward) {
         && instance_exists(_ward.owner_point)
     );
 
-    // ── Диагностика (пакет №73 hotfix) ──
-    // Раз в секунду печатает, чего не хватает у несобранной койки.
+    // ── Диагностика (пакет №73 hotfix, пакет №328) ──
+    //
+    // Печатает, чего не хватает у несобранной койки. Две поправки:
+    //
+    //   1. Койка сверх потолка клиники не предупреждает вовсе. В
+    //      клинике №2 две койки, а контроллеров в комнате может стоять
+    //      восемь — лишние никогда не соберутся, и ругать за них
+    //      бессмысленно: игра их и так не откроет.
+    //
+    //   2. Предупреждение печатается ОДИН раз за вход в комнату, а не
+    //      раз в секунду навсегда. Раньше шесть несобранных коек
+    //      давали шесть строк каждую секунду до конца сеанса.
+    var _should_warn = true;
+
+    if (script_exists(asset_get_index("clinic_bed_is_open"))) {
+        _should_warn = clinic_bed_is_open(_slot);
+    }
+
+    if (_should_warn) {
+        if (!variable_global_exists("inpatient_warned")) {
+            global.inpatient_warned = {};
+        }
+
+        if (variable_struct_exists(global.inpatient_warned, string(_slot))) {
+            _should_warn = false;
+        }
+    }
+
     if (!_complete) {
-        if (_ward.link_retry_timer <= 0) {
+        if (_should_warn && _ward.link_retry_timer <= 0) {
             _ward.link_retry_timer = max(1, game_get_speed(gamespeed_fps));
+            variable_struct_set(global.inpatient_warned, string(_slot), true);
 
             var _missing = "";
 
@@ -263,10 +290,20 @@ function inpatient_refresh_room_links(_ward) {
                 _missing = "что-то ещё";
             }
 
+            // ПАКЕТ №329: в сообщении видно, в КАКОЙ клинике и
+            // комнате койка — в четырёх клиниках иначе не найти.
+            var _diag_context = script_exists(asset_get_index("clinic_diag_context"))
+                ? clinic_diag_context()
+                : "";
+
             show_debug_message(
-                "[INPATIENT] Койка " + string(_slot)
+                "[INPATIENT] " + _diag_context
+                + "койка " + string(_slot)
                 + " не собрана. Не хватает: " + _missing
-                + ". Проверь exam_slot_id у ВСЕХ объектов этой койки."
+                + ". Проверь слот у ВСЕХ объектов этой койки: "
+                + "у контроллера и стола — exam_slot_id = "
+                + string(_slot) + "; у точек — ward_slot_id = "
+                + string(_slot) + "."
             );
         }
     } else {
@@ -958,9 +995,17 @@ function inpatient_update_staff_animation(_staff) {
             _staff._owner_sitting = false;
         }
 
-        _staff.is_walking = true;
+        // ПАКЕТ №340: is_walking = true ТОЛЬКО при живом пути.
+        // Раньше флаг стоял всегда, из-за этого:
+        //   1) врач «дёргался» на месте — анимация ходьбы без пути;
+        //   2) inpatient_ensure_walk считал его «уже идущим» и не
+        //      перестраивал путь к стулу, если первый путь кончился
+        //      раньше цели.
+        var _has_path = (_staff.path_index != -1 && _staff.path_position < 1);
 
-        if (_staff.image_speed <= 0) {
+        _staff.is_walking = _has_path;
+
+        if (_has_path && _staff.image_speed <= 0) {
             _staff.image_speed = 1;
         }
     }
@@ -1857,6 +1902,9 @@ function inpatient_spawn_returning_owner(_ward) {
     _owner.my_pet = _ward.patient;
     _owner.registered = true;
     _owner.queue_purpose = "payment";
+    // ПАКЕТ №341: метка для obj_owner — не использовать прямую
+    // доводку и телепорт из going_to_exam, движением владеет палата.
+    _owner.inpatient_returning = true;
     _owner.payment_pending = true;
     _owner.payment_done = false;
     _owner.assigned_doctor = noone;
@@ -2338,11 +2386,16 @@ function inpatient_controller_step(_ward) {
                 _position_doctor.doctor_state == "inpatient_moving_to_chair"
                 && instance_exists(_ward.doctor_rest_point)
             ) {
-                inpatient_ensure_walk(
+                // ПАКЕТ №340: не удалось построить путь — сажаем всё
+                // равно (состояние at_chair сам ставит его в точку).
+                if (!inpatient_ensure_walk(
                     _position_doctor,
                     _ward.doctor_rest_point.x,
                     _ward.doctor_rest_point.y
-                );
+                )) {
+                    inpatient_stop_actor(_position_doctor);
+                    _position_doctor.doctor_state = "inpatient_at_chair";
+                }
             }
 
             if (
@@ -2822,11 +2875,16 @@ function inpatient_controller_step(_ward) {
             );
         }
         else if (_doctor.doctor_state == "inpatient_returning_to_chair") {
-            inpatient_ensure_walk(
+            // ПАКЕТ №340: путь не строится — возвращаем посадкой.
+            if (!inpatient_ensure_walk(
                 _doctor,
                 _ward.doctor_rest_point.x,
                 _ward.doctor_rest_point.y
-            );
+            )) {
+                inpatient_stop_actor(_doctor);
+                _doctor.doctor_state = "inpatient_at_chair";
+                _ward.ward_doctor = noone;
+            }
         }
 
         if (
@@ -3341,24 +3399,36 @@ function inpatient_controller_step(_ward) {
         }
     }
 
+    // ПАКЕТ №341: владелец идёт ТОЛЬКО маршрутом по сетке.
+    // Раньше здесь был move_towards_point — он вёл напрямую сквозь
+    // стены, а в going_to_exam срабатывал телепорт после трёх
+    // попыток. Со стороны это выглядело как «дошёл до входа и
+    // телепортировался в стационар».
     if (
         _ward.phase == "owner_returning"
         && instance_exists(_ward.returning_owner)
-        && _ward.returning_owner.path_index < 0
-        && point_distance(
-            _ward.returning_owner.x,
-            _ward.returning_owner.y,
+    ) {
+        if (!inpatient_ensure_walk(
+            _ward.returning_owner,
             _ward.owner_point.x,
             _ward.owner_point.y
-        ) > 14
-    ) {
-        with (_ward.returning_owner) {
-            move_towards_point(
-                _ward.owner_point.x,
-                _ward.owner_point.y,
-                p_move_speed
-            );
-            is_walking = true;
+        )) {
+            // Путь не строится вообще. Ждём до 90 секунд (обычно
+            // мешающий персонаж отходит и путь появляется), потом
+            // аварийно ставим в точку, чтобы приём не завис навечно.
+            if (!variable_instance_exists(_ward, "owner_stuck_timer")) {
+                _ward.owner_stuck_timer = 0;
+            }
+
+            _ward.owner_stuck_timer += 1;
+
+            if (_ward.owner_stuck_timer >= game_get_speed(gamespeed_fps) * 90) {
+                _ward.returning_owner.x = _ward.owner_point.x;
+                _ward.returning_owner.y = _ward.owner_point.y;
+            }
+        }
+        else if (variable_instance_exists(_ward, "owner_stuck_timer")) {
+            _ward.owner_stuck_timer = 0;
         }
     }
 
