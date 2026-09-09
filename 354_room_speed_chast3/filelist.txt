@@ -1,0 +1,10 @@
+par_animals_Create_0_FULL.gml
+par_animals_Step_0_FULL.gml
+par_staff_Create_0_FULL.gml
+par_staff_Step_1_FULL.gml
+par_staff_Step_2_FULL.gml
+admin_xp_needed_FULL.gml
+case_apply_treatment_action_FULL.gml
+clinic_cleanliness_system_FULL.gml
+doctor_add_therapy_xp_FULL.gml
+inpatient_system_FULL.gml

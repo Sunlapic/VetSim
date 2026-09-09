@@ -1,0 +1,11 @@
+obj_Render_Step_0_FULL.gml
+obj_UI_HUD_Step_1_FULL.gml
+obj_UI_Tablet_Create_0_FULL.gml
+obj_UI_Tablet_Draw_64_FULL.gml
+obj_cleanliness_controller_Create_0_FULL.gml
+obj_dog_puppy_Alarm_1_FULL.gml
+obj_dog_puppy_Create_0_FULL.gml
+obj_dog_puppy_Step_2_FULL.gml
+obj_float_text_Create_0_FULL.gml
+obj_floor_dirt_Create_0_FULL.gml
+obj_owner_Step_0_FULL.gml

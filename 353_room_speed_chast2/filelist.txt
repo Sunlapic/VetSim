@@ -1,0 +1,11 @@
+obj_player_Create_0_FULL.gml
+obj_player_Step_0_FULL.gml
+obj_speech_bubble_Create_0_FULL.gml
+obj_staff_admin_CleanUp_0_FULL.gml
+obj_staff_admin_Create_0_FULL.gml
+obj_staff_admin_Step_0_FULL.gml
+obj_staff_assistant_Create_0_FULL.gml
+obj_staff_assistant_Step_0_FULL.gml
+obj_staff_assistant_Step_2_FULL.gml
+obj_table_Create_0_FULL.gml
+obj_table_1_Create_0_FULL.gml
