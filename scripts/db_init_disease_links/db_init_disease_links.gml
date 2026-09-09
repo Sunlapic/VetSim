@@ -670,14 +670,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_tartar", symptom_id : "symptom_gum_redness", weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_tartar", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_tartar", diagnostic_id : "diag_dental_exam",   required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
-    // ПАКЕТ №299: чистка стала операцией под наркозом, поэтому повтор
-    // до выздоровления снят — все операции в проекте разовые
-    // (цистотомия, остеосинтез, удаление зуба). Иначе животное возили
-    // бы на наркоз снова и снова. Флаг повтора, выданный в пакете 298,
-    // перенесён на антисептическую обработку: она и добирает состояние
-    // до 100% амбулаторно, уже после операции.
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_tartar", action_id : "treat_dental_cleaning", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Ультразвуковая чистка (операционная).", repeat_until_recovered : false, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_tartar", action_id : "treat_antiseptic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Обработка дёсен после чистки.", repeat_until_recovered : true, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_tartar", action_id : "treat_dental_cleaning", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Ультразвуковая чистка.", repeat_until_recovered : true, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_tartar", skill_id : "skill_procedures", min_level : 3, importance : "main" });
 
     // ── ГИНГИВИТ ──
@@ -714,12 +707,8 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_symptoms, { disease_id : "disease_cystitis", symptom_id : "symptom_bloody_urine",  weight : 2, visible_on_start : false });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_cystitis", diagnostic_id : "diag_physical_exam", required_to_confirm : false, priority : 1, unlocks_reveal_level : 1 });
     array_push(global.med_db.disease_diagnostics, { disease_id : "disease_cystitis", diagnostic_id : "diag_urinalysis",    required_to_confirm : true,  priority : 2, unlocks_reveal_level : 2 });
-    // ПАКЕТ №299: цистит лечится антибиотиком и спазмолитиком.
-    // Уросептик убран из игры полностью. Антибиотик стал основным
-    // средством и повторяется до выздоровления, спазмолитик из
-    // необязательного стал обязательной частью курса.
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_antibiotic",    count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Антибиотик курсом.", repeat_until_recovered : true, per_visit_limit : 1 });
-    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_antispasmodic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Снимает спазм.", repeat_until_recovered : false, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_uroseptic",     count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Уросептик курсом.", repeat_until_recovered : true, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_cystitis", action_id : "treat_antispasmodic", count : 1, days : 1, reveal_level : 1, required : false, severity_or_condition : "any", notes : "Снимает спазм.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_cystitis", skill_id : "skill_therapy_diag", min_level : 4, importance : "main" });
 
     // ── МОЧЕКАМЕННАЯ БОЛЕЗНЬ ──
@@ -731,6 +720,7 @@ function db_init_disease_links() {
     array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_cystotomy", count : 1, days : 1, reveal_level : 3, required : true, severity_or_condition : "any", notes : "Операция: цистотомия (удаление камней).", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_antispasmodic", count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Снимает боль.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_diet_feed",     count : 1, days : 1, reveal_level : 1, required : true, severity_or_condition : "any", notes : "Спецдиета растворяет камни.", repeat_until_recovered : true, per_visit_limit : 1 });
+    array_push(global.med_db.disease_treatment, { disease_id : "disease_urolithiasis", action_id : "treat_uroseptic",    count : 1, days : 1, reveal_level : 2, required : false, severity_or_condition : "any", notes : "Профилактика инфекции.", repeat_until_recovered : false, per_visit_limit : 1 });
     array_push(global.med_db.disease_skills, { disease_id : "disease_urolithiasis", skill_id : "skill_therapy_diag", min_level : 6, importance : "main" });
 
     // ── ЗАПОР ──

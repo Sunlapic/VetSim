@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"finance_history_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"finance_history_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -128,13 +128,6 @@ switch (state) {
     break;
 
     case "going_to_exam":
-        // ПАКЕТ №341: владелец, пришедший забрать пациента из
-        // стационара, не доводится напрямую и не телепортируется —
-        // его ведёт контроллер палаты маршрутом по сетке.
-        var _is_returning = (
-            variable_instance_exists(id, "inpatient_returning")
-            && inpatient_returning
-        );
         // ═══════════════════════════════════════════════════════════
         // ПАКЕТ 283: ЗАВИСАНИЕ НА ПОДХОДЕ К СТОЛУ
         //
@@ -172,23 +165,18 @@ switch (state) {
             speed = 0;
             is_walking = false;
             exam_walk_timer = 0;
-
-            if (!_is_returning) state = "in_exam";
+            state = "in_exam";
             break;
         }
 
         // Путь уже закончился, а мы не дошли — доводим напрямую.
         // path_end() гасит path_index, и со следующего шага ведёт
         // штатный блок доводки из раздела 1.
-        if (!_is_returning && (path_index == -1 || path_position >= 1)) {
+        if (path_index == -1 || path_position >= 1) {
             path_end();
             is_walking = true;
             move_towards_point(exam_target_x, exam_target_y, p_move_speed);
         }
-
-        // ПАКЕТ №341: возвратника доводит палата — таймеры и телепорт
-        // после трёх попыток ему не нужны.
-        if (_is_returning) break;
 
         // ═══════════════════════════════════════════════════════════
         // ПАКЕТ №291: ВЛАДЕЛЕЦ ХОДИТ, А НЕ ЛЕТАЕТ

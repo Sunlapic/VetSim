@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"staff_salary_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"staff_salary_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

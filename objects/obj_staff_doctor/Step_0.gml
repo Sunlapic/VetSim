@@ -310,16 +310,17 @@ switch (doctor_state) {
                     state = "going_to_exam_floor";
                     path_end();
 
-                    if (mp_grid_path(global.ai_grid, my_path, x, y, exam_floor_x, exam_floor_y, true)) {
-                        path_set_kind(my_path, 1);
-                        path_start(my_path, p_move_speed, path_action_stop, true);
-                        is_walking = true;
-                    } else {
-                        x = exam_floor_x;
-                        y = exam_floor_y;
-                        state = "jumping_to_table";
-                        is_walking = false;
-                    }
+                    // ПАКЕТ №325: путь животного через animal_walk_to.
+                    //
+                    // Пакет 323 перевёл на сетку пути в inpatient_system
+                    // и operating_system, но пропустил три места, где
+                    // животное отправляют В КАБИНЕТ. Это одно из них.
+                    //
+                    // Здесь запасная ветка была даже хуже прямой линии:
+                    // при непостроенном пути животное ТЕЛЕПОРТИРОВАЛОСЬ
+                    // в точку у стола. Со стороны это и выглядит как
+                    // «прошло сквозь стену» — только мгновенно.
+                    animal_walk_to(id, exam_floor_x, exam_floor_y);
                 }
             }
 

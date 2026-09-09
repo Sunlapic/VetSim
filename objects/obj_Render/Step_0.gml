@@ -1144,8 +1144,10 @@ if (render_last_day != global.game_day) {
 
     if (script_exists(asset_get_index("clinic_network_daily_income"))) {
         clinic_network_daily_income();
-    }
-
+    }
+
+
+
     // ═══════════════════════════════════════════════════════════
     // ПАКЕТ №320: КТО ХОЧЕТ ПРИБАВКУ
     //

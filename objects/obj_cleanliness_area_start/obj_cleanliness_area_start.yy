@@ -29,7 +29,10 @@
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
-  "spriteId":null,
+  "spriteId":{
+    "name":"sprite_cleaning_start",
+    "path":"sprites/sprite_cleaning_start/sprite_cleaning_start.yy",
+  },
   "spriteMaskId":null,
   "visible":true,
 }

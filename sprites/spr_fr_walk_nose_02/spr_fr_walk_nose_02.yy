@@ -40,7 +40,7 @@
   "origin":9,
   "parent":{
     "name":"4_NOSE",
-    "path":"folders/SPRITES/FR_WALK/4_NOSE.yy",
+    "path":"folders/SPRITES/FR/4_NOSE.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"clinic_case_gate",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"clinic_case_gate",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

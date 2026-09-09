@@ -40,7 +40,7 @@
   "origin":9,
   "parent":{
     "name":"2_HAIR",
-    "path":"folders/SPRITES/B_WALK/2_HAIR.yy",
+    "path":"folders/SPRITES/B/2_HAIR.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

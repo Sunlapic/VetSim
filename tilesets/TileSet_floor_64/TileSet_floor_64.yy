@@ -12,8 +12,8 @@
   "out_tilehborder":2,
   "out_tilevborder":2,
   "parent":{
-    "name":"VetSim_v13((16_08)",
-    "path":"VetSim_v13((16_08).yyp",
+    "name":"VetSim_v18 (09_09)",
+    "path":"VetSim_v18 (09_09).yyp",
   },
   "resourceType":"GMTileSet",
   "resourceVersion":"2.0",

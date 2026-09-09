@@ -1,5 +1,5 @@
 /// Create obj_Render
-/// @description Инициализация проекта без readonly debug_mode и устаревшего room_speed.
+/// @description Инициализация проекта без readonly debug_mode и устаревшего game_get_speed(gamespeed_fps).
 ///
 /// ═══════════════════════════════════════════════════════════════
 /// ПАКЕТ №300: СОБЫТИЕ РАЗДЕЛЕНО НА ПРОГРЕСС И ОБСТАНОВКУ
@@ -34,7 +34,7 @@
 
 randomize();
 
-// Современная частота игры. Внутри Create используется вместо room_speed.
+// Современная частота игры. Внутри Create используется вместо game_get_speed(gamespeed_fps).
 var _game_fps = max(1, game_get_speed(gamespeed_fps));
 
 db_clients_init();

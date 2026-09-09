@@ -273,11 +273,7 @@ function hud_draw_clients_database(_hud) {
                 ui_text_fit_left(_list_x1 + 12, _list_y1 + 58, "В базе пока нет клиентов.", (_list_x2 - _list_x1) - 24, UI_FS_ROW);
             }
             else {
-                // Пакет №209: обрезка по области списка — нижняя карточка
-                // видна половинкой, видно, что список продолжается.
-                ui_clip_begin(_list_x1, _client_row_top - 4, _list_x2, _list_y2 - 4);
-
-                for (var _row = 0; _row < _client_visible + 1; _row++) {
+                for (var _row = 0; _row < _client_visible; _row++) {
                     var _entry_index = client_scroll + _row;
                     if (_entry_index >= array_length(client_entries)) break;
 
@@ -332,8 +328,6 @@ function hud_draw_clients_database(_hud) {
                     draw_set_color(_text_soft);
                     ui_text_row(_cell_x, _cell_y, 30, _pet_breed, _cell_w, UI_FS_ROW);
                 }
-
-                ui_clip_end();
             }
 
             hud_clients_scroll_hint(
@@ -582,14 +576,7 @@ function hud_draw_clients_database(_hud) {
                 array_length(client_visit_entries)
             );
 
-            ui_clip_begin(
-                client_history_x1,
-                _history_top - 4,
-                client_history_x2,
-                client_history_y2 - 6
-            );
-
-            for (var _history_row = 0; _history_row < _history_visible + 1; _history_row++) {
+            for (var _history_row = 0; _history_row < _history_visible; _history_row++) {
                 var _history_index = client_visit_scroll + _history_row;
                 if (_history_index >= array_length(client_visit_entries)) break;
 
@@ -615,8 +602,6 @@ function hud_draw_clients_database(_hud) {
                 ui_text_row(client_history_x1 + 24, _history_y1 + 36, 30, variable_struct_exists(_visit_record, "outcome_name_ru") ? string(_visit_record.outcome_name_ru) : "Приём завершён", _hist_w, UI_FS_ROW);
             }
 
-            ui_clip_end();
-
             return;
         }
 
@@ -633,9 +618,7 @@ function hud_draw_clients_database(_hud) {
             ui_text_fit_left(_list_x1 + 12, _list_y1 + 58, "Нет клиентов с повторным приёмом.", (_list_x2 - _list_x1) - 24, UI_FS_ROW);
         }
         else {
-            ui_clip_begin(_list_x1, _follow_top - 4, _list_x2, _list_y2 - 4);
-
-            for (var _follow_row = 0; _follow_row < _follow_visible + 1; _follow_row++) {
+            for (var _follow_row = 0; _follow_row < _follow_visible; _follow_row++) {
                 var _follow_index = followup_scroll + _follow_row;
                 if (_follow_index >= array_length(followup_entries)) break;
 
@@ -687,8 +670,6 @@ function hud_draw_clients_database(_hud) {
                     ui_text_row(_fcell_x, _fcell_y, 30, "ДЕНЬ " + string(_scheduled.scheduled_day) + " - " + hud_minute_to_clock(_scheduled.scheduled_minute), _fcell_w, UI_FS_ROW);
                 }
             }
-
-            ui_clip_end();
         }
 
         hud_clients_scroll_hint(

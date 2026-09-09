@@ -1,1 +1,0 @@
-exam_slot_id = 202;

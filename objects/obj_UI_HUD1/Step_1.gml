@@ -1,0 +1,1810 @@
+/// Begin Step obj_UI_HUD
+/// Пакет №136: списки (персонал/клиенты/склады) собираются только
+/// при открытой панели — убрана пустая покадровая работа.
+
+if (!visible) exit;
+
+// ─────────────────────────────────────────────
+// ПАКЕТ №69 (hotfix): СТРАХОВКА СПРАВОЧНИКА
+// Гарантирует, что переменные справочника существуют до первого чтения.
+// Это убирает ошибку «Variable handbook_open not set before reading»,
+// даже если Create ещё не заменён или файлы установлены в другом порядке.
+// ─────────────────────────────────────────────
+if (!variable_instance_exists(id, "handbook_open")) handbook_open = false;
+if (!variable_instance_exists(id, "handbook_close_x1")) handbook_close_x1 = 0;
+if (!variable_instance_exists(id, "handbook_close_y1")) handbook_close_y1 = 0;
+if (!variable_instance_exists(id, "handbook_close_x2")) handbook_close_x2 = 0;
+if (!variable_instance_exists(id, "handbook_close_y2")) handbook_close_y2 = 0;
+if (!variable_instance_exists(id, "handbook_panel_x1")) handbook_panel_x1 = 0;
+if (!variable_instance_exists(id, "handbook_panel_y1")) handbook_panel_y1 = 0;
+if (!variable_instance_exists(id, "handbook_panel_x2")) handbook_panel_x2 = 0;
+if (!variable_instance_exists(id, "handbook_panel_y2")) handbook_panel_y2 = 0;
+if (!variable_instance_exists(id, "handbook_x1")) handbook_x1 = 0;
+if (!variable_instance_exists(id, "handbook_y1")) handbook_y1 = 0;
+if (!variable_instance_exists(id, "handbook_x2")) handbook_x2 = 0;
+if (!variable_instance_exists(id, "handbook_y2")) handbook_y2 = 0;
+if (!variable_instance_exists(id, "hover_handbook")) hover_handbook = false;
+if (!variable_instance_exists(id, "hover_handbook_close")) hover_handbook_close = false;
+
+// ── ПАКЕТ №280: КАРТА КЛИНИК ──
+if (!variable_instance_exists(id, "map_panel_open")) map_panel_open = false;
+if (!variable_instance_exists(id, "map_panel_x1")) map_panel_x1 = 0;
+if (!variable_instance_exists(id, "map_panel_y1")) map_panel_y1 = 0;
+if (!variable_instance_exists(id, "map_panel_x2")) map_panel_x2 = 0;
+if (!variable_instance_exists(id, "map_panel_y2")) map_panel_y2 = 0;
+if (!variable_instance_exists(id, "map_btn_x1")) map_btn_x1 = 0;
+if (!variable_instance_exists(id, "map_btn_y1")) map_btn_y1 = 0;
+if (!variable_instance_exists(id, "map_btn_x2")) map_btn_x2 = 0;
+if (!variable_instance_exists(id, "map_btn_y2")) map_btn_y2 = 0;
+if (!variable_instance_exists(id, "map_close_x1")) map_close_x1 = 0;
+if (!variable_instance_exists(id, "map_close_y1")) map_close_y1 = 0;
+if (!variable_instance_exists(id, "map_close_x2")) map_close_x2 = 0;
+if (!variable_instance_exists(id, "map_close_y2")) map_close_y2 = 0;
+if (!variable_instance_exists(id, "hover_map")) hover_map = false;
+if (!variable_instance_exists(id, "hover_map_close")) hover_map_close = false;
+if (!variable_instance_exists(id, "hover_map_building")) hover_map_building = -1;
+if (!variable_instance_exists(id, "hover_map_main")) hover_map_main = false;
+if (!variable_instance_exists(id, "hover_map_sell")) hover_map_sell = false;
+if (!variable_instance_exists(id, "hover_map_close_card")) hover_map_close_card = false;
+if (!variable_instance_exists(id, "map_card_clinic_id")) map_card_clinic_id = 0;
+if (!variable_instance_exists(id, "map_confirm_sell")) map_confirm_sell = false;
+if (!variable_instance_exists(id, "handbook_row_hover")) handbook_row_hover = -1;
+if (!variable_instance_exists(id, "handbook_scroll")) handbook_scroll = 0;
+if (!variable_instance_exists(id, "selected_handbook_disease")) selected_handbook_disease = "";
+
+var _gw = display_get_gui_width();
+var _gh = display_get_gui_height();
+var _mx = device_mouse_x_to_gui(0);
+var _my = device_mouse_y_to_gui(0);
+
+// ─────────────────────────────────────────────
+// ГАРАНТИЯ СУЩЕСТВОВАНИЯ ГЛОБАЛЬНЫХ БАЗ
+// ─────────────────────────────────────────────
+if (!variable_global_exists("owner_db")) global.owner_db = {};
+if (!variable_global_exists("pet_db")) global.pet_db = {};
+if (!variable_global_exists("visit_db")) global.visit_db = {};
+
+if (!variable_global_exists("owner_list")) global.owner_list = [];
+if (!variable_global_exists("pet_list")) global.pet_list = [];
+if (!variable_global_exists("visit_list")) global.visit_list = [];
+if (!variable_global_exists("scheduled_visits")) global.scheduled_visits = [];
+
+if (!variable_global_exists("item_db")) global.item_db = {};
+if (!variable_global_exists("item_ids")) global.item_ids = [];
+if (!variable_global_exists("inventory_main")) global.inventory_main = {};
+if (!variable_global_exists("storage_buy_batch")) global.storage_buy_batch = 5;
+
+// ─────────────────────────────────────────────
+// ЧИСТИМ ССЫЛКИ
+// ─────────────────────────────────────────────
+if (!instance_exists(global.current_candidate)) {
+    global.current_candidate = noone;
+}
+
+if (!instance_exists(global.selected_candidate)) {
+    global.selected_candidate = noone;
+}
+
+if (!instance_exists(selected_staff_id)) {
+    selected_staff_id = noone;
+}
+
+if (!instance_exists(fire_confirm_target)) {
+    fire_confirm_target = noone;
+    fire_confirm_open = false;
+}
+
+if (global.selected_candidate == noone && instance_exists(global.current_candidate)) {
+    if (global.current_candidate.candidate_state == "waiting_offer") {
+        global.selected_candidate = global.current_candidate;
+    }
+}
+
+if (hiring_panel_open && !instance_exists(global.selected_candidate) && !instance_exists(global.current_candidate)) {
+    hiring_panel_open = false;
+}
+
+// ─────────────────────────────────────────────
+if (staff_panel_open) {
+
+// СОБИРАЕМ СПИСОК ПЕРСОНАЛА
+// ─────────────────────────────────────────────
+staff_entries = [];
+
+if (instance_exists(obj_player)) {
+    array_push(staff_entries, instance_find(obj_player, 0));
+}
+
+with (obj_staff_admin) {
+    array_push(other.staff_entries, id);
+}
+
+with (obj_staff_doctor) {
+    array_push(other.staff_entries, id);
+}
+
+with (obj_staff_assistant) {
+    array_push(other.staff_entries, id);
+}
+
+if (array_length(staff_entries) > 0) {
+    if (!instance_exists(selected_staff_id)) {
+        selected_staff_id = staff_entries[0];
+    }
+} else {
+    selected_staff_id = noone;
+}
+
+// Пакет №136: конец блока «список персонала только при staff_panel_open»
+}
+
+
+// Пакет №136: списки клиентов и складов собираем только когда открыта
+// соответствующая панель (иначе — пустая работа каждый кадр).
+if (clients_panel_open || clinic_panel_open) {
+
+// СОБИРАЕМ СПИСОК КЛИЕНТОВ ИЗ БАЗЫ
+// ─────────────────────────────────────────────
+client_entries = [];
+followup_entries = [];
+client_visit_entries = [];
+
+// ─────────────────────────────────────────────
+// СОБИРАЕМ СПИСОК СКЛАДОВ
+// ─────────────────────────────────────────────
+storage_scope_entries = [];
+
+var _main_inst = noone;
+with (obj_storage_main) { _main_inst = id; break; }
+array_push(storage_scope_entries, {
+    scope_id   : "main",
+    label_ru   : "Основной склад",
+    cabinet_id : _main_inst
+});
+
+// Собираем только шкафы с корректным slot_id
+var _cab_list = [];
+with (obj_storage_cabinet) {
+    if (variable_instance_exists(id, "exam_slot_id") && exam_slot_id > 0) {
+        array_push(_cab_list, { inst: id, slot: exam_slot_id });
+    }
+}
+// Сортировка по slot (1, 2, 3)
+for (var _a = 0; _a < array_length(_cab_list); _a++) {
+    for (var _b = _a + 1; _b < array_length(_cab_list); _b++) {
+        if (_cab_list[_b].slot < _cab_list[_a].slot) {
+            var _tmp = _cab_list[_a];
+            _cab_list[_a] = _cab_list[_b];
+            _cab_list[_b] = _tmp;
+        }
+    }
+}
+// Проверка дублей слотов — чтобы при расстановке двух шкафов на один слот
+// игра в лог писала предупреждение и ты видел ошибку
+var _used_slots = [];
+for (var _k = 0; _k < array_length(_cab_list); _k++) {
+    var _cinst = _cab_list[_k].inst;
+    var _cslot = _cab_list[_k].slot;
+    var _clbl  = "Шкаф кабинета " + string(_cslot);
+    if (instance_exists(_cinst) && variable_instance_exists(_cinst, "storage_name_ru") && _cinst.storage_name_ru != "") {
+        _clbl = _cinst.storage_name_ru;
+    }
+    if (array_contains(_used_slots, _cslot) && global.debug_mode) {
+        show_debug_message("[CABINET WARNING] Два шкафа имеют одинаковый exam_slot_id = " + string(_cslot) + "! Проверь расстановку в Room Editor.");
+        _clbl = "[ДУБЛЬ] " + _clbl;
+    }
+    array_push(_used_slots, _cslot);
+    array_push(storage_scope_entries, {
+        scope_id   : "cab_" + string(_cinst),
+        label_ru   : _clbl,
+        cabinet_id : _cinst
+    });
+}
+
+// Проверяем выбранный склад
+var _storage_selected_ok = false;
+
+for (var _ss = 0; _ss < array_length(storage_scope_entries); _ss++) {
+    if (storage_scope_entries[_ss].scope_id == storage_scope_selected) {
+        _storage_selected_ok = true;
+        break;
+    }
+}
+
+if (!_storage_selected_ok) {
+    storage_scope_selected = "main";
+}
+
+var _query = string_lower(client_search_text);
+
+// ВСЕ КЛИЕНТЫ
+for (var _owner_i = 0; _owner_i < array_length(global.owner_list); _owner_i++) {
+    var _owner_id = global.owner_list[_owner_i];
+    if (!variable_struct_exists(global.owner_db, _owner_id)) continue;
+
+    var _owner_ref = variable_struct_get(global.owner_db, _owner_id);
+    var _owner_name = variable_struct_exists(_owner_ref, "full_name") ? string(_owner_ref.full_name) : "Клиент";
+
+    var _pet_ids = [];
+    if (variable_struct_exists(_owner_ref, "pet_ids")) {
+        _pet_ids = _owner_ref.pet_ids;
+    }
+
+    if (array_length(_pet_ids) > 0) {
+        for (var _pet_i = 0; _pet_i < array_length(_pet_ids); _pet_i++) {
+            var _pet_id = _pet_ids[_pet_i];
+            if (!variable_struct_exists(global.pet_db, _pet_id)) continue;
+
+            var _pet_ref = variable_struct_get(global.pet_db, _pet_id);
+            var _pet_name = variable_struct_exists(_pet_ref, "name") ? string(_pet_ref.name) : "";
+            var _pet_breed = variable_struct_exists(_pet_ref, "breed") ? string(_pet_ref.breed) : "";
+
+            var _hay = string_lower(_owner_name + " " + _pet_name + " " + _pet_breed);
+
+            if (_query == "" || string_pos(_query, _hay) > 0) {
+                array_push(client_entries, {
+                    owner_id : _owner_id,
+                    pet_id : _pet_id
+                });
+            }
+        }
+    } else {
+        var _hay2 = string_lower(_owner_name);
+
+        if (_query == "" || string_pos(_query, _hay2) > 0) {
+            array_push(client_entries, {
+                owner_id : _owner_id,
+                pet_id : ""
+            });
+        }
+    }
+}
+
+// ПОВТОРНЫЕ ПРИЁМЫ
+for (var _sv_i = 0; _sv_i < array_length(global.scheduled_visits); _sv_i++) {
+    var _sv = global.scheduled_visits[_sv_i];
+
+    if (_sv.status != "pending" && _sv.status != "spawned") continue;
+    if (!variable_struct_exists(global.owner_db, _sv.owner_id)) continue;
+    if (!variable_struct_exists(global.pet_db, _sv.pet_id)) continue;
+
+    var _owner_ref2 = variable_struct_get(global.owner_db, _sv.owner_id);
+    var _pet_ref2 = variable_struct_get(global.pet_db, _sv.pet_id);
+
+    var _owner_name2 = variable_struct_exists(_owner_ref2, "full_name") ? string(_owner_ref2.full_name) : "Клиент";
+    var _pet_name2 = variable_struct_exists(_pet_ref2, "name") ? string(_pet_ref2.name) : "";
+    var _pet_breed2 = variable_struct_exists(_pet_ref2, "breed") ? string(_pet_ref2.breed) : "";
+    var _visit_type2 = variable_struct_exists(_sv, "visit_type_name_ru") ? string(_sv.visit_type_name_ru) : "Повторный приём";
+    var _reason2 = variable_struct_exists(_sv, "reason") ? string(_sv.reason) : "";
+
+    var _hay3 = string_lower(_owner_name2 + " " + _pet_name2 + " " + _pet_breed2 + " " + _visit_type2 + " " + _reason2);
+
+    if (_query == "" || string_pos(_query, _hay3) > 0) {
+        array_push(followup_entries, {
+            scheduled_visit_id : _sv.scheduled_visit_id,
+            owner_id : _sv.owner_id,
+            pet_id : _sv.pet_id
+        });
+    }
+}
+
+// ─────────────────────────────────────────────
+// ПРОВЕРКА ВЫБРАННОГО КЛИЕНТА
+// ─────────────────────────────────────────────
+var _client_selected_ok = false;
+
+for (var _ci = 0; _ci < array_length(client_entries); _ci++) {
+    if (client_entries[_ci].owner_id == selected_client_owner_id
+    && client_entries[_ci].pet_id == selected_client_pet_id) {
+        _client_selected_ok = true;
+        break;
+    }
+}
+
+if (!_client_selected_ok) {
+    if (array_length(client_entries) > 0) {
+        selected_client_owner_id = client_entries[0].owner_id;
+        selected_client_pet_id = client_entries[0].pet_id;
+    } else {
+        selected_client_owner_id = "";
+        selected_client_pet_id = "";
+    }
+
+    selected_client_visit_id = "";
+    client_visit_scroll = 0;
+}
+
+// ─────────────────────────────────────────────
+// ПРОВЕРКА ВЫБРАННОГО FOLLOW-UP
+// ─────────────────────────────────────────────
+var _followup_selected_ok = false;
+
+for (var _fi = 0; _fi < array_length(followup_entries); _fi++) {
+    if (followup_entries[_fi].scheduled_visit_id == selected_followup_id) {
+        _followup_selected_ok = true;
+        break;
+    }
+}
+
+if (!_followup_selected_ok) {
+    if (array_length(followup_entries) > 0) {
+        selected_followup_id = followup_entries[0].scheduled_visit_id;
+    } else {
+        selected_followup_id = "";
+    }
+}
+
+// ─────────────────────────────────────────────
+// СОБИРАЕМ ИСТОРИЮ ВИЗИТОВ ДЛЯ ВЫБРАННОГО КЛИЕНТА
+// ─────────────────────────────────────────────
+if (selected_client_owner_id != "") {
+    if (selected_client_pet_id != "" && variable_struct_exists(global.pet_db, selected_client_pet_id)) {
+        var _pet_data = variable_struct_get(global.pet_db, selected_client_pet_id);
+
+        if (variable_struct_exists(_pet_data, "visit_history")) {
+            for (var _vh = 0; _vh < array_length(_pet_data.visit_history); _vh++) {
+                var _visit_id = _pet_data.visit_history[_vh];
+
+                if (variable_struct_exists(global.visit_db, _visit_id)) {
+                    array_push(client_visit_entries, {
+                        visit_id : _visit_id
+                    });
+                }
+            }
+        }
+    } else {
+        for (var _vi = 0; _vi < array_length(global.visit_list); _vi++) {
+            var _visit_id2 = global.visit_list[_vi];
+            if (!variable_struct_exists(global.visit_db, _visit_id2)) continue;
+
+            var _visit_ref = variable_struct_get(global.visit_db, _visit_id2);
+
+            if (_visit_ref.owner_id == selected_client_owner_id) {
+                array_push(client_visit_entries, {
+                    visit_id : _visit_id2
+                });
+            }
+        }
+    }
+}
+
+// Сортировка истории по убыванию времени
+for (var _a = 0; _a < array_length(client_visit_entries) - 1; _a++) {
+    for (var _b = _a + 1; _b < array_length(client_visit_entries); _b++) {
+        var _va = variable_struct_get(global.visit_db, client_visit_entries[_a].visit_id);
+        var _vb = variable_struct_get(global.visit_db, client_visit_entries[_b].visit_id);
+
+        var _key_a = _va.visit_day * 1440 + _va.visit_hour * 60 + _va.visit_minute;
+        var _key_b = _vb.visit_day * 1440 + _vb.visit_hour * 60 + _vb.visit_minute;
+
+        if (_key_b > _key_a) {
+            var _tmp = client_visit_entries[_a];
+            client_visit_entries[_a] = client_visit_entries[_b];
+            client_visit_entries[_b] = _tmp;
+        }
+    }
+}
+
+// Проверка выбранного визита
+var _visit_selected_ok = false;
+
+for (var _cv = 0; _cv < array_length(client_visit_entries); _cv++) {
+    if (client_visit_entries[_cv].visit_id == selected_client_visit_id) {
+        _visit_selected_ok = true;
+        break;
+    }
+}
+
+if (!_visit_selected_ok) {
+    if (array_length(client_visit_entries) > 0) {
+        selected_client_visit_id = client_visit_entries[0].visit_id;
+    } else {
+        selected_client_visit_id = "";
+    }
+
+    client_visit_scroll = 0;
+}
+
+// Пакет №136: конец блока «списки только при открытой панели»
+}
+
+// ─────────────────────────────────────────────
+// ВЕРХНЯЯ ПАНЕЛЬ
+// ─────────────────────────────────────────────
+topbar_x1 = hud_margin;
+topbar_y1 = hud_margin;
+topbar_x2 = _gw - hud_margin;
+topbar_y2 = hud_margin + hud_top_h;
+
+// ─────────────────────────────────────────────
+// НИЖНЯЯ ПАНЕЛЬ
+// ─────────────────────────────────────────────
+bottombar_x1 = hud_margin;
+bottombar_y1 = _gh - hud_margin - bottombar_h;
+bottombar_x2 = _gw - hud_margin;
+bottombar_y2 = _gh - hud_margin;
+
+// Главная рабочая зона.
+// Пакет №181: единый прямоугольник для всех пяти панелей нижнего меню.
+var _std_panel = ui_panel_rect();
+main_panel_x1 = _std_panel.x1;
+main_panel_y1 = _std_panel.y1;
+main_panel_x2 = _std_panel.x2;
+main_panel_y2 = _std_panel.y2;
+
+// ─────────────────────────────────────────────
+// ПАНЕЛИ
+// ─────────────────────────────────────────────
+staff_panel_x1 = main_panel_x1;
+staff_panel_y1 = main_panel_y1;
+staff_panel_x2 = main_panel_x2;
+staff_panel_y2 = main_panel_y2;
+
+candidate_x1 = main_panel_x1 + 40;
+candidate_y1 = main_panel_y1 + 10;
+candidate_x2 = main_panel_x2 - 40;
+candidate_y2 = main_panel_y2 - 10;
+
+clients_panel_x1 = main_panel_x1;
+clients_panel_y1 = main_panel_y1;
+clients_panel_x2 = main_panel_x2;
+clients_panel_y2 = main_panel_y2;
+
+// Панель справочника (пакет №69)
+handbook_panel_x1 = main_panel_x1;
+handbook_panel_y1 = main_panel_y1;
+handbook_panel_x2 = main_panel_x2;
+handbook_panel_y2 = main_panel_y2;
+
+// Пакет №194: крестик справочника такого же размера и на том же месте,
+// что и во всех остальных окнах нижнего меню (был мелкий, 28 пикселей).
+var _handbook_close_rect = ui_close_button_rect(
+    handbook_panel_x1,
+    handbook_panel_y1,
+    handbook_panel_x2,
+    handbook_panel_y2
+);
+
+handbook_close_x1 = _handbook_close_rect.x1;
+handbook_close_y1 = _handbook_close_rect.y1;
+handbook_close_x2 = _handbook_close_rect.x2;
+handbook_close_y2 = _handbook_close_rect.y2;
+
+// ── ПАКЕТ №280: ПАНЕЛЬ КАРТЫ ──
+// Та же область, что у справочника: карта открывается там, где игрок
+// привык видеть окна нижнего меню.
+map_panel_x1 = main_panel_x1;
+map_panel_y1 = main_panel_y1;
+map_panel_x2 = main_panel_x2;
+map_panel_y2 = main_panel_y2;
+
+var _map_close_rect = ui_close_button_rect(
+    map_panel_x1,
+    map_panel_y1,
+    map_panel_x2,
+    map_panel_y2
+);
+
+map_close_x1 = _map_close_rect.x1;
+map_close_y1 = _map_close_rect.y1;
+map_close_x2 = _map_close_rect.x2;
+map_close_y2 = _map_close_rect.y2;
+
+// Подвкладки клиники
+// Пакет №180: размеры вкладок берутся из UI-кита — один стиль во всей игре.
+clinic_tab_clinic_x1 = ui_tab_x1(main_panel_x1 + 26, 0);
+clinic_tab_clinic_y1 = main_panel_y1 + 22;
+clinic_tab_clinic_x2 = ui_tab_x2(main_panel_x1 + 26, 0);
+clinic_tab_clinic_y2 = clinic_tab_clinic_y1 + UI_TAB_H;
+
+clinic_tab_storage_x1 = ui_tab_x1(main_panel_x1 + 26, 1);
+clinic_tab_storage_y1 = clinic_tab_clinic_y1;
+clinic_tab_storage_x2 = ui_tab_x2(main_panel_x1 + 26, 1);
+clinic_tab_storage_y2 = clinic_tab_storage_y1 + UI_TAB_H;
+
+// Подвкладки клиентов
+// Пакет №180: тот же размер, что у вкладок КЛИНИКИ.
+clients_tab_all_x1 = ui_tab_x1(clients_panel_x1 + 26, 0);
+clients_tab_all_y1 = clients_panel_y1 + 22;
+clients_tab_all_x2 = ui_tab_x2(clients_panel_x1 + 26, 0);
+clients_tab_all_y2 = clients_tab_all_y1 + UI_TAB_H;
+
+clients_tab_followup_x1 = ui_tab_x1(clients_panel_x1 + 26, 1);
+clients_tab_followup_y1 = clients_tab_all_y1;
+clients_tab_followup_x2 = ui_tab_x2(clients_panel_x1 + 26, 1);
+clients_tab_followup_y2 = clients_tab_followup_y1 + UI_TAB_H;
+
+// Поле поиска
+client_search_x1 = clients_panel_x1 + 26;
+client_search_y1 = clients_tab_all_y2 + 10;
+client_search_x2 = client_search_x1 + 360;
+client_search_y2 = client_search_y1 + 34;
+
+client_clear_x2 = client_search_x2 - 6;
+client_clear_x1 = client_clear_x2 - 24;
+client_clear_y1 = client_search_y1 + 5;
+client_clear_y2 = client_clear_y1 + 24;
+
+// ─────────────────────────────────────────────
+// КНОПКИ НИЖНЕЙ ПАНЕЛИ
+// ─────────────────────────────────────────────
+// Пакет №199: пять кнопок занимают ВСЮ нижнюю панель. Ширина считается
+// от панели, а не берётся фиксированной (было 180), высота — почти во всю
+// полосу. На телефоне по такой кнопке промахнуться трудно.
+// Пакет №280: кнопок стало ШЕСТЬ — добавилась «КАРТА». Шесть кнопок и
+// пять зазоров между ними. Промежуток уменьшен с 14 до 11: иначе на
+// узком экране подписи начинают ужиматься.
+var _menu_side_pad = 16;
+var _menu_gap = 11;
+var _menu_area_w = (bottombar_x2 - bottombar_x1) - _menu_side_pad * 2;
+var _menu_btn_w = (_menu_area_w - _menu_gap * 5) / 6;
+var _menu_btn_h = max(52, (bottombar_y2 - bottombar_y1) - 14);
+var _menu_x = bottombar_x1 + _menu_side_pad;
+var _menu_y = bottombar_y1 + ((bottombar_y2 - bottombar_y1) - _menu_btn_h) * 0.5;
+
+// Кнопки идут одна за другой, каждая своей ширины — без дырок по краям.
+clinic_x1 = _menu_x;
+clinic_y1 = _menu_y;
+clinic_x2 = clinic_x1 + _menu_btn_w;
+clinic_y2 = clinic_y1 + _menu_btn_h;
+
+clients_x1 = clinic_x2 + _menu_gap;
+clients_y1 = _menu_y;
+clients_x2 = clients_x1 + _menu_btn_w;
+clients_y2 = clients_y1 + _menu_btn_h;
+
+staff_x1 = clients_x2 + _menu_gap;
+staff_y1 = _menu_y;
+staff_x2 = staff_x1 + _menu_btn_w;
+staff_y2 = staff_y1 + _menu_btn_h;
+
+finance_x1 = staff_x2 + _menu_gap;
+finance_y1 = _menu_y;
+finance_x2 = finance_x1 + _menu_btn_w;
+finance_y2 = finance_y1 + _menu_btn_h;
+
+handbook_x1 = finance_x2 + _menu_gap;
+handbook_y1 = _menu_y;
+handbook_x2 = handbook_x1 + _menu_btn_w;
+handbook_y2 = handbook_y1 + _menu_btn_h;
+
+// Пакет №280: шестая кнопка — КАРТА.
+map_btn_x1 = handbook_x2 + _menu_gap;
+map_btn_y1 = _menu_y;
+map_btn_x2 = map_btn_x1 + _menu_btn_w;
+map_btn_y2 = map_btn_y1 + _menu_btn_h;
+
+// ─────────────────────────────────────────────
+// ВЕРХНИЕ КНОПКИ ВРЕМЕНИ
+// ─────────────────────────────────────────────
+var _group_right = topbar_x2 - 18;
+// Пакет №146: кнопки по центру более высокой панели.
+var _group_y = topbar_y1 + round((topbar_y2 - topbar_y1 - btn_h) * 0.5);
+
+speed4_x1 = _group_right - btn_w;
+speed4_y1 = _group_y;
+speed4_x2 = speed4_x1 + btn_w;
+speed4_y2 = speed4_y1 + btn_h;
+
+speed2_x1 = speed4_x1 - btn_gap - btn_w;
+speed2_y1 = _group_y;
+speed2_x2 = speed2_x1 + btn_w;
+speed2_y2 = speed2_y1 + btn_h;
+
+speed1_x1 = speed2_x1 - btn_gap - btn_w;
+speed1_y1 = _group_y;
+speed1_x2 = speed1_x1 + btn_w;
+speed1_y2 = speed1_y1 + btn_h;
+
+pause_x1 = speed1_x1 - btn_gap - btn_w;
+pause_y1 = _group_y;
+pause_x2 = pause_x1 + btn_w;
+pause_y2 = pause_y1 + btn_h;
+
+// ─────────────────────────────────────────────
+// ПАКЕТ 271: КНОПКА-ШЕСТЕРЁНКА (меню игры)
+//
+// Ставится левее паузы, в свободном месте между табличкой ШТАТ и
+// кнопками скорости. Шире обычной кнопки времени и выше — это
+// главная кнопка меню, и палец должен попадать уверенно.
+// ─────────────────────────────────────────────
+// ПРАВКА: кнопка увеличена примерно втрое по площади и стала
+// квадратной. Было 55x32 (btn_w*1.25 на btn_h+6) — на телефоне это
+// был крошечный прямоугольник, палец мазал. Стало 84x84: высота
+// почти во всю панель (106 px, поля по 11), ширина в полтора раза
+// больше прежней. Площадь выросла с 1760 до 7056 px².
+//
+// Квадрат выбран потому, что иконка круглая: в прямоугольнике
+// шестерёнку ограничивала меньшая сторона, и половина кнопки
+// оставалась пустой.
+var _gear_h = min(84, topbar_y2 - topbar_y1 - 22);
+var _gear_w = _gear_h;
+
+gear_x1 = pause_x1 - btn_gap * 3 - _gear_w;
+gear_y1 = topbar_y1 + round((topbar_y2 - topbar_y1 - _gear_h) * 0.5);
+gear_x2 = gear_x1 + _gear_w;
+gear_y2 = gear_y1 + _gear_h;
+
+// ─────────────────────────────────────────────
+// ПАКЕТ 271: ОКНО МЕНЮ ИГРЫ
+//
+// Крупное окно по центру экрана. Размеры считаются от экрана, а не
+// заданы числами: игра телефонная, разрешения разные.
+// ─────────────────────────────────────────────
+var _menu_w = min(_gw - 60, 620);
+var _menu_h = min(_gh - 80, 720);
+
+game_menu_x1 = round((_gw - _menu_w) * 0.5);
+game_menu_y1 = round((_gh - _menu_h) * 0.5);
+game_menu_x2 = game_menu_x1 + _menu_w;
+game_menu_y2 = game_menu_y1 + _menu_h;
+
+// Кнопки главного меню: крупные, во всю ширину окна.
+var _mb_pad = 26;
+var _mb_h = 74;                       // выше UI_BUTTON_H (64) — под палец
+var _mb_gap = 16;
+var _mb_x1 = game_menu_x1 + _mb_pad;
+var _mb_x2 = game_menu_x2 - _mb_pad;
+var _mb_y = game_menu_y1 + 96;        // ниже заголовка окна
+
+menu_save_x1 = _mb_x1;  menu_save_y1 = _mb_y;
+menu_save_x2 = _mb_x2;  menu_save_y2 = _mb_y + _mb_h;
+
+_mb_y += _mb_h + _mb_gap;
+menu_load_x1 = _mb_x1;  menu_load_y1 = _mb_y;
+menu_load_x2 = _mb_x2;  menu_load_y2 = _mb_y + _mb_h;
+
+_mb_y += _mb_h + _mb_gap;
+menu_new_x1 = _mb_x1;   menu_new_y1 = _mb_y;
+menu_new_x2 = _mb_x2;   menu_new_y2 = _mb_y + _mb_h;
+
+// ЗАКРЫТЬ — всегда у нижнего края окна.
+menu_close_x1 = _mb_x1;
+menu_close_y2 = game_menu_y2 - _mb_pad;
+menu_close_y1 = menu_close_y2 - _mb_h;
+menu_close_x2 = _mb_x2;
+
+// ─────────────────────────────────────────────
+// СТРОКИ СПИСКА СЛОТОВ
+// Прямоугольники считаем всегда, чтобы клики и отрисовка брали
+// одни и те же числа из одного места.
+// ─────────────────────────────────────────────
+menu_slot_rects = [];
+
+// ПАКЕТ 273, БАГ №1: прямоугольники строились по menu_slot_entries,
+// которые могли остаться от ПРЕДЫДУЩЕГО режима меню.
+//
+// Список читается один раз при нажатии СОХРАНИТЬ или ЗАГРУЗИТЬ, и это
+// РАЗНЫЕ списки: сохранение отдаёт 5 ручных слотов, загрузка — 8
+// (3 авто + 5 ручных). Если сначала открыть сохранение, а потом
+// загрузку, то один кадр строки уже рисуются по «загрузочной»
+// геометрии, а данные берутся ещё из «сохраняющего» списка. Клик по
+// третьей строке (Авто 3) попадал в menu_slot_entries[2] — третий
+// РУЧНОЙ слот. Отсюда «жму День 3, пишет День 1».
+//
+// Лечится тем, что строки строятся только когда список действительно
+// прочитан для текущего режима.
+if (!variable_instance_exists(id, "menu_slot_mode")) menu_slot_mode = "";
+
+if ((game_menu_mode == "save" || game_menu_mode == "load")
+    && menu_slot_mode == game_menu_mode) {
+
+    var _rows = array_length(menu_slot_entries);
+
+    // На низком экране (720) при отступе 96 и зазоре 8 восьмой слот
+    // не помещался. Поджимаем шапку и зазор, когда записей много.
+    var _row_gap = (_rows > 6) ? 6 : 8;
+    var _row_top = game_menu_y1 + ((_rows > 6) ? 84 : 96);
+    var _row_bottom = menu_close_y1 - 10;
+
+    // ПАКЕТ 273, БАГ №2: восемь слотов не влезали в окно.
+    // Было жёстко _row_h = 66, и лишние строки молча обрезались через
+    // break — два последних ручных слота становились невидимыми и
+    // недоступными. Их нельзя было ни загрузить, ни перезаписать.
+    //
+    // Высота строки подгоняется под число записей, но не мельче 52 px:
+    // это минимум под палец, ниже опускаться нельзя. Если и при 52 px
+    // всё не влезает (очень низкий экран), окно меню растягивается —
+    // список слотов важнее красивых полей.
+    var _row_h = 66;
+
+    if (_rows > 0) {
+        var _need = 52 * _rows + _row_gap * (_rows - 1);
+        var _have = _row_bottom - _row_top;
+
+        // Не хватает даже на минимальную высоту — опускаем кнопку
+        // ЗАКРЫТЬ ниже и растим окно, чтобы поместились все слоты.
+        if (_have < _need) {
+            var _grow = _need - _have;
+
+            game_menu_y2 += _grow;
+            menu_close_y1 += _grow;
+            menu_close_y2 += _grow;
+
+            _row_bottom += _grow;
+        }
+
+        var _avail = (_row_bottom - _row_top) - _row_gap * (_rows - 1);
+        _row_h = clamp(floor(_avail / _rows), 52, 66);
+    }
+
+    var _row_y = _row_top;
+
+    for (var _r = 0; _r < _rows; _r++) {
+        if (_row_y + _row_h > _row_bottom) break;
+
+        // ПАКЕТ 274: кнопка удаления справа в строке.
+        //
+        // Квадратная, во всю высоту строки — на телефоне это самая
+        // надёжная цель для пальца, и её невозможно перепутать с самой
+        // строкой. Ширина равна высоте, поэтому при любом _row_h
+        // (52..66) крестик остаётся квадратным.
+        //
+        // Полезная часть строки заканчивается ЛЕВЕЕ кнопки: del_x1.
+        // Текст рисуется по этой границе, иначе длинная подпись
+        // «День 12, 14:35 — $143 250» заезжала бы под крестик.
+        var _del_w = _row_h;
+        var _del_x1 = _mb_x2 - _del_w;
+
+        array_push(menu_slot_rects, {
+            x1 : _mb_x1,
+            y1 : _row_y,
+            x2 : _mb_x2,
+            y2 : _row_y + _row_h,
+            entry_index : _r,
+
+            // Зона строки без кнопки удаления — по ней идёт
+            // сохранение/загрузка.
+            body_x2 : _del_x1 - 6,
+
+            del_x1 : _del_x1,
+            del_y1 : _row_y,
+            del_x2 : _mb_x2,
+            del_y2 : _row_y + _row_h
+        });
+
+        _row_y += _row_h + _row_gap;
+    }
+}
+
+// ─────────────────────────────────────────────
+// ОКНО ПОДТВЕРЖДЕНИЯ (поверх меню)
+// ─────────────────────────────────────────────
+var _cf_w = min(_gw - 80, 560);
+// Пакет 271: 340, а не 300 — текст подтверждения рисуется крупно
+// (UI_FS_TITLE), и длинному вопросу про новую игру нужен запас,
+// иначе он ужимался бы обратно до мелкого.
+var _cf_h = 340;
+
+menu_confirm_x1 = round((_gw - _cf_w) * 0.5);
+menu_confirm_y1 = round((_gh - _cf_h) * 0.5);
+menu_confirm_x2 = menu_confirm_x1 + _cf_w;
+menu_confirm_y2 = menu_confirm_y1 + _cf_h;
+
+var _cf_btn_h = 72;
+var _cf_pad = 22;
+var _cf_btn_w = round((_cf_w - _cf_pad * 3) * 0.5);
+var _cf_btn_y = menu_confirm_y2 - _cf_pad - _cf_btn_h;
+
+menu_confirm_yes_x1 = menu_confirm_x1 + _cf_pad;
+menu_confirm_yes_y1 = _cf_btn_y;
+menu_confirm_yes_x2 = menu_confirm_yes_x1 + _cf_btn_w;
+menu_confirm_yes_y2 = _cf_btn_y + _cf_btn_h;
+
+menu_confirm_no_x1 = menu_confirm_yes_x2 + _cf_pad;
+menu_confirm_no_y1 = _cf_btn_y;
+menu_confirm_no_x2 = menu_confirm_no_x1 + _cf_btn_w;
+menu_confirm_no_y2 = _cf_btn_y + _cf_btn_h;
+
+// ─────────────────────────────────────────────
+// КРЕСТИК ПАНЕЛИ НАЙМА
+// ─────────────────────────────────────────────
+hiring_close_x2 = candidate_x2 - 18;
+hiring_close_x1 = hiring_close_x2 - 24;
+hiring_close_y1 = candidate_y1 + 16;
+hiring_close_y2 = hiring_close_y1 + 24;
+
+// ─────────────────────────────────────────────
+// КНОПКИ ПЕРСОНАЛА
+// ─────────────────────────────────────────────
+staff_fire_x2 = staff_panel_x2 - 18;
+staff_fire_x1 = staff_fire_x2 - 118;
+staff_fire_y1 = staff_panel_y1 + 18;
+staff_fire_y2 = staff_fire_y1 + 30;
+
+staff_focus_x2 = staff_fire_x1 - 10;
+staff_focus_x1 = staff_focus_x2 - 118;
+staff_focus_y1 = staff_panel_y1 + 18;
+staff_focus_y2 = staff_focus_y1 + 30;
+
+staff_card_x2 = staff_focus_x1 - 10;
+staff_card_x1 = staff_card_x2 - 118;
+staff_card_y1 = staff_panel_y1 + 18;
+staff_card_y2 = staff_card_y1 + 30;
+
+// ─────────────────────────────────────────────
+// КНОПКИ НАЙМА
+// ─────────────────────────────────────────────
+hire_x2 = candidate_x2 - 18;
+hire_x1 = hire_x2 - 118;
+hire_y1 = candidate_y1 + 18;
+hire_y2 = hire_y1 + 30;
+
+reject_x2 = hire_x1 - 10;
+reject_x1 = reject_x2 - 118;
+reject_y1 = candidate_y1 + 18;
+reject_y2 = reject_y1 + 30;
+
+// ─────────────────────────────────────────────
+// КООРДИНАТЫ ИСТОРИИ ВИЗИТОВ
+// ─────────────────────────────────────────────
+client_history_x1 = 0;
+client_history_y1 = 0;
+client_history_x2 = 0;
+client_history_y2 = 0;
+
+if (clients_panel_open && clients_subtab == "all") {
+    // Пакет №189: координаты берутся из общей раскладки окна КЛИЕНТЫ,
+    // той же самой, по которой панель рисуется. Раньше здесь стояли
+    // отдельные числа (ширина списка 380 вместо 470) — и зоны кликов
+    // не совпадали с картинкой.
+    var _clients_layout = hud_clients_layout(id);
+
+    client_history_x1 = _clients_layout.hist_x1;
+    client_history_y1 = _clients_layout.hist_y1;
+    client_history_x2 = _clients_layout.hist_x2;
+    client_history_y2 = _clients_layout.hist_y2;
+}
+
+// ─────────────────────────────────────────────
+// HOVER
+// ─────────────────────────────────────────────
+hover_pause = point_in_rectangle(_mx, _my, pause_x1, pause_y1, pause_x2, pause_y2);
+
+// ── Пакет 271: наведение на меню игры ──
+hover_gear = point_in_rectangle(_mx, _my, gear_x1, gear_y1, gear_x2, gear_y2);
+
+// ── Пакет 347: колокольчик рядом с шестерёнкой. Считает свою
+// раскладку, наведение и раскладку панели просьб.
+hud_bell_step(id, _mx, _my);
+
+hover_menu_save = (game_menu_mode == "main")
+    && point_in_rectangle(_mx, _my, menu_save_x1, menu_save_y1, menu_save_x2, menu_save_y2);
+hover_menu_load = (game_menu_mode == "main")
+    && point_in_rectangle(_mx, _my, menu_load_x1, menu_load_y1, menu_load_x2, menu_load_y2);
+hover_menu_new = (game_menu_mode == "main")
+    && point_in_rectangle(_mx, _my, menu_new_x1, menu_new_y1, menu_new_x2, menu_new_y2);
+hover_menu_close = (game_menu_mode != "")
+    && point_in_rectangle(_mx, _my, menu_close_x1, menu_close_y1, menu_close_x2, menu_close_y2);
+
+hover_menu_slot = -1;
+// ПАКЕТ 274: наведение на кнопку удаления считается отдельно от
+// строки. Иначе тап по крестику одновременно означал бы «загрузить».
+hover_menu_del = -1;
+
+for (var _hs = 0; _hs < array_length(menu_slot_rects); _hs++) {
+    var _hr = menu_slot_rects[_hs];
+
+    if (point_in_rectangle(_mx, _my, _hr.x1, _hr.y1, _hr.x2, _hr.y2)) {
+        // Крестик перекрывает строку: сначала проверяем его.
+        if (point_in_rectangle(_mx, _my, _hr.del_x1, _hr.del_y1, _hr.del_x2, _hr.del_y2)) {
+            hover_menu_del = _hs;
+        }
+        else {
+            hover_menu_slot = _hs;
+        }
+
+        break;
+    }
+}
+
+hover_menu_yes = menu_confirm_open
+    && point_in_rectangle(_mx, _my, menu_confirm_yes_x1, menu_confirm_yes_y1, menu_confirm_yes_x2, menu_confirm_yes_y2);
+hover_menu_no = menu_confirm_open
+    && point_in_rectangle(_mx, _my, menu_confirm_no_x1, menu_confirm_no_y1, menu_confirm_no_x2, menu_confirm_no_y2);
+hover_1x    = point_in_rectangle(_mx, _my, speed1_x1, speed1_y1, speed1_x2, speed1_y2);
+hover_2x    = point_in_rectangle(_mx, _my, speed2_x1, speed2_y1, speed2_x2, speed2_y2);
+hover_4x    = point_in_rectangle(_mx, _my, speed4_x1, speed4_y1, speed4_x2, speed4_y2);
+
+hover_clinic  = point_in_rectangle(_mx, _my, clinic_x1, clinic_y1, clinic_x2, clinic_y2);
+hover_clients = point_in_rectangle(_mx, _my, clients_x1, clients_y1, clients_x2, clients_y2);
+hover_staff   = point_in_rectangle(_mx, _my, staff_x1, staff_y1, staff_x2, staff_y2);
+hover_finance = point_in_rectangle(_mx, _my, finance_x1, finance_y1, finance_x2, finance_y2);
+hover_handbook = point_in_rectangle(_mx, _my, handbook_x1, handbook_y1, handbook_x2, handbook_y2);
+
+// ── ПАКЕТ №280: НАВЕДЕНИЕ НА КАРТЕ ──
+hover_map = point_in_rectangle(_mx, _my, map_btn_x1, map_btn_y1, map_btn_x2, map_btn_y2);
+hover_map_close = map_panel_open && point_in_rectangle(_mx, _my, map_close_x1, map_close_y1, map_close_x2, map_close_y2);
+
+hover_map_building = -1;
+hover_map_main = false;
+hover_map_sell = false;
+hover_map_close_card = false;
+
+if (map_panel_open) {
+
+    clinics_init();
+
+    if (map_card_clinic_id > 0) {
+
+        // Карточка открыта — она перехватывает наведение целиком,
+        // иначе здания подсвечивались бы сквозь затемнение.
+        var _card_btn = clinics_map_card_buttons(id);
+
+        hover_map_main = point_in_rectangle(_mx, _my, _card_btn.main_x1, _card_btn.main_y1, _card_btn.main_x2, _card_btn.main_y2);
+        hover_map_sell = point_in_rectangle(_mx, _my, _card_btn.sell_x1, _card_btn.sell_y1, _card_btn.sell_x2, _card_btn.sell_y2);
+        hover_map_close_card = point_in_rectangle(_mx, _my, _card_btn.close_x1, _card_btn.close_y1, _card_btn.close_x2, _card_btn.close_y2);
+    }
+    else if (variable_global_exists("clinics") && is_array(global.clinics)) {
+
+        // С конца: если здания перекрываются, верхнее (нарисованное
+        // последним) должно и нажиматься первым.
+        for (var _mb = array_length(global.clinics) - 1; _mb >= 0; _mb--) {
+
+            var _mb_rect = clinics_map_building_rect(id, _mb);
+
+            if (point_in_rectangle(_mx, _my, _mb_rect.x1, _mb_rect.y1, _mb_rect.x2, _mb_rect.y2)) {
+                hover_map_building = _mb;
+                break;
+            }
+        }
+    }
+}
+
+hover_handbook_close = handbook_open && point_in_rectangle(_mx, _my, handbook_close_x1, handbook_close_y1, handbook_close_x2, handbook_close_y2);
+
+hover_clinic_tab_clinic = clinic_panel_open && point_in_rectangle(_mx, _my, clinic_tab_clinic_x1, clinic_tab_clinic_y1, clinic_tab_clinic_x2, clinic_tab_clinic_y2);
+hover_clinic_tab_storage = clinic_panel_open && point_in_rectangle(_mx, _my, clinic_tab_storage_x1, clinic_tab_storage_y1, clinic_tab_storage_x2, clinic_tab_storage_y2);
+
+hover_hiring_close = hiring_panel_open && point_in_rectangle(_mx, _my, hiring_close_x1, hiring_close_y1, hiring_close_x2, hiring_close_y2);
+hover_client_clear = clients_panel_open && point_in_rectangle(_mx, _my, client_clear_x1, client_clear_y1, client_clear_x2, client_clear_y2);
+hover_client_search = clients_panel_open && point_in_rectangle(_mx, _my, client_search_x1, client_search_y1, client_clear_x1 - 4, client_search_y2);
+
+hover_clients_tab_all = clients_panel_open && point_in_rectangle(_mx, _my, clients_tab_all_x1, clients_tab_all_y1, clients_tab_all_x2, clients_tab_all_y2);
+hover_clients_tab_followup = clients_panel_open && point_in_rectangle(_mx, _my, clients_tab_followup_x1, clients_tab_followup_y1, clients_tab_followup_x2, clients_tab_followup_y2);
+
+hover_staff_card = false;
+hover_staff_focus = false;
+hover_staff_fire = false;
+
+if (staff_panel_open && instance_exists(selected_staff_id)) {
+    hover_staff_card  = point_in_rectangle(_mx, _my, staff_card_x1, staff_card_y1, staff_card_x2, staff_card_y2);
+    hover_staff_focus = point_in_rectangle(_mx, _my, staff_focus_x1, staff_focus_y1, staff_focus_x2, staff_focus_y2);
+    hover_staff_fire  = point_in_rectangle(_mx, _my, staff_fire_x1, staff_fire_y1, staff_fire_x2, staff_fire_y2);
+}
+
+hover_hire = false;
+hover_reject = false;
+
+if (hiring_panel_open && instance_exists(global.selected_candidate)) {
+    hover_hire = point_in_rectangle(_mx, _my, hire_x1, hire_y1, hire_x2, hire_y2);
+    hover_reject = point_in_rectangle(_mx, _my, reject_x1, reject_y1, reject_x2, reject_y2);
+}
+
+// ─────────────────────────────────────────────
+// ПРОКРУТКА И ВЫБОР СТРОК ПЕРСОНАЛА
+//
+// Пакет №192: старый блок отсюда убран. Он остался от прежней панели и
+// считал строку списка по 58 пикселей при ширине 340, тогда как панель
+// ПЕРСОНАЛ рисует строки по 132 пикселя. Из-за этого клик по списку
+// сначала выделял чужого сотрудника, и только потом отпускание кнопки
+// выбирало правильного. Списком штата целиком занимается
+// hud_staff_manage_draw_roster: и прокрутка колесом, и перетягивание
+// пальцем, и бегунок, и выбор строки.
+// ─────────────────────────────────────────────
+staff_row_hover = -1;
+
+// ─────────────────────────────────────────────
+// ПРОКРУТКА И ВЫБОР СТРОК КЛИЕНТОВ
+// ─────────────────────────────────────────────
+client_row_hover = -1;
+followup_row_hover = -1;
+client_visit_row_hover = -1;
+
+if (clients_panel_open) {
+    // Пакет №189: одна раскладка на рисование и на клики.
+    var _cl_layout = hud_clients_layout(id);
+
+    var _cl_list_x1 = _cl_layout.list_x1;
+    var _cl_list_y1 = _cl_layout.list_y1;
+    var _cl_list_x2 = _cl_layout.list_x2;
+    var _cl_list_y2 = _cl_layout.list_y2;
+    var _cl_row_h = _cl_layout.row_h;
+    var _cl_row_top = _cl_layout.row_top;
+
+    if (clients_subtab == "all") {
+        var _cl_visible_rows = _cl_layout.row_visible;
+        var _cl_max_scroll = max(0, array_length(client_entries) - _cl_visible_rows);
+
+        client_scroll = clamp(client_scroll, 0, _cl_max_scroll);
+
+        if (point_in_rectangle(_mx, _my, _cl_list_x1, _cl_list_y1, _cl_list_x2, _cl_list_y2)) {
+            if (mouse_wheel_down()) client_scroll = min(_cl_max_scroll, client_scroll + 1);
+            if (mouse_wheel_up())   client_scroll = max(0, client_scroll - 1);
+        }
+
+        for (var _cj = 0; _cj < _cl_visible_rows; _cj++) {
+            var _cidx = client_scroll + _cj;
+            if (_cidx >= array_length(client_entries)) break;
+
+            var _cry1 = _cl_row_top + _cj * _cl_row_h;
+            var _cry2 = _cry1 + (_cl_row_h - 8);
+            var _crx1 = _cl_list_x1 + 8;
+            var _crx2 = _cl_list_x2 - 8;
+
+            if (point_in_rectangle(_mx, _my, _crx1, _cry1, _crx2, _cry2)) {
+                client_row_hover = _cidx;
+
+                if (mouse_check_button_pressed(mb_left)) {
+                    selected_client_owner_id = client_entries[_cidx].owner_id;
+                    selected_client_pet_id = client_entries[_cidx].pet_id;
+                    selected_client_visit_id = "";
+                    client_visit_scroll = 0;
+                }
+            }
+        }
+
+        // История визитов выбранного клиента
+        if (client_history_x2 > client_history_x1 && client_history_y2 > client_history_y1) {
+            var _hist_row_h = _cl_layout.hist_row_h;
+            var _hist_row_top = _cl_layout.hist_row_top;
+            var _hist_visible_rows = _cl_layout.hist_visible;
+            var _hist_max_scroll = max(0, array_length(client_visit_entries) - _hist_visible_rows);
+
+            client_visit_scroll = clamp(client_visit_scroll, 0, _hist_max_scroll);
+
+            if (point_in_rectangle(_mx, _my, client_history_x1, client_history_y1, client_history_x2, client_history_y2)) {
+                if (mouse_wheel_down()) client_visit_scroll = min(_hist_max_scroll, client_visit_scroll + 1);
+                if (mouse_wheel_up())   client_visit_scroll = max(0, client_visit_scroll - 1);
+            }
+
+            for (var _hj = 0; _hj < _hist_visible_rows; _hj++) {
+                var _hidx = client_visit_scroll + _hj;
+                if (_hidx >= array_length(client_visit_entries)) break;
+
+                var _hry1 = _hist_row_top + _hj * _hist_row_h;
+                var _hry2 = _hry1 + (_hist_row_h - 8);
+                var _hrx1 = client_history_x1 + 10;
+                var _hrx2 = client_history_x2 - 10;
+
+                if (point_in_rectangle(_mx, _my, _hrx1, _hry1, _hrx2, _hry2)) {
+                    client_visit_row_hover = _hidx;
+
+                    if (mouse_check_button_pressed(mb_left)) {
+                        selected_client_visit_id = client_visit_entries[_hidx].visit_id;
+                    }
+                }
+            }
+        }
+    } else {
+        var _fu_visible_rows = _cl_layout.row_visible;
+        var _fu_max_scroll = max(0, array_length(followup_entries) - _fu_visible_rows);
+
+        followup_scroll = clamp(followup_scroll, 0, _fu_max_scroll);
+
+        if (point_in_rectangle(_mx, _my, _cl_list_x1, _cl_list_y1, _cl_list_x2, _cl_list_y2)) {
+            if (mouse_wheel_down()) followup_scroll = min(_fu_max_scroll, followup_scroll + 1);
+            if (mouse_wheel_up())   followup_scroll = max(0, followup_scroll - 1);
+        }
+
+        for (var _fj = 0; _fj < _fu_visible_rows; _fj++) {
+            var _fidx = followup_scroll + _fj;
+            if (_fidx >= array_length(followup_entries)) break;
+
+            var _fry1 = _cl_row_top + _fj * _cl_row_h;
+            var _fry2 = _fry1 + (_cl_row_h - 8);
+            var _frx1 = _cl_list_x1 + 8;
+            var _frx2 = _cl_list_x2 - 8;
+
+            if (point_in_rectangle(_mx, _my, _frx1, _fry1, _frx2, _fry2)) {
+                followup_row_hover = _fidx;
+
+                if (mouse_check_button_pressed(mb_left)) {
+                    selected_followup_id = followup_entries[_fidx].scheduled_visit_id;
+                }
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+// ПРОКРУТКА И ВЫБОР БОЛЕЗНИ В СПРАВОЧНИКЕ (пакет №69)
+// ─────────────────────────────────────────────
+handbook_row_hover = -1;
+
+if (
+    handbook_open
+    && variable_global_exists("med_db")
+    && is_struct(global.med_db)
+    && variable_struct_exists(global.med_db, "disease_ids")
+) {
+    handbook_init();
+
+    var _hb_list_x1 = handbook_panel_x1 + 20;
+    var _hb_list_y1 = handbook_panel_y1 + 62;
+    var _hb_list_x2 = _hb_list_x1 + 360;
+    var _hb_list_y2 = handbook_panel_y2 - 20;
+
+    var _hb_row_h = 46;
+    var _hb_visible_rows = max(1, floor((_hb_list_y2 - _hb_list_y1) / _hb_row_h));
+    var _hb_max_scroll = max(0, array_length(global.med_db.disease_ids) - _hb_visible_rows);
+
+    handbook_scroll = clamp(handbook_scroll, 0, _hb_max_scroll);
+
+    if (point_in_rectangle(_mx, _my, _hb_list_x1, _hb_list_y1, _hb_list_x2, _hb_list_y2)) {
+        if (mouse_wheel_down()) handbook_scroll = min(_hb_max_scroll, handbook_scroll + 1);
+        if (mouse_wheel_up())   handbook_scroll = max(0, handbook_scroll - 1);
+    }
+
+    for (var _hj = 0; _hj < _hb_visible_rows; _hj++) {
+        var _hidx = handbook_scroll + _hj;
+        if (_hidx >= array_length(global.med_db.disease_ids)) break;
+
+        var _hry1 = _hb_list_y1 + _hj * _hb_row_h;
+        var _hry2 = _hry1 + (_hb_row_h - 4);
+
+        if (point_in_rectangle(_mx, _my, _hb_list_x1, _hry1, _hb_list_x2, _hry2)) {
+            handbook_row_hover = _hidx;
+
+            if (mouse_check_button_pressed(mb_left)) {
+                selected_handbook_disease = global.med_db.disease_ids[_hidx];
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+// ДИАЛОГ ПОДТВЕРЖДЕНИЯ УВОЛЬНЕНИЯ
+// ─────────────────────────────────────────────
+hover_fire_yes = false;
+hover_fire_no = false;
+
+if (fire_confirm_open && instance_exists(fire_confirm_target)) {
+    fire_confirm_x1 = staff_panel_x1 + 210;
+    fire_confirm_x2 = staff_panel_x2 - 210;
+    fire_confirm_y1 = staff_panel_y1 + 140;
+    fire_confirm_y2 = fire_confirm_y1 + 120;
+
+    fire_yes_x1 = fire_confirm_x1 + 22;
+    fire_yes_x2 = fire_yes_x1 + 110;
+    fire_yes_y1 = fire_confirm_y2 - 42;
+    fire_yes_y2 = fire_yes_y1 + 24;
+
+    fire_no_x2 = fire_confirm_x2 - 22;
+    fire_no_x1 = fire_no_x2 - 110;
+    fire_no_y1 = fire_yes_y1;
+    fire_no_y2 = fire_yes_y2;
+
+    hover_fire_yes = point_in_rectangle(_mx, _my, fire_yes_x1, fire_yes_y1, fire_yes_x2, fire_yes_y2);
+    hover_fire_no  = point_in_rectangle(_mx, _my, fire_no_x1, fire_no_y1, fire_no_x2, fire_no_y2);
+} else {
+    fire_confirm_open = false;
+    fire_confirm_target = noone;
+}
+
+// ─────────────────────────────────────────────
+// УВЕДОМЛЕНИЯ-СТОПКА: ХОВЕР (пакет №101)
+// ─────────────────────────────────────────────
+var _notice_hover = false;
+
+if (
+    variable_instance_exists(id, "notice_stack")
+    && is_array(notice_stack)
+) {
+    var _ncount = array_length(notice_stack);
+    for (var _ni = _ncount - 1; _ni >= 0; _ni--) {
+        var _nt = notice_stack[_ni];
+        if (_nt.state == "fading") continue;
+        if (
+            _nt.x2 > _nt.x1
+            && point_in_rectangle(
+                _mx, _my,
+                _nt.x1, _nt.y1,
+                _nt.x2, _nt.y2
+            )
+        ) {
+            _notice_hover = true;
+            break;
+        }
+    }
+}
+
+// ─────────────────────────────────────────────
+// БЛОКИРОВКА КЛИКОВ ПО МИРУ
+// ─────────────────────────────────────────────
+global.ui_block_world_click =
+    point_in_rectangle(_mx, _my, topbar_x1, topbar_y1, topbar_x2, topbar_y2)
+    || point_in_rectangle(_mx, _my, bottombar_x1, bottombar_y1, bottombar_x2, bottombar_y2)
+    || (staff_panel_open && point_in_rectangle(_mx, _my, staff_panel_x1, staff_panel_y1, staff_panel_x2, staff_panel_y2))
+    || (clients_panel_open && point_in_rectangle(_mx, _my, clients_panel_x1, clients_panel_y1, clients_panel_x2, clients_panel_y2))
+    || (clinic_panel_open && point_in_rectangle(_mx, _my, main_panel_x1, main_panel_y1, main_panel_x2, main_panel_y2))
+    || (finance_panel_open && point_in_rectangle(_mx, _my, main_panel_x1, main_panel_y1, main_panel_x2, main_panel_y2))
+    || (hiring_panel_open && point_in_rectangle(_mx, _my, candidate_x1, candidate_y1, candidate_x2, candidate_y2))
+    || (handbook_open && point_in_rectangle(_mx, _my, handbook_panel_x1, handbook_panel_y1, handbook_panel_x2, handbook_panel_y2))
+    || (fire_confirm_open && point_in_rectangle(_mx, _my, fire_confirm_x1, fire_confirm_y1, fire_confirm_x2, fire_confirm_y2))
+    // Пакет 271: меню игры блокирует мир ЦЕЛИКОМ, а не только под своим
+    // окном. Окно модальное и затемняет экран — клик мимо него не должен
+    // проваливаться на сотрудника и открывать карточку под меню.
+    || (game_menu_mode != "")
+    || menu_confirm_open
+    // Пакет 347: панель просьб тоже модальная.
+    || bell_panel_open
+    || _notice_hover;
+
+// ─────────────────────────────────────────────
+// КЛИКИ
+// ─────────────────────────────────────────────
+if (mouse_check_button_pressed(mb_left)) {
+    // Клик по уведомлению — закрыть его и больше ничего не делать (пакет №101).
+    if (_notice_hover) {
+        if (is_array(notice_stack)) {
+            var _nc2 = array_length(notice_stack);
+            for (var _ni2 = _nc2 - 1; _ni2 >= 0; _ni2--) {
+                var _nt2 = notice_stack[_ni2];
+                if (_nt2.state == "fading") continue;
+                if (
+                    point_in_rectangle(
+                        _mx, _my,
+                        _nt2.x1, _nt2.y1,
+                        _nt2.x2, _nt2.y2
+                    )
+                ) {
+                    _nt2.state = "fading";
+                    _nt2.timer = 0;
+                    break;
+                }
+            }
+        }
+    }
+    // Если открыт диалог увольнения — обрабатываем только его
+    else if (fire_confirm_open && instance_exists(fire_confirm_target)) {
+        if (hover_fire_yes) {
+            if (instance_exists(fire_confirm_target)) {
+                if (fire_confirm_target.object_index != obj_player) {
+                    with (fire_confirm_target) {
+                        instance_destroy();
+                    }
+                }
+            }
+
+            if (selected_staff_id == fire_confirm_target) {
+                selected_staff_id = noone;
+            }
+
+            fire_confirm_target = noone;
+            fire_confirm_open = false;
+        }
+        else if (hover_fire_no) {
+            fire_confirm_target = noone;
+            fire_confirm_open = false;
+        }
+    }
+    // ═══════════════════════════════════════════════════════════
+    // ПАКЕТ 271: МЕНЮ ИГРЫ
+    //
+    // Стоит ПЕРЕД остальным интерфейсом и всегда завершается ветвью
+    // else — пока меню открыто, клики не проваливаются в игру под ним.
+    // ═══════════════════════════════════════════════════════════
+    else if (menu_confirm_open) {
+        // Подтверждение перехватывает всё.
+        if (hover_menu_yes) {
+            if (menu_confirm_kind == "save") {
+                if (script_exists(asset_get_index("save_slot_save_manual"))) {
+                    save_slot_save_manual(menu_confirm_slot_index);
+                }
+
+                game_menu_mode = "";
+            }
+            else if (menu_confirm_kind == "load") {
+                if (script_exists(asset_get_index("save_slot_load"))) {
+                    save_slot_load(menu_confirm_slot_auto, menu_confirm_slot_index);
+                }
+
+                game_menu_mode = "";
+            }
+            else if (menu_confirm_kind == "delete") {
+                // ПАКЕТ 274: стираем файл и СРАЗУ перечитываем список,
+                // иначе строка осталась бы на экране до переоткрытия
+                // окна, а клик по ней ушёл бы в несуществующий файл.
+                if (script_exists(asset_get_index("save_slot_delete"))) {
+                    save_slot_delete(menu_confirm_slot_auto, menu_confirm_slot_index);
+                }
+
+                if (game_menu_mode == "save") {
+                    if (script_exists(asset_get_index("save_slot_list_manual"))) {
+                        menu_slot_entries = save_slot_list_manual();
+                        menu_slot_mode = "save";
+                    }
+                }
+                else {
+                    if (script_exists(asset_get_index("save_slot_list_all"))) {
+                        menu_slot_entries = save_slot_list_all();
+                        menu_slot_mode = "load";
+                    }
+                }
+
+                // Меню НЕ закрываем: игрок обычно чистит несколько
+                // слотов подряд.
+            }
+            else if (menu_confirm_kind == "new") {
+                if (script_exists(asset_get_index("save_slot_new_game"))) {
+                    save_slot_new_game();
+                }
+            }
+
+            menu_confirm_open = false;
+            menu_confirm_kind = "";
+        }
+        else if (hover_menu_no) {
+            menu_confirm_open = false;
+            menu_confirm_kind = "";
+        }
+    }
+    else if (game_menu_mode == "main") {
+        if (hover_menu_save) {
+            game_menu_mode = "save";
+
+            // Список читается ОДИН раз при открытии, а не каждый кадр:
+            // это чтение файлов с диска.
+            if (script_exists(asset_get_index("save_slot_list_manual"))) {
+                menu_slot_entries = save_slot_list_manual();
+                menu_slot_mode = "save";   // пакет 273: список и режим всегда парой
+            }
+        }
+        else if (hover_menu_load) {
+            game_menu_mode = "load";
+
+            if (script_exists(asset_get_index("save_slot_list_all"))) {
+                menu_slot_entries = save_slot_list_all();
+                menu_slot_mode = "load";   // пакет 273: список и режим всегда парой
+            }
+        }
+        else if (hover_menu_new) {
+            menu_confirm_open = true;
+            menu_confirm_kind = "new";
+            menu_confirm_text = "Начать новую игру? Текущий прогресс будет потерян, сохранения останутся.";
+        }
+        else if (hover_menu_close) {
+            game_menu_mode = "";
+        }
+    }
+    else if (game_menu_mode == "save" || game_menu_mode == "load") {
+        if (hover_menu_close) {
+            game_menu_mode = "main";
+            menu_slot_mode = "";   // пакет 273: список больше не действителен
+        }
+        // ПАКЕТ 274: удаление слота. Проверяется ПЕРЕД обычным
+        // кликом по строке, потому что крестик лежит внутри неё.
+        else if (hover_menu_del >= 0
+            && hover_menu_del < array_length(menu_slot_rects)) {
+
+            var _drect = menu_slot_rects[hover_menu_del];
+
+            if (_drect.entry_index < array_length(menu_slot_entries)) {
+                var _dentry = menu_slot_entries[_drect.entry_index];
+
+                // Пустой слот удалять нечего.
+                if (_dentry.exists) {
+                    menu_confirm_open = true;
+                    menu_confirm_kind = "delete";
+                    menu_confirm_slot_auto = _dentry.is_auto;
+                    menu_confirm_slot_index = _dentry.index;
+
+                    menu_confirm_text = "Удалить сохранение День "
+                        + string(_dentry.day)
+                        + "? Восстановить его будет нельзя.";
+                }
+            }
+        }
+        else if (hover_menu_slot >= 0
+            && hover_menu_slot < array_length(menu_slot_rects)) {
+
+            var _rect = menu_slot_rects[hover_menu_slot];
+
+            // Пакет 273: страховка от выхода за массив. Даже если
+            // списки когда-нибудь снова разъедутся, игра не упадёт.
+            if (_rect.entry_index >= array_length(menu_slot_entries)) exit;
+
+            var _entry = menu_slot_entries[_rect.entry_index];
+
+            if (game_menu_mode == "save") {
+                // В автослот вручную писать нельзя — он кольцевой.
+                if (!_entry.is_auto) {
+                    menu_confirm_open = true;
+                    menu_confirm_kind = "save";
+                    menu_confirm_slot_auto = false;
+                    menu_confirm_slot_index = _entry.index;
+
+                    menu_confirm_text = _entry.exists
+                        ? ("Перезаписать сохранение " + string(_entry.index)
+                            + "? День " + string(_entry.day) + " будет потерян.")
+                        : ("Сохранить игру в слот " + string(_entry.index) + "?");
+                }
+            }
+            else {
+                // Загружать можно только непустой слот.
+                if (_entry.exists) {
+                    menu_confirm_open = true;
+                    menu_confirm_kind = "load";
+                    menu_confirm_slot_auto = _entry.is_auto;
+                    menu_confirm_slot_index = _entry.index;
+
+                    menu_confirm_text = "Загрузить День " + string(_entry.day)
+                        + "? Несохранённый прогресс будет потерян.";
+                }
+            }
+        }
+    }
+    // ── Пакет 347: панель колокольчика модальная — пока открыта,
+    // все клики уходят ей и больше никуда.
+    else if (bell_panel_open) {
+        hud_bell_click(id, _mx, _my);
+    }
+
+    else {
+        // Верхняя панель
+        if (hover_bell) {
+            hud_bell_click(id, _mx, _my);
+        }
+        else if (hover_gear) {
+            game_menu_mode = "main";
+        }
+        else if (hover_pause) {
+            global.time_paused = !global.time_paused;
+        }
+        else if (hover_1x) {
+            global.time_paused = false;
+            global.time_speed = 1;
+        }
+        else if (hover_2x) {
+            global.time_paused = false;
+            global.time_speed = 2;
+        }
+        else if (hover_4x) {
+            global.time_paused = false;
+            global.time_speed = 4;
+        }
+
+        // Нижнее меню
+        else if (hover_clinic) {
+            if (selected_sidebar_tab == "clinic" && clinic_panel_open) {
+                clinic_panel_open = false;
+            } else {
+                selected_sidebar_tab = "clinic";
+                clinic_panel_open = true;
+            }
+
+            clients_panel_open = false;
+            staff_panel_open = false;
+            finance_panel_open = false;
+            hiring_panel_open = false;
+            handbook_open = false;
+            map_panel_open = false;
+            client_search_active = false;
+        }
+        else if (hover_clients) {
+            if (selected_sidebar_tab == "clients" && clients_panel_open) {
+                clients_panel_open = false;
+            } else {
+                selected_sidebar_tab = "clients";
+                clients_panel_open = true;
+            }
+
+            clinic_panel_open = false;
+            staff_panel_open = false;
+            finance_panel_open = false;
+            hiring_panel_open = false;
+            handbook_open = false;
+            map_panel_open = false;
+        }
+        else if (hover_staff) {
+            if (selected_sidebar_tab == "staff" && staff_panel_open) {
+                staff_panel_open = false;
+            } else {
+                selected_sidebar_tab = "staff";
+                staff_panel_open = true;
+            }
+
+            clinic_panel_open = false;
+            clients_panel_open = false;
+            finance_panel_open = false;
+            hiring_panel_open = false;
+            handbook_open = false;
+            map_panel_open = false;
+            client_search_active = false;
+        }
+        else if (hover_finance) {
+            if (selected_sidebar_tab == "finance" && finance_panel_open) {
+                finance_panel_open = false;
+            } else {
+                selected_sidebar_tab = "finance";
+                finance_panel_open = true;
+            }
+
+            clinic_panel_open = false;
+            clients_panel_open = false;
+            staff_panel_open = false;
+            hiring_panel_open = false;
+            handbook_open = false;
+            map_panel_open = false;
+            client_search_active = false;
+        }
+        else if (hover_handbook) {
+            if (selected_sidebar_tab == "handbook" && handbook_open) {
+                handbook_open = false;
+            } else {
+                selected_sidebar_tab = "handbook";
+                handbook_open = true;
+            }
+
+            clinic_panel_open = false;
+            clients_panel_open = false;
+            staff_panel_open = false;
+            finance_panel_open = false;
+            hiring_panel_open = false;
+            client_search_active = false;
+            map_panel_open = false;
+        }
+        // ── ПАКЕТ №280: КНОПКА «КАРТА» ──
+        else if (hover_map) {
+            if (selected_sidebar_tab == "map" && map_panel_open) {
+                map_panel_open = false;
+            } else {
+                selected_sidebar_tab = "map";
+                map_panel_open = true;
+                clinics_init();
+            }
+
+            // Карточку закрываем вместе с картой, иначе она всплывёт
+            // при следующем открытии.
+            map_card_clinic_id = 0;
+            map_confirm_sell = false;
+
+            clinic_panel_open = false;
+            clients_panel_open = false;
+            staff_panel_open = false;
+            finance_panel_open = false;
+            hiring_panel_open = false;
+            client_search_active = false;
+            handbook_open = false;
+        }
+
+        // Вкладка и поиск клиентов
+        if (clients_panel_open) {
+            if (hover_clients_tab_all) {
+                clients_subtab = "all";
+                client_search_active = false;
+            }
+            else if (hover_clients_tab_followup) {
+                clients_subtab = "followup";
+                client_search_active = false;
+            }
+            else if (hover_client_search) {
+                client_search_active = true;
+                keyboard_string = client_search_text;
+            }
+            else if (hover_client_clear) {
+                client_search_text = "";
+                keyboard_string = "";
+                client_search_active = false;
+            }
+            else {
+                client_search_active = false;
+            }
+        }
+// Подвкладки клиники
+if (clinic_panel_open) {
+    if (hover_clinic_tab_clinic) {
+        clinic_subtab = "clinic";
+    }
+    else if (hover_clinic_tab_storage) {
+        clinic_subtab = "storage";
+    }
+}
+
+        // Крестик панели найма
+        if (hiring_panel_open && hover_hiring_close) {
+            hiring_panel_open = false;
+        }
+
+        // Крестик панели справочника (пакет №69)
+        if (handbook_open && hover_handbook_close) {
+            handbook_open = false;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // ПАКЕТ №280: КЛИКИ ВНУТРИ КАРТЫ
+        //
+        // Блок стоит здесь, рядом с крестиком справочника, а НЕ в
+        // цепочке «else if (hover_...)» нижнего меню. Это важно: та
+        // цепочка перебирает кнопки самой панели и обрывается на
+        // первом совпадении, поэтому клик по зданию внутри открытого
+        // окна туда просто не доходил — карта не реагировала на тапы.
+        // ═══════════════════════════════════════════════════════════
+        if (map_panel_open) {
+
+            if (hover_map_close) {
+                map_panel_open = false;
+                map_card_clinic_id = 0;
+                map_confirm_sell = false;
+            }
+            else if (map_card_clinic_id > 0) {
+
+                var _card_clinic = clinics_get(map_card_clinic_id);
+
+                if (is_struct(_card_clinic)) {
+
+                    if (map_confirm_sell) {
+
+                        // Режим подтверждения продажи.
+                        if (hover_map_sell) {
+
+                            var _sold_name = _card_clinic.name;
+                            var _sold_sum = clinics_sell_price(_card_clinic);
+
+                            if (clinics_sell(map_card_clinic_id)) {
+                                show_notice(
+                                    "КЛИНИКА ПРОДАНА",
+                                    _sold_name + " — получено $" + string(_sold_sum),
+                                    room_speed * 3
+                                );
+
+                                map_card_clinic_id = 0;
+                            }
+
+                            map_confirm_sell = false;
+                        }
+                        else if (hover_map_close_card) {
+                            map_confirm_sell = false;
+                        }
+                    }
+                    else {
+
+                        if (hover_map_main) {
+
+                            if (!_card_clinic.owned) {
+
+                                var _buy_res = clinics_can_buy(_card_clinic);
+
+                                if (_buy_res.ok) {
+                                    if (clinics_buy(map_card_clinic_id)) {
+                                        show_notice(
+                                            "КЛИНИКА КУПЛЕНА",
+                                            _card_clinic.name + " теперь ваша",
+                                            room_speed * 3
+                                        );
+                                    }
+                                }
+                                else {
+                                    show_notice("НЕЛЬЗЯ КУПИТЬ", _buy_res.reason, room_speed * 3);
+                                }
+                            }
+                            else {
+
+                                // ═══════════════════════════════════
+                                // ПАКЕТ №303: РЕАЛЬНЫЙ ПЕРЕЕЗД
+                                //
+                                // Здесь стояла заглушка из пакета 280
+                                // («переезд пока не готов»), и она
+                                // осталась даже после того, как в
+                                // пакете 301 появился clinics_enter,
+                                // а в 302 — комната клиники №1.
+                                // Кнопка выглядела рабочей, но не
+                                // делала ничего.
+                                //
+                                // Условие тоже изменено: сравнение с
+                                // active_clinic убрано. Игрок может
+                                // стоять в тестовой комнате, и тогда
+                                // «войти» в собственную клинику —
+                                // законное действие. Проверку «вы уже
+                                // здесь» делает clinics_can_enter,
+                                // сверяясь с реальной комнатой.
+                                // ═══════════════════════════════════
+
+                                var _enter = clinics_can_enter(
+                                    _card_clinic.id
+                                );
+
+                                if (_enter.ok) {
+                                    map_panel_open = false;
+
+                                    show_notice(
+                                        "ПЕРЕЕЗД",
+                                        _card_clinic.name,
+                                        room_speed * 2
+                                    );
+
+                                    clinics_enter(_card_clinic.id);
+                                }
+                                else {
+                                    show_notice(
+                                        "НЕ ПОЛУЧИЛОСЬ",
+                                        _enter.reason,
+                                        room_speed * 3
+                                    );
+                                }
+                            }
+                        }
+                        else if (hover_map_sell) {
+
+                            var _sell_res = clinics_can_sell(_card_clinic);
+
+                            if (_sell_res.ok) {
+                                // Продажа необратима — спрашиваем ещё раз.
+                                map_confirm_sell = true;
+                            }
+                            else {
+                                show_notice("НЕЛЬЗЯ ПРОДАТЬ", _sell_res.reason, room_speed * 3);
+                            }
+                        }
+                        else if (hover_map_close_card) {
+                            map_card_clinic_id = 0;
+                        }
+                    }
+                }
+                else {
+                    map_card_clinic_id = 0;
+                }
+            }
+            else if (hover_map_building >= 0) {
+
+                // Тап по зданию — открываем карточку.
+                var _picked = global.clinics[hover_map_building];
+
+                if (is_struct(_picked)) {
+                    map_card_clinic_id = _picked.id;
+                    map_confirm_sell = false;
+                }
+            }
+        }
+
+        // Кнопки кандидата
+        if (hiring_panel_open && instance_exists(global.selected_candidate)) {
+            var _cand = global.selected_candidate;
+
+            if (_cand.candidate_state == "waiting_offer") {
+                if (hover_hire) {
+                    with (_cand) {
+                        resolve_hire();
+                    }
+                    hiring_panel_open = false;
+                }
+                else if (hover_reject) {
+                    with (_cand) {
+                        resolve_reject();
+                    }
+                    hiring_panel_open = false;
+                }
+            }
+        }
+
+        // Кнопки персонала
+        if (staff_panel_open && instance_exists(selected_staff_id)) {
+            if (hover_staff_card) {
+                if (instance_exists(obj_UI_Tablet)) {
+                    with (obj_UI_Tablet) {
+                        visible = true;
+                        target_id = other.selected_staff_id;
+                    }
+                }
+
+                staff_panel_open = false;
+            }
+            else if (hover_staff_focus) {
+                if (instance_exists(obj_Render)) {
+                    with (instance_find(obj_Render, 0)) {
+                        camera_mode = "focus_staff";
+                        camera_focus_target = other.selected_staff_id;
+                        camera_focus_timer = room_speed * 3;
+                    }
+                }
+            }
+            else if (hover_staff_fire) {
+                if (selected_staff_id.object_index != obj_player) {
+                    fire_confirm_target = selected_staff_id;
+                    fire_confirm_open = true;
+                }
+            }
+        }
+    }
+}

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"hud_ui_scale",
   "parent":{
-    "name":"SCRIPTS",
-    "path":"folders/SCRIPTS.yy",
+    "name":"HUD",
+    "path":"folders/SCRIPTS/HUD.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

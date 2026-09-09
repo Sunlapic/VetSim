@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"sh_scrub_pattern",
+  "name":"sh_scrub_pattern",
+  "parent":{
+    "name":"SHADER",
+    "path":"folders/SHADER.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

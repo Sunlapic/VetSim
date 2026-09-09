@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"clinics_map_panel",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"clinics_map_panel",
+  "parent":{
+    "name":"MAP",
+    "path":"folders/SCRIPTS/MAP.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"animal_walk_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"animal_walk_system",
+  "parent":{
+    "name":"ANIMALS",
+    "path":"folders/SCRIPTS/ANIMALS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

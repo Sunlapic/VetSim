@@ -30,8 +30,8 @@
   "resourceVersion":"2.0",
   "solid":false,
   "spriteId":{
-    "name":"Sprite84",
-    "path":"sprites/Sprite84/Sprite84.yy",
+    "name":"Sprite_reception_point_owner",
+    "path":"sprites/Sprite_reception_point_owner/Sprite_reception_point_owner.yy",
   },
   "spriteMaskId":null,
   "visible":true,

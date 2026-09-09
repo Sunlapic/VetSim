@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"clinic_scene_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"clinic_scene_system",
+  "parent":{
+    "name":"MAP",
+    "path":"folders/SCRIPTS/MAP.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

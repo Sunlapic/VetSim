@@ -1,0 +1,1 @@
+reception_slot_id = 2;

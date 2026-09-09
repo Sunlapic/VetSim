@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"world_tap_input",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"world_tap_input",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

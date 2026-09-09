@@ -796,11 +796,66 @@ function operating_park_at_home(_actor) {
         return false;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // ПАКЕТ №325: СНАЧАЛА ОТХОДИМ ВНУТРИ ОПЕРАЦИОННОЙ
+    //
+    // home_x/home_y — это точка НАЙМА, у стойки регистрации. Если
+    // операционная отгорожена от неё (а по отладочной панели видно,
+    // что путь даже к соседнему стулу не строится), уйти домой
+    // невозможно: operating_walk_actor_to вернёт false, вызовется
+    // inpatient_stop_actor, и хирург замрёт ровно там, где стоял —
+    // вплотную к операционному столу.
+    //
+    // Поэтому запасной план должен быть ВНУТРИ помещения. Берём
+    // рабочую точку своей роли и отступаем от стола на полтора метра
+    // вбок: врач отходит от пациента, но остаётся в операционной.
+    // Туда путь заведомо есть — он только что по нему пришёл.
+    // ═══════════════════════════════════════════════════════════════
+
+    var _fallback_x = _actor.home_x;
+    var _fallback_y = _actor.home_y;
+
+    // Точка роли: у каждой свой объект-маркер в комнате.
+    var _role_point = noone;
+    var _role_name = variable_instance_exists(_actor, "operating_role")
+        ? string(_actor.operating_role)
+        : "";
+
+    switch (_role_name) {
+        case "surgeon":
+            _role_point = operating_find_point(obj_operating_point_surgeon);
+        break;
+
+        case "anesthetist":
+            _role_point = operating_find_point(obj_operating_point_anesthetist);
+        break;
+
+        case "assistant":
+            _role_point = operating_find_point(obj_operating_point_assistant);
+        break;
+    }
+
+    if (instance_exists(_role_point)) {
+        var _table_here = operating_find_table();
+
+        if (instance_exists(_table_here)) {
+            // Отступаем от стола по горизонтали, сохраняя свою сторону.
+            var _side = (_role_point.x < _table_here.x) ? -1 : 1;
+
+            _fallback_x = _role_point.x + _side * 70;
+            _fallback_y = _role_point.y;
+        }
+        else {
+            _fallback_x = _role_point.x;
+            _fallback_y = _role_point.y;
+        }
+    }
+
     var _home_dist = point_distance(
         _actor.x,
         _actor.y,
-        _actor.home_x,
-        _actor.home_y
+        _fallback_x,
+        _fallback_y
     );
 
     // Уже дома — стоим спокойно, не дёргаем маршрут каждый кадр.
@@ -812,7 +867,11 @@ function operating_park_at_home(_actor) {
         return true;
     }
 
-    operating_walk_actor_to(_actor, _actor.home_x, _actor.home_y);
+    // Если и до отступной точки пути нет, пробуем всё-таки домой:
+    // хуже уже не будет, а вдруг проход есть.
+    if (!operating_walk_actor_to(_actor, _fallback_x, _fallback_y)) {
+        operating_walk_actor_to(_actor, _actor.home_x, _actor.home_y);
+    }
 
     return true;
 }

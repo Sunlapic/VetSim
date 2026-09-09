@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"wait_bar_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"wait_bar_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

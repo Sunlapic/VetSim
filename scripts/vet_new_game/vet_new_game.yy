@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"vet_new_game",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"vet_new_game",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

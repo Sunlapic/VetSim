@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"people_traffic_system",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"people_traffic_system",
+  "parent":{
+    "name":"SCRIPTS",
+    "path":"folders/SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

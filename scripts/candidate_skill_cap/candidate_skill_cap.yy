@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"candidate_skill_cap",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"candidate_skill_cap",
+  "parent":{
+    "name":"SKILLS_SCRIPTS",
+    "path":"folders/SCRIPTS/SKILLS_SCRIPTS.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

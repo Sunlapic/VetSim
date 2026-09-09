@@ -40,7 +40,7 @@
   "origin":9,
   "parent":{
     "name":"3_EYES",
-    "path":"folders/SPRITES/FR_WALK/3_EYES.yy",
+    "path":"folders/SPRITES/FR/3_EYES.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

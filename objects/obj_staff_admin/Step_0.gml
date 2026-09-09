@@ -134,27 +134,12 @@ switch (reception_state) {
                     path_end();
                     is_walking = false;
 
-                    var _warn_key = string(round(_target_x)) + ":" + string(round(_target_y));
-
-                    if (
-                        !variable_instance_exists(id, "reception_warn_xy")
-                        || reception_warn_xy != _warn_key
-                    ) {
-                        reception_warn_xy = _warn_key;
-
-                        var _diag_context = script_exists(asset_get_index("clinic_diag_context"))
-                            ? clinic_diag_context()
-                            : "";
-
-                        show_debug_message(
-                            "[RECEPTION] " + _diag_context
-                            + "не удалось построить путь к точке персонала: "
-                            + string(_target_x)
-                            + ", "
-                            + string(_target_y)
-                            + ". Подвинь obj_reception_point_staff на проходимый пол рядом со стойкой, не в стену и не в стол."
-                        );
-                    }
+                    show_debug_message(
+                        "[RECEPTION] Не удалось построить путь к точке персонала: "
+                        + string(_target_x)
+                        + ", "
+                        + string(_target_y)
+                    );
                 }
             }
         }
@@ -296,27 +281,12 @@ switch (reception_state) {
                     path_start(my_path, p_move_speed, path_action_stop, true);
                     is_walking = true;
                 } else {
-                    var _warn_key = string(round(_target_x)) + ":" + string(round(_target_y));
-
-                    if (
-                        !variable_instance_exists(id, "reception_warn_xy")
-                        || reception_warn_xy != _warn_key
-                    ) {
-                        reception_warn_xy = _warn_key;
-
-                        var _diag_context = script_exists(asset_get_index("clinic_diag_context"))
-                            ? clinic_diag_context()
-                            : "";
-
-                        show_debug_message(
-                            "[RECEPTION] " + _diag_context
-                            + "точка персонала недостижима: "
-                            + string(_target_x)
-                            + ", "
-                            + string(_target_y)
-                            + ". Подвинь obj_reception_point_staff на проходимый пол рядом со стойкой, не в стену и не в стол."
-                        );
-                    }
+                    show_debug_message(
+                        "[RECEPTION] Точка персонала недостижима: "
+                        + string(_target_x)
+                        + ", "
+                        + string(_target_y)
+                    );
                 }
             }
         }

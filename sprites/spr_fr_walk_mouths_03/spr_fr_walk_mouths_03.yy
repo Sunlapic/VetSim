@@ -40,7 +40,7 @@
   "origin":9,
   "parent":{
     "name":"5_MOUTHS",
-    "path":"folders/SPRITES/FR_WALK/5_MOUTHS.yy",
+    "path":"folders/SPRITES/FR/5_MOUTHS.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

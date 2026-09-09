@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"storage_visible_items",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"storage_visible_items",
+  "parent":{
+    "name":"STORAGE",
+    "path":"folders/SCRIPTS/STORAGE.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
