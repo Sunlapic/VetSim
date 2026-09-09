@@ -27,8 +27,15 @@ if (!variable_instance_exists(id, "exam_slot_id")) {
         variable_global_exists("vetsim_debug_mode")
         && global.vetsim_debug_mode
     ) {
+        // ПАКЕТ №329: в сообщении видно, в КАКОЙ клинике и комнате
+        // стоит стол — иначе в четырёх клиниках его не найти.
+        var _diag_context = script_exists(asset_get_index("clinic_diag_context"))
+            ? clinic_diag_context()
+            : "";
+
         show_debug_message(
-            "[TABLE] Стол в позиции ("
+            "[TABLE] " + _diag_context
+            + "стол в позиции ("
             + string(x) + "," + string(y)
             + ") без exam_slot_id — считается кабинетом 1. "
             + "Если это второй стол, добавь exam_slot_id = 2; "
@@ -48,6 +55,4 @@ exam_duration = game_get_speed(gamespeed_fps) * 5;
 
 // Базовая interact point логика
 interact_x = x;
-interact_y = y + 40;
-
-
+interact_y = y + 40;  
