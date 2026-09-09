@@ -1031,15 +1031,35 @@ function tablet_draw_staff_card(
         && _tablet.staff_workplace_menu_target == _target
     ) {
         // Пакет №110: у врача — роли ХИРУРГ / АНЕСТЕЗИОЛОГ, у ассистента — ОПЕРАЦИОННАЯ.
-        var _option_ids;
-        var _option_labels;
+        // ПАКЕТ №343: в списке только те места, которые реально есть
+        // в клинике. Нет операционной (объектов в комнате нет) — нет
+        // кнопок ХИРУРГ / АНЕСТЕЗИОЛОГ / ОПЕРАЦИОННАЯ; нет стационара —
+        // нет кнопки СТАЦИОНАР. В новой клинике остаётся «НА ПРИЁМЕ».
+        var _option_ids = ["reception"];
+        var _option_labels = ["НА ПРИЁМЕ"];
 
-        if (_role == "doctor") {
-            _option_ids = ["reception", "inpatient", "op_surgeon", "op_anesthetist"];
-            _option_labels = ["НА ПРИЁМЕ", "СТАЦИОНАР", "ХИРУРГ", "АНЕСТЕЗИОЛОГ"];
-        } else {
-            _option_ids = ["reception", "inpatient", "op_assistant"];
-            _option_labels = ["НА ПРИЁМЕ", "СТАЦИОНАР", "ОПЕРАЦИОННАЯ"];
+        // ПАКЕТ №344: смотрим на ДАННЫЕ клиники, а не на объекты в
+        // комнате: объекты стоят в комнате всегда, а решает покупка.
+        // Σταц — палата куплена; операционная — предусмотрена и
+        // куплена (clinic_rooms_system).
+        var _has_inpatient = clinic_ward_is_open();
+        var _has_operating = clinic_operating_is_open();
+
+        if (_has_inpatient) {
+            array_push(_option_ids, "inpatient");
+            array_push(_option_labels, "СТАЦИОНАР");
+        }
+
+        if (_has_operating) {
+            if (_role == "doctor") {
+                array_push(_option_ids, "op_surgeon");
+                array_push(_option_labels, "ХИРУРГ");
+                array_push(_option_ids, "op_anesthetist");
+                array_push(_option_labels, "АНЕСТЕЗИОЛОГ");
+            } else {
+                array_push(_option_ids, "op_assistant");
+                array_push(_option_labels, "ОПЕРАЦИОННАЯ");
+            }
         }
         var _option_x1 = _tablet.staff_workplace_button_x1;
         var _option_x2 = _tablet.staff_workplace_button_x2;
